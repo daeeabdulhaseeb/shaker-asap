@@ -1305,7 +1305,7 @@ function exportTransferTable(){tableToXLSX('tr-table','asap_transfers');}
 function exportPipelineTable(){tableToXLSX('pl-table','asap_pipeline');}
 function exportProductTable(){tableToXLSX('prod-table','asap_products');}
 
-// ── Embedded data (no server required) ───────────────────────────────────
+// ── Data loading ─────────────────────────────────────────────────────────
 function loadAll(){
   var base='data/';
   Promise.all([
