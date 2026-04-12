@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASAP Sales Dashboard - Shaker Group</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f9fa;--surface:#ffffff;--surface2:#f1f3f5;
+  --border:#e5e7eb;--border2:#d1d5db;
+  --text:#111827;--text2:#6b7280;--text3:#9ca3af;
+  --accent:#1d4ed8;--accent-light:#eff6ff;
+  --success:#16a34a;--success-bg:#f0fdf4;
+  --warn:#d97706;--warn-bg:#fffbeb;
+  --danger:#dc2626;--danger-bg:#fef2f2;
+  --info:#2563eb;--info-bg:#eff6ff;
+  --radius:8px;--radius-lg:12px;
+  --font:'DM Sans',sans-serif;
+}
+body{font-family:var(--font);font-size:13px;color:var(--text);background:var(--bg);min-height:100vh}
+.nav{display:flex;align-items:center;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;position:sticky;top:0;z-index:100}
+.nav-brand{font-size:12px;font-weight:500;color:var(--text2);padding:14px 16px 14px 0;border-right:1px solid var(--border);margin-right:4px;white-space:nowrap}
+.nav-link{font-size:12px;padding:14px 14px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;user-select:none}
+.nav-link:hover{color:var(--text)}
+.nav-link.active{color:var(--text);font-weight:500;border-bottom:2px solid var(--accent)}
+.nav-updated{margin-left:auto;font-size:11px;color:var(--text3)}
+.page{display:none;padding:20px 24px 40px}
+.page.active{display:block}
+.page-title{font-size:15px;font-weight:500;margin-bottom:2px}
+.page-sub{font-size:11px;color:var(--text2);margin-bottom:14px}
+.kpi-grid{display:grid;gap:10px;margin-bottom:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.kpi{background:var(--surface2);border-radius:var(--radius);padding:12px 14px}
+.kpi-label{font-size:10px;color:var(--text2);margin-bottom:4px}
+.kpi-val{font-size:20px;font-weight:500}
+.kpi-sub{font-size:10px;color:var(--text2);margin-top:2px}
+.kpi-pos{font-size:10px;color:var(--success);margin-top:2px}
+.kpi-neg{font-size:10px;color:var(--danger);margin-top:2px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:12px}
+.card-title{font-size:12px;font-weight:500;margin-bottom:3px}
+.card-sub{font-size:11px;color:var(--text2);margin-bottom:10px}
+.two-col{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px}
+.three-col{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.half{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.divider{height:1px;background:var(--border);margin:10px 0}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.filter-bar select,.filter-bar input{font-size:11px;padding:5px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);height:30px}
+.filter-bar input[type=text]{width:160px}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:20px;background:var(--info-bg);color:var(--info);border:1px solid #bfdbfe}
+.chip-x{cursor:pointer;font-size:12px;line-height:1;padding:0 2px;opacity:.7}
+.btn-clear{font-size:11px;padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text2);cursor:pointer;height:30px}
+.btn-export{font-size:11px;padding:4px 12px;border:1px solid var(--accent);border-radius:var(--radius);background:var(--accent-light);color:var(--accent);cursor:pointer;height:30px;font-weight:500}
+.btn-export:hover{background:var(--accent);color:#fff}
+.filter-count{margin-left:auto;font-size:11px;color:var(--text3);white-space:nowrap}
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:11px;background:var(--surface)}
+th{font-size:10px;font-weight:500;color:var(--text2);text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.r{text-align:right;font-variant-numeric:tabular-nums}
+.c{text-align:center}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:var(--surface2)}
+tr.selected td{background:var(--accent-light)!important}
+.dim{color:var(--text3)}
+.pos{color:var(--success)}
+.neg{color:var(--danger)}
+.section-head td{background:var(--surface2);font-size:10px;font-weight:500;color:var(--text2);padding:5px 10px}
+.badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.b-inter{background:#fee2e2;color:#991b1b}
+.b-intra{background:#fef3c7;color:#92400e}
+.b-same{background:#dcfce7;color:#14532d}
+.b-new{background:#dbeafe;color:#1e3a8a}
+.b-active{background:#dcfce7;color:#14532d}
+.b-inactive{background:#f3f4f6;color:#374151}
+.b-react{background:#fef3c7;color:#92400e}
+.b-pot{background:#ede9fe;color:#4c1d95}
+.b-owner{background:#dcfce7;color:#14532d}
+.b-transact{background:#fef3c7;color:#92400e}
+.b-aplus{background:#dbeafe;color:#1e3a8a}
+.b-a{background:#dcfce7;color:#14532d}
+.b-b{background:#fef3c7;color:#92400e}
+.b-c{background:#f3f4f6;color:#374151}
+.b-d{background:#fee2e2;color:#991b1b}
+.b-warn{background:#fef3c7;color:#92400e}
+.b-unresolved{background:#fce7f3;color:#9d174d}
+.drilldown-row td{padding:0;background:var(--surface2)!important}
+.drilldown-inner{padding:16px 20px}
+.drilldown-title{font-size:12px;font-weight:500;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.dd-close{font-size:11px;color:var(--text2);cursor:pointer;padding:3px 10px;border:1px solid var(--border2);border-radius:var(--radius)}
+.verdict{padding:9px 12px;border-radius:var(--radius);font-size:11px;line-height:1.5;margin-bottom:10px;border-left:3px solid}
+.verdict.good{background:var(--success-bg);color:#14532d;border-color:var(--success)}
+.verdict.warn{background:var(--warn-bg);color:#92400e;border-color:var(--warn)}
+.verdict.danger{background:var(--danger-bg);color:#991b1b;border-color:var(--danger)}
+.verdict.info{background:var(--info-bg);color:#1e3a8a;border-color:var(--info)}
+.insight{padding:8px 12px;border-radius:0 var(--radius) var(--radius) 0;font-size:11px;line-height:1.5;margin-bottom:6px;border-left:3px solid var(--info);background:var(--surface2);color:var(--text2)}
+.insight.warn{border-left-color:var(--warn)}
+.insight.danger{border-left-color:var(--danger)}
+.insight.good{border-left-color:var(--success)}
+.bar-wrap{margin-bottom:8px}
+.bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:3px}
+.bar-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;display:flex;gap:2px}
+.bar-fill{height:100%;border-radius:3px;min-width:2px}
+.fill-blue{background:#3b82f6}
+.fill-blue-light{background:#93c5fd}
+.fill-green{background:#22c55e}
+.fill-red{background:#ef4444}
+.fill-amber{background:#f59e0b}
+.fill-gray{background:#9ca3af}
+.month-chart{display:flex;align-items:flex-end;gap:2px;height:70px}
+.m-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
+.m-bars{display:flex;gap:1px;align-items:flex-end;height:60px;width:100%}
+.m-bar{flex:1;border-radius:2px 2px 0 0;min-height:2px}
+.m-2024{background:#93c5fd}
+.m-2025{background:#3b82f6}
+.m-label{font-size:9px;color:var(--text3);text-align:center}
+.chart-legend{display:flex;gap:14px;margin-top:6px;font-size:10px;color:var(--text2)}
+.legend-dot{width:10px;height:6px;border-radius:2px;display:inline-block;margin-right:4px}
+.contrib-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:6px 0}
+.seg-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:8px 0}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-brand">Shaker / ASAP Sales</span>
+  <span class="nav-link active" onclick="showPage('home',this)">Home</span>
+  <span class="nav-link" onclick="showPage('accounts',this)">Account explorer</span>
+  <span class="nav-link" onclick="showPage('se',this)">SE &amp; team</span>
+  <span class="nav-link" onclick="showPage('transfer',this)">Transfer impact</span>
+  <span class="nav-link" onclick="showPage('pipeline',this)">Pipeline &amp; coverage</span>
+  <span class="nav-link" onclick="showPage('product',this)">Product analysis</span>
+  <span class="nav-updated" id="last-updated"></span>
+</nav>
+
+<!-- HOME -->
+<div id="page-home" class="page active">
+  <div class="page-title">Overview</div>
+  <div class="page-sub" id="home-sub">Loading...</div>
+  <div class="kpi-grid g5" id="home-kpis"></div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Sales trend 2022-2026</div>
+      <div class="card-sub">Annual invoiced value - 2026 = Jan-Feb actuals</div>
+      <div id="home-trend-chart" style="height:120px;display:flex;align-items:flex-end;gap:8px;padding-top:8px"></div>
+      <div class="divider"></div>
+      <div class="kpi-grid g3" style="margin-bottom:0" id="home-mom-kpis"></div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">Account status breakdown</div>
+        <div class="card-sub" id="home-status-sub"></div>
+        <div class="seg-bar" id="home-status-bar"></div>
+        <div id="home-status-legend" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-size:10px"></div>
+        <div class="divider"></div>
+        <div id="home-transfer-bars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Key insights</div>
+        <div id="home-insights"></div>
+      </div>
+    </div>
+  </div>
+  <div class="three-col">
+    <div class="card"><div class="card-title">Sales by team (2025)</div><div id="home-team-bars"></div></div>
+    <div class="card"><div class="card-title">Contractor size distribution</div><div id="home-size-bars"></div></div>
+    <div class="card"><div class="card-title">Top product groups (2025)</div><div id="home-group-bars"></div></div>
+  </div>
+</div>
+
+<!-- ACCOUNTS -->
+<div id="page-accounts" class="page">
+  <div class="page-title">Account explorer</div>
+  <div class="page-sub">Click any row to drill down into SE history and project breakdown</div>
+  <div class="filter-bar">
+    <select id="acc-f-transfer" onchange="applyAccFilters()">
+      <option value="">All transfer types</option>
+      <option value="inter">Inter-team</option>
+      <option value="intra">Intra-team</option>
+      <option value="same">Same SE</option>
+      <option value="new">New account</option>
+    </select>
+    <select id="acc-f-team" onchange="applyAccFilters()"><option value="">All teams (current)</option></select>
+    <select id="acc-f-oldteam" onchange="applyAccFilters()"><option value="">All teams (old)</option></select>
+    <select id="acc-f-se" onchange="applyAccFilters()"><option value="">All SEs</option></select>
+    <select id="acc-f-status" onchange="applyAccFilters()">
+      <option value="">All statuses</option>
+      <option value="Active">Active</option>
+      <option value="Inactive">Inactive</option>
+      <option value="New">New</option>
+      <option value="Reactivated">Reactivated</option>
+      <option value="Active/Potential">Active/Potential</option>
+    </select>
+    <select id="acc-f-size" onchange="applyAccFilters()">
+      <option value="">All sizes</option>
+      <option value="A+">A+</option><option value="A">A</option>
+      <option value="B">B</option><option value="C">C</option><option value="D">D</option>
+    </select>
+    <select id="acc-f-type" onchange="applyAccFilters()">
+      <option value="">All types</option>
+      <option value="MEP Contractor">MEP Contractor</option>
+      <option value="Main Contractor">Main Contractor</option>
+      <option value="AC Specialist">AC Specialist</option>
+      <option value="Developer">Developer</option>
+      <option value="End Customer">End Customer</option>
+    </select>
+    <input type="text" id="acc-f-search" placeholder="Search account..." oninput="applyAccFilters()">
+    <button class="btn-clear" onclick="clearAccFilters()">Clear filters</button>
+    <button class="btn-export" onclick="exportAccTable()">Export</button>
+    <span class="filter-count" id="acc-count"></span>
+  </div>
+  <div id="acc-chips" class="filter-chips" style="margin-bottom:8px"></div>
+  <div class="tbl-wrap">
+    <table id="acc-table">
+      <thead><tr>
+        <th style="width:200px">Customer</th>
+        <th>Size</th><th>Status</th><th>Type</th><th>Transfer</th>
+        <th class="r">2023</th><th class="r">2024</th><th class="r">2025</th><th class="r">2026 YTD</th>
+        <th class="r">YoY 25v24</th><th class="r">Hot pipeline</th><th class="r">Award</th><th class="r">Backlog</th>
+        <th>Group 24-&gt;25</th><th>Current SE / team</th>
+      </tr></thead>
+      <tbody id="acc-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SE & TEAM -->
+<div id="page-se" class="page">
+  <div class="page-title">SE &amp; team performance</div>
+  <div class="page-sub">Click a team to filter SE panel, click an SE to filter accounts and charts</div>
+  <div class="kpi-grid g4" id="se-kpis"></div>
+  <div class="three-col" style="align-items:start">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
+        <div><div class="card-title">Team summary</div><div class="card-sub">Click to filter</div></div>
+        <button class="btn-export" onclick="exportTeamTable()">Export</button>
+      </div>
+      <table id="se-team-table">
+        <thead><tr><th>Team</th><th class="r">Accts</th><th class="r">2024</th><th class="r">2025</th><th class="r">YoY</th><th class="r">Pipeline</th></tr></thead>
+        <tbody id="se-team-tbody"></tbody>
+      </table>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
+        <div><div class="card-title" id="se-se-title">SE breakdown</div><div class="card-sub">Click to filter</div></div>
+        <button class="btn-export" onclick="exportSETable()">Export</button>
+      </div>
+      <table id="se-se-table">
+        <thead><tr><th>SE</th><th class="r">Accts</th><th class="r">2025</th><th class="r">YoY</th><th class="r">Pipeline</th><th>Mix</th></tr></thead>
+        <tbody id="se-se-tbody"></tbody>
+      </table>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
+        <div><div class="card-title" id="se-acc-title">Accounts</div><div class="card-sub">Owner vs transacted</div></div>
+        <button class="btn-export" onclick="exportSEAccTable()">Export</button>
+      </div>
+      <table id="se-acc-table">
+        <thead><tr><th>Account</th><th>Owner?</th><th class="r">2025</th><th class="r">YoY</th><th class="r">Pipeline</th></tr></thead>
+        <tbody id="se-acc-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="half">
+    <div class="card">
+      <div class="card-title" id="se-chart-title">Monthly sales</div>
+      <div class="card-sub">2024 vs 2025 - bars grouped by month</div>
+      <div class="month-chart" id="se-monthly-chart"></div>
+      <div class="chart-legend">
+        <span><span class="legend-dot" style="background:#93c5fd"></span>2024</span>
+        <span><span class="legend-dot" style="background:#3b82f6"></span>2025</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="se-group-title">Sales by product group</div>
+      <div class="card-sub">2024 vs 2025</div>
+      <div id="se-group-bars"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" id="se-flags-title">Decision flags</div>
+    <div class="card-sub">Auto-generated from performance data</div>
+    <div id="se-flags" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"></div>
+  </div>
+</div>
+
+<!-- TRANSFER IMPACT -->
+<div id="page-transfer" class="page">
+  <div class="page-title">Transfer impact analysis</div>
+  <div class="page-sub">Before (old SE) vs after (new SE) - sales, pipeline, award</div>
+  <div class="filter-bar">
+    <select id="tr-f-type" onchange="applyTransferFilters()">
+      <option value="inter">Inter-team transfers</option>
+      <option value="intra">Intra-team transfers</option>
+      <option value="">All transfers</option>
+    </select>
+    <select id="tr-f-oldteam" onchange="applyTransferFilters()"><option value="">All old teams</option></select>
+    <select id="tr-f-newteam" onchange="applyTransferFilters()"><option value="">All new teams</option></select>
+    <select id="tr-f-size" onchange="applyTransferFilters()">
+      <option value="">All sizes</option><option value="A+">A+</option><option value="A">A</option><option value="B">B</option>
+    </select>
+    <button class="btn-clear" onclick="clearTransferFilters()">Clear</button>
+    <button class="btn-export" onclick="exportTransferTable()">Export</button>
+    <span class="filter-count" id="tr-count"></span>
+  </div>
+  <div class="kpi-grid g4" id="tr-kpis"></div>
+  <div class="two-col">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:12px 14px 8px"><div class="card-title">Account-level before vs after</div><div class="card-sub">Sales comparison</div></div>
+      <div class="tbl-wrap" style="border:none;border-radius:0">
+        <table id="tr-table">
+          <thead><tr>
+            <th>Account</th><th>Size</th><th>Old SE</th><th>New SE</th>
+            <th class="r">2024 sales</th><th class="r">2025 sales</th><th class="r">Sales delta</th>
+            <th class="r">Pipeline delta</th><th class="r">Award delta</th>
+          </tr></thead>
+          <tbody id="tr-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">Transfer route breakdown</div>
+        <table class="tbl">
+          <thead><tr><th>Route</th><th class="r">Accounts</th><th class="r">Avg delta sales</th></tr></thead>
+          <tbody id="tr-routes-tbody"></tbody>
+        </table>
+      </div>
+      <div class="card"><div class="card-title">Transfer insights</div><div id="tr-insights"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PIPELINE -->
+<div id="page-pipeline" class="page">
+  <div class="page-title">Pipeline &amp; coverage</div>
+  <div class="page-sub">Hot pipeline (50%+70%) - Award (90%+100%) - Backlog - VALID/NOT DUPLICATE only</div>
+  <div class="filter-bar">
+    <select id="pl-f-team" onchange="applyPipelineFilters()"><option value="">All teams</option></select>
+    <select id="pl-f-se" onchange="applyPipelineFilters()"><option value="">All SEs</option></select>
+    <button class="btn-clear" onclick="clearPipelineFilters()">Clear</button>
+    <button class="btn-export" onclick="exportPipelineTable()">Export</button>
+  </div>
+  <div class="kpi-grid g4" id="pl-kpis"></div>
+  <div class="two-col">
+    <div class="card"><div class="card-title">Pipeline by team</div><div id="pl-team-bars"></div></div>
+    <div class="card">
+      <div class="card-title">Coverage alerts</div>
+      <div id="pl-alerts"></div>
+      <div class="divider"></div>
+      <div class="card-title" style="margin-bottom:8px">Pipeline probability split</div>
+      <div id="pl-prob-bars"></div>
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:12px 14px 8px"><div class="card-title">Pipeline detail by SE</div></div>
+    <div class="tbl-wrap" style="border:none;border-radius:0">
+      <table id="pl-table">
+        <thead><tr>
+          <th>SE</th><th>Team</th><th class="r">2025 sales</th>
+          <th class="r">Hot pipeline</th><th class="r">Award</th><th class="r">Backlog</th><th class="r">Coverage</th>
+        </tr></thead>
+        <tbody id="pl-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT -->
+<div id="page-product" class="page">
+  <div class="page-title">Product analysis</div>
+  <div class="page-sub">Sales by group - market shift detection - account-level product behaviour</div>
+  <div class="filter-bar">
+    <select id="prod-f-team" onchange="applyProductFilters()"><option value="">All teams</option></select>
+    <select id="prod-f-se" onchange="applyProductFilters()"><option value="">All SEs</option></select>
+    <button class="btn-clear" onclick="clearProductFilters()">Clear</button>
+    <button class="btn-export" onclick="exportProductTable()">Export</button>
+  </div>
+  <div class="kpi-grid g4" id="prod-kpis"></div>
+  <div class="two-col">
+    <div class="card"><div class="card-title">Market group shift 2023-2024-2025</div><div id="prod-group-bars"></div></div>
+    <div class="card"><div class="card-title">Account-level group shifts</div><div id="prod-shifts"></div></div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:12px 14px 8px"><div class="card-title">Account product detail</div></div>
+    <div class="tbl-wrap" style="border:none;border-radius:0">
+      <table id="prod-table">
+        <thead><tr>
+          <th>Account</th><th>Type</th><th>SE / team</th>
+          <th>Top group 2023</th><th>Top group 2024</th><th>Top group 2025</th>
+          <th class="c">Shifted?</th><th class="r">2025 sales</th>
+        </tr></thead>
+        <tbody id="prod-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+var ACCOUNTS=[], SE_DATA=[], TEAM_DATA=[], PIPE_DATA=[], PROD_DATA={};
+var ACC_INDEX={};
+var SEL_TEAM=null, SEL_SE=null;
+var ACC_FILTERED=[];
+var OPEN_DD=null;
+var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function sar(v){
+  if(v==null||v===0)return'--';
+  var abs=Math.abs(v),s=v<0?'-':'';
+  if(abs>=1e9)return s+(abs/1e9).toFixed(1)+'B';
+  if(abs>=1e6)return s+(abs/1e6).toFixed(1)+'M';
+  if(abs>=1e3)return s+(abs/1e3).toFixed(0)+'K';
+  return s+abs.toFixed(0);
+}
+function pct(v){if(v==null)return'--';return(v>0?'+':'')+v.toFixed(1)+'%';}
+function posNeg(v){if(v==null)return'dim';return v>0?'pos':'neg';}
+function sizeBadge(tier,trend){
+  if(!tier)return'';
+  var t=trend==='up'?' (+)':trend==='down'?' (-)':'';
+  var cls={'A+':'b-aplus','A':'b-a','B':'b-b','C':'b-c','D':'b-d'}[tier]||'b-c';
+  return'<span class="badge '+cls+'">'+tier+t+'</span>';
+}
+function statusBadge(s){
+  var map={'Active':'b-active','Inactive':'b-inactive','New':'b-new','Reactivated':'b-react','Active/Potential':'b-pot','Unknown':'b-inactive'};
+  return s?'<span class="badge '+(map[s]||'b-inactive')+'">'+s+'</span>':'';
+}
+function transferBadge(t){
+  var map={'inter':'b-inter','intra':'b-intra','same':'b-same','new':'b-new'};
+  var labels={'inter':'Inter','intra':'Intra','same':'Same','new':'New'};
+  return t?'<span class="badge '+(map[t]||'')+'">'+labels[t]+'</span>':'';
+}
+function groupShift(g24,g25){
+  if(!g24&&!g25)return'<span class="dim">--</span>';
+  if(!g25)return'<span class="dim">'+g24+'</span>';
+  if(!g24)return g25;
+  if(g24===g25)return g24;
+  return'<span style="color:var(--text2)">'+g24+'</span> -&gt; <span style="color:var(--warn)">'+g25+'</span>';
+}
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-link').forEach(function(l){l.classList.remove('active');});
+  document.getElementById('page-'+id).classList.add('active');
+  if(el)el.classList.add('active');
+}
+function populateFilter(selId,values){
+  var sel=document.getElementById(selId);
+  if(!sel)return;
+  var curr=sel.value;
+  while(sel.options.length>1)sel.remove(1);
+  values.forEach(function(v){var o=document.createElement('option');o.value=v;o.text=v;sel.appendChild(o);});
+  if(curr)sel.value=curr;
+}
+function initFilters(){
+  var teams=[...new Set(ACCOUNTS.map(function(a){return a.curr_team;}).filter(Boolean))].sort();
+  var oldTeams=[...new Set(ACCOUNTS.map(function(a){return a.old_team;}).filter(Boolean))].sort();
+  var ses=[...new Set(ACCOUNTS.map(function(a){return a.curr_se;}).filter(Boolean))].sort();
+  populateFilter('acc-f-team',teams);
+  populateFilter('acc-f-oldteam',oldTeams);
+  populateFilter('acc-f-se',ses);
+  populateFilter('tr-f-oldteam',oldTeams);
+  populateFilter('tr-f-newteam',teams);
+  populateFilter('pl-f-team',teams);
+  populateFilter('pl-f-se',ses);
+  populateFilter('prod-f-team',teams);
+  populateFilter('prod-f-se',ses);
+}
+
+function renderHome(){
+  if(!TEAM_DATA.length)return;
+  var total25=TEAM_DATA.reduce(function(s,t){return s+(t.sales['2025']||0);},0);
+  var total24=TEAM_DATA.reduce(function(s,t){return s+(t.sales['2024']||0);},0);
+  var total23=TEAM_DATA.reduce(function(s,t){return s+(t.sales['2023']||0);},0);
+  var total22=TEAM_DATA.reduce(function(s,t){return s+(t.sales['2022']||0);},0);
+  var total26=TEAM_DATA.reduce(function(s,t){return s+(t.sales['2026']||0);},0);
+  var totalPipe=TEAM_DATA.reduce(function(s,t){return s+(t.hot_pipeline||0);},0);
+  var totalAward=TEAM_DATA.reduce(function(s,t){return s+(t.award||0);},0);
+  var totalBL=TEAM_DATA.reduce(function(s,t){return s+(t.backlog||0);},0);
+  var yoy25=total24>0?((total25-total24)/total24*100):null;
+  document.getElementById('home-sub').textContent=ACCOUNTS.length+' accounts - Sales 2022-2026 - Pipeline & Award';
+  document.getElementById('last-updated').textContent='Generated: '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('home-kpis').innerHTML=[
+    {l:'2025 sales (SAR)',v:sar(total25),s:yoy25!=null?(yoy25>=0?"+ ":"- ")+Math.abs(yoy25).toFixed(1)+"% vs 2024":"--",sc:yoy25>=0?"kpi-pos":"kpi-neg"},
+    {l:'2024 sales (SAR)',v:sar(total24),s:'vs 2023: '+pct(total23>0?(total24-total23)/total23*100:null),sc:'kpi-sub'},
+    {l:'Hot pipeline',v:sar(totalPipe),s:'50% + 70% stages',sc:'kpi-sub'},
+    {l:'Award',v:sar(totalAward),s:'90% + 100%',sc:'kpi-sub'},
+    {l:'Backlog',v:sar(totalBL),s:'current',sc:'kpi-sub'},
+  ].map(function(k){return'<div class="kpi"><div class="kpi-label">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="'+k.sc+'">'+k.s+'</div></div>';}).join('');
+  var yrs=[{y:2022,v:total22},{y:2023,v:total23},{y:2024,v:total24},{y:2025,v:total25},{y:2026,v:total26}];
+  var maxV=Math.max.apply(null,yrs.map(function(x){return x.v||0;}));
+  document.getElementById('home-trend-chart').innerHTML=yrs.map(function(yr){
+    var h=maxV>0?Math.round((yr.v||0)/maxV*100):0;
+    var col=yr.y===2022?'var(--text3)':yr.y===2026?'var(--warn)':'var(--accent)';
+    return'<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">'
+      +'<div style="font-size:10px;color:var(--text2)">'+sar(yr.v)+'</div>'
+      +'<div style="flex:1;width:100%;display:flex;align-items:flex-end">'
+      +'<div style="width:100%;height:'+h+'%;background:'+col+';border-radius:3px 3px 0 0;min-height:4px"></div></div>'
+      +'<div style="font-size:10px;color:var(--text3)">'+yr.y+(yr.y===2026?' YTD':'')+'</div></div>';
+  }).join('');
+  document.getElementById('home-mom-kpis').innerHTML=[
+    {l:'YoY 25 vs 24',v:pct(yoy25),c:yoy25>=0?'kpi-pos':'kpi-neg'},
+    {l:'2026 YTD vs prior',v:'--',c:'kpi-sub'},
+    {l:'2024 vs 2023',v:pct(total23>0?(total24-total23)/total23*100:null),c:'kpi-sub'},
+  ].map(function(k){return'<div><div class="kpi-label">'+k.l+'</div><div style="font-size:14px;font-weight:500" class="'+k.c+'">'+k.v+'</div></div>';}).join('');
+  var statusCounts={'Active':0,'Inactive':0,'New':0,'Reactivated':0,'Active/Potential':0};
+  ACCOUNTS.forEach(function(a){if(a.cust_status&&statusCounts.hasOwnProperty(a.cust_status))statusCounts[a.cust_status]++;});
+  var statusColors={'Active':'#22c55e','New':'#3b82f6','Reactivated':'#f59e0b','Active/Potential':'#a78bfa','Inactive':'#d1d5db'};
+  var stTotal=Object.values(statusCounts).reduce(function(a,b){return a+b;},0)||1;
+  document.getElementById('home-status-sub').textContent=ACCOUNTS.length+' total accounts';
+  document.getElementById('home-status-bar').innerHTML=Object.entries(statusCounts).map(function(e){return'<div style="flex:'+(e[1]/stTotal*100)+';background:'+statusColors[e[0]]+'" class="seg"></div>';}).join('');
+  document.getElementById('home-status-legend').innerHTML=Object.entries(statusCounts).map(function(e){return'<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+statusColors[e[0]]+';margin-right:3px"></span>'+e[0]+' '+e[1]+'</span>';}).join('');
+  var tCounts={'inter':0,'intra':0,'same':0,'new':0};
+  var tLabels={'inter':'Inter-team','intra':'Intra-team','same':'Same SE','new':'New account'};
+  var tColors={'inter':'#3b82f6','intra':'#f59e0b','same':'#22c55e','new':'#9ca3af'};
+  ACCOUNTS.forEach(function(a){if(tCounts.hasOwnProperty(a.transfer_type))tCounts[a.transfer_type]++;});
+  var maxT=Math.max.apply(null,Object.values(tCounts))||1;
+  document.getElementById('home-transfer-bars').innerHTML=Object.entries(tCounts).map(function(e){return'<div class="bar-wrap"><div class="bar-label"><span>'+tLabels[e[0]]+'</span><span>'+e[1]+'</span></div><div class="bar-track"><div class="bar-fill" style="width:'+(e[1]/maxT*100)+'%;background:'+tColors[e[0]]+'"></div></div></div>';}).join('');
+  var maxTeam=Math.max.apply(null,TEAM_DATA.map(function(t){return t.sales['2025']||0;}))||1;
+  document.getElementById('home-team-bars').innerHTML=TEAM_DATA.slice(0,7).map(function(t){return'<div class="bar-wrap"><div class="bar-label"><span>'+t.team+'</span><span>'+sar(t.sales['2025'])+'</span></div><div class="bar-track"><div class="bar-fill fill-blue" style="width:'+((t.sales['2025']||0)/maxTeam*100)+'%"></div></div></div>';}).join('');
+  var sizeAgg={'A+':0,'A':0,'B':0,'C':0,'D':0,'No history':0};
+  ACCOUNTS.forEach(function(a){if(!a.size_tier)sizeAgg['No history']++;else if(sizeAgg.hasOwnProperty(a.size_tier))sizeAgg[a.size_tier]++;});
+  var sizeColors={'A+':'#3b82f6','A':'#22c55e','B':'#f59e0b','C':'#9ca3af','D':'#ef4444','No history':'#e5e7eb'};
+  var maxS=Math.max.apply(null,Object.values(sizeAgg))||1;
+  document.getElementById('home-size-bars').innerHTML=Object.entries(sizeAgg).map(function(e){return'<div class="bar-wrap"><div class="bar-label"><span>'+e[0]+'</span><span>'+e[1]+'</span></div><div class="bar-track"><div class="bar-fill" style="width:'+(e[1]/maxS*100)+'%;background:'+sizeColors[e[0]]+'"></div></div></div>';}).join('');
+  var g25=PROD_DATA.by_year&&PROD_DATA.by_year['2025']||{};
+  var g25sorted=Object.entries(g25).sort(function(a,b){return b[1]-a[1];}).slice(0,6);
+  var maxG=g25sorted.length?(g25sorted[0][1]||0):1;
+  document.getElementById('home-group-bars').innerHTML=g25sorted.map(function(e){return'<div class="bar-wrap"><div class="bar-label"><span>'+e[0]+'</span><span>'+sar(e[1])+'</span></div><div class="bar-track"><div class="bar-fill fill-blue" style="width:'+(e[1]/maxG*100)+'%"></div></div></div>';}).join('');
+  var insights=[];
+  var interAccs=ACCOUNTS.filter(function(a){return a.transfer_type==='inter';});
+  if(interAccs.length){var with25=interAccs.filter(function(a){return a.sales&&a.sales['2024']&&a.sales['2025'];});if(with25.length){var avgChg=with25.reduce(function(s,a){return s+(a.sales['2025']-a.sales['2024'])/a.sales['2024'];},0)/with25.length*100;insights.push({t:'danger',m:interAccs.length+' inter-team transfers - avg sales change: '+pct(avgChg)});}}
+  var aplusInactive=ACCOUNTS.filter(function(a){return a.size_tier==='A+'&&a.cust_status==='Inactive';});
+  if(aplusInactive.length)insights.push({t:'warn',m:aplusInactive.length+' A+ accounts inactive - check pipeline'});
+  var newAccs=ACCOUNTS.filter(function(a){return a.transfer_type==='new';});
+  if(newAccs.length)insights.push({t:'good',m:newAccs.length+' new accounts in 2025/2026'});
+  document.getElementById('home-insights').innerHTML=insights.map(function(i){return'<div class="insight '+i.t+'">'+i.m+'</div>';}).join('');
+}
+
+function applyAccFilters(){
+  var fTr=document.getElementById('acc-f-transfer').value;
+  var fTeam=document.getElementById('acc-f-team').value;
+  var fOld=document.getElementById('acc-f-oldteam').value;
+  var fSE=document.getElementById('acc-f-se').value;
+  var fSt=document.getElementById('acc-f-status').value;
+  var fSz=document.getElementById('acc-f-size').value;
+  var fTy=document.getElementById('acc-f-type').value;
+  var fSrch=document.getElementById('acc-f-search').value.toLowerCase();
+  ACC_FILTERED=ACCOUNTS.filter(function(a){
+    if(fTr&&a.transfer_type!==fTr)return false;
+    if(fTeam&&a.curr_team!==fTeam)return false;
+    if(fOld&&a.old_team!==fOld)return false;
+    if(fSE&&a.curr_se!==fSE)return false;
+    if(fSt&&a.cust_status!==fSt)return false;
+    if(fSz&&a.size_tier!==fSz)return false;
+    if(fTy&&a.description!==fTy)return false;
+    if(fSrch&&!a.name.toLowerCase().includes(fSrch))return false;
+    return true;
+  });
+  document.getElementById('acc-count').textContent=ACC_FILTERED.length+' accounts shown';
+  renderAccTable();
+  var chips=[];
+  if(fTr)chips.push({l:'Transfer: '+fTr,f:'acc-f-transfer'});
+  if(fTeam)chips.push({l:'Team: '+fTeam,f:'acc-f-team'});
+  if(fOld)chips.push({l:'Old team: '+fOld,f:'acc-f-oldteam'});
+  if(fSE)chips.push({l:'SE: '+fSE,f:'acc-f-se'});
+  if(fSt)chips.push({l:'Status: '+fSt,f:'acc-f-status'});
+  if(fSz)chips.push({l:'Size: '+fSz,f:'acc-f-size'});
+  if(fTy)chips.push({l:'Type: '+fTy,f:'acc-f-type'});
+  if(fSrch)chips.push({l:'Search: '+fSrch,f:'acc-f-search',isText:true});
+  document.getElementById('acc-chips').innerHTML=chips.map(function(c){return'<span class="chip">'+c.l+'<span class="chip-x" onclick="clearChip(''+c.f+'','+!!c.isText+')">x</span></span>';}).join('');
+}
+function clearAccFilters(){['acc-f-transfer','acc-f-team','acc-f-oldteam','acc-f-se','acc-f-status','acc-f-size','acc-f-type'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('acc-f-search').value='';applyAccFilters();}
+function clearChip(fieldId,isText){document.getElementById(fieldId).value='';applyAccFilters();}
+
+function renderAccTable(){
+  var SORT_ORDER={inter:0,intra:1,same:2,new:3};
+  var sorted=ACC_FILTERED.slice().sort(function(a,b){var ta=SORT_ORDER[a.transfer_type]||0,tb=SORT_ORDER[b.transfer_type]||0;if(ta!==tb)return ta-tb;return(b.sales&&b.sales['2025']||0)-(a.sales&&a.sales['2025']||0);});
+  var rows='',prevSec='';
+  sorted.forEach(function(a,i){
+    var sec=a.transfer_type;
+    if(sec!==prevSec){
+      var secLabels={inter:'Inter-team transfers',intra:'Intra-team transfers',same:'Same SE',new:'New accounts'};
+      rows+='<tr class="section-head"><td colspan="15">'+secLabels[sec]+' - '+sorted.filter(function(x){return x.transfer_type===sec;}).length+' accounts</td></tr>';
+      prevSec=sec;
+    }
+    var idx=ACC_INDEX[a.customer]!==undefined?ACC_INDEX[a.customer]:i;
+    rows+='<tr class="clickable" onclick="toggleDD('+idx+')">'
+      +'<td style="font-weight:500">'+a.name+'</td>'
+      +'<td>'+sizeBadge(a.size_tier,a.size_trend)+'</td>'
+      +'<td>'+statusBadge(a.cust_status)+'</td>'
+      +'<td><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--surface2);color:var(--text2)">'+a.description+'</span></td>'
+      +'<td>'+transferBadge(a.transfer_type)+'</td>'
+      +'<td class="r '+(a.sales&&a.sales['2023']?'':'dim')+'">'+sar(a.sales&&a.sales['2023'])+'</td>'
+      +'<td class="r '+(a.sales&&a.sales['2024']?'':'dim')+'">'+sar(a.sales&&a.sales['2024'])+'</td>'
+      +'<td class="r '+(a.sales&&a.sales['2025']?'':'dim')+'">'+sar(a.sales&&a.sales['2025'])+'</td>'
+      +'<td class="r dim">'+sar(a.sales&&a.sales['2026'])+'</td>'
+      +'<td class="r '+(a.yoy_25v24!=null?posNeg(a.yoy_25v24):'dim')+'">'+pct(a.yoy_25v24)+'</td>'
+      +'<td class="r">'+sar(a.hot_pipeline)+'</td>'
+      +'<td class="r">'+sar(a.award)+'</td>'
+      +'<td class="r">'+sar(a.backlog)+'</td>'
+      +'<td>'+groupShift(a.group_2024,a.group_2025)+'</td>'
+      +'<td style="font-size:10px;color:var(--text2)">'+a.curr_se+(a.curr_team?' / '+a.curr_team:'')+'</td>'
+      +'</tr>'
+      +'<tr id="dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="15">'+renderDrilldown(a)+'</td></tr>';
+  });
+  document.getElementById('acc-tbody').innerHTML=rows;
+}
+
+function renderDrilldown(a){
+  var v=a.verdict;
+  var vHtml=v?'<div class="verdict '+v.type+'">'+v.text+'</div>':'';
+  var seRows=(a.se_history||[]).map(function(s){
+    var ob=s.is_owner?'<span class="badge b-owner">Owner</span>':'<span class="badge b-transact">Transacted</span>';
+    var yrs=[2022,2023,2024,2025,2026].map(function(yr){return'<td class="r '+(s.yr_sales[yr]?'':'dim')+'">'+sar(s.yr_sales[yr])+'</td>';}).join('');
+    return'<tr><td>'+s.se_name+'</td><td>'+ob+'</td>'+yrs+'<td class="r"><b>'+s.contrib_pct+'%</b></td></tr>';
+  }).join('');
+  var colors=['#3b82f6','#22c55e','#f59e0b','#9ca3af','#ef4444'];
+  var cBar=(a.se_history||[]).slice(0,5).map(function(s,i){return'<div style="flex:'+(s.contrib_pct/100)+';background:'+colors[i]+'" class="contrib-seg"></div>';}).join('');
+  var cLeg=(a.se_history||[]).slice(0,5).map(function(s,i){return'<span style="font-size:10px;color:var(--text2)"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+colors[i]+';margin-right:3px"></span>'+s.se_name.split(' ')[0]+' '+s.contrib_pct+'%</span>';}).join(' ');
+  var projRows=(a.projects||[]).map(function(p){
+    var tb=p.is_award?'<span class="badge b-a" style="font-size:9px">Award</span>':p.is_hot?'<span class="badge b-new" style="font-size:9px">Hot</span>':'';
+    return'<tr><td style="font-size:10px">'+(p.project_name||'--')+'</td><td style="font-size:10px;color:var(--text2)">'+(p.group||'--')+'</td><td>'+tb+'</td><td class="r">'+sar(p.q_gross_value)+'</td><td class="r">'+sar(p.backlog_val)+'</td><td class="r dim">'+(p.expected_award||'--')+'</td></tr>';
+  }).join('');
+  return'<div class="drilldown-inner">'
+    +'<div class="drilldown-title"><span>'+a.name+' - drilldown</span><span class="dd-close" onclick="closeDD()">close x</span></div>'
+    +vHtml
+    +'<div class="half">'
+    +'<div><div class="card-title" style="margin-bottom:6px">SE history</div>'
+    +'<div style="overflow-x:auto"><table><thead><tr><th>Salesman</th><th>Role</th><th class="r">2022</th><th class="r">2023</th><th class="r">2024</th><th class="r">2025</th><th class="r">2026</th><th class="r">Contrib%</th></tr></thead><tbody>'+seRows+'</tbody></table></div>'
+    +(cBar?'<div style="margin-top:8px"><div style="font-size:10px;color:var(--text2);margin-bottom:4px">Sales contribution</div><div class="contrib-bar">'+cBar+'</div><div style="display:flex;gap:10px;flex-wrap:wrap">'+cLeg+'</div></div>':'')
+    +'</div>'
+    +'<div><div class="card-title" style="margin-bottom:6px">Projects</div>'
+    +'<div style="overflow-x:auto"><table><thead><tr><th>Project</th><th>Group</th><th>Type</th><th class="r">Value</th><th class="r">Backlog</th><th class="r">Exp. award</th></tr></thead>'
+    +'<tbody>'+(projRows||'<tr><td colspan="6" class="dim" style="text-align:center;padding:12px">No pipeline data</td></tr>')+'</tbody></table></div>'
+    +'</div></div></div>';
+}
+
+function toggleDD(idx){
+  var row=document.getElementById('dd-'+idx);
+  if(!row)return;
+  if(OPEN_DD!==null&&OPEN_DD!==idx){var prev=document.getElementById('dd-'+OPEN_DD);if(prev)prev.style.display='none';}
+  row.style.display=(row.style.display==='none'||row.style.display==='')?'table-row':'none';
+  OPEN_DD=(row.style.display==='table-row')?idx:null;
+}
+function closeDD(){if(OPEN_DD!==null){var r=document.getElementById('dd-'+OPEN_DD);if(r)r.style.display='none';OPEN_DD=null;}}
+
+function renderSEPage(){renderTeamTable();renderSETable(null);renderSEAccs(null,null);renderSECharts(null,null);renderSEFlags(null);updateSEKpis(null,null);}
+function renderTeamTable(){
+  document.getElementById('se-team-tbody').innerHTML=TEAM_DATA.map(function(t){
+    var isSel=SEL_TEAM===t.team;
+    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectTeam(''+t.team.replace(/'/g,"\'")+'')"><td style="font-weight:'+(isSel?'500':'400')+'">'+t.team+'</td><td class="r">'+t.account_count+'</td><td class="r">'+sar(t.sales['2024'])+'</td><td class="r">'+sar(t.sales['2025'])+'</td><td class="r '+(t.yoy_25v24!=null?posNeg(t.yoy_25v24):'dim')+'">'+pct(t.yoy_25v24)+'</td><td class="r">'+sar(t.hot_pipeline)+'</td></tr>';
+  }).join('');
+}
+function selectTeam(team){SEL_TEAM=(SEL_TEAM===team)?null:team;SEL_SE=null;renderTeamTable();renderSETable(SEL_TEAM);renderSEAccs(SEL_TEAM,null);renderSECharts(SEL_TEAM,null);renderSEFlags(SEL_TEAM);updateSEKpis(SEL_TEAM,null);}
+function renderSETable(team){
+  var ses=team?SE_DATA.filter(function(s){return s.team===team;}):SE_DATA;
+  document.getElementById('se-se-title').textContent='SE breakdown'+(team?' - '+team:'');
+  document.getElementById('se-se-tbody').innerHTML=ses.map(function(s){
+    var isSel=SEL_SE===s.se_name;
+    var mx=Object.entries(s.size_counts||{}).slice(0,2).map(function(e){var cls={'A+':'b-aplus','A':'b-a','B':'b-b','C':'b-c','D':'b-d'}[e[0]]||'b-c';return'<span class="badge '+cls+'" style="font-size:9px">'+e[0]+'x'+e[1]+'</span>';}).join(' ');
+    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectSE(''+s.se_name.replace(/'/g,"\'")+'')"><td>'+s.se_name+'</td><td class="r">'+s.account_count+'</td><td class="r">'+sar(s.sales['2025'])+'</td><td class="r '+(s.yoy_25v24!=null?posNeg(s.yoy_25v24):'dim')+'">'+pct(s.yoy_25v24)+'</td><td class="r">'+sar(s.hot_pipeline)+'</td><td>'+mx+'</td></tr>';
+  }).join('');
+}
+function selectSE(se){SEL_SE=(SEL_SE===se)?null:se;renderSETable(SEL_TEAM);renderSEAccs(SEL_TEAM,SEL_SE);renderSECharts(SEL_TEAM,SEL_SE);updateSEKpis(SEL_TEAM,SEL_SE);}
+function renderSEAccs(team,se){
+  var accs=ACCOUNTS.filter(function(a){if(se)return a.curr_se===se;if(team)return a.curr_team===team;return false;}).sort(function(a,b){return(b.sales&&b.sales['2025']||0)-(a.sales&&a.sales['2025']||0);});
+  document.getElementById('se-acc-title').textContent='Accounts'+(se?' - '+se:team?' - '+team:'');
+  document.getElementById('se-acc-tbody').innerHTML=accs.slice(0,50).map(function(a){
+    return'<tr class="clickable"><td style="font-size:11px">'+a.name+'</td><td><span class="badge b-owner">Owner</span></td><td class="r">'+sar(a.sales&&a.sales['2025'])+'</td><td class="r '+(a.yoy_25v24!=null?posNeg(a.yoy_25v24):'dim')+'">'+pct(a.yoy_25v24)+'</td><td class="r">'+sar(a.hot_pipeline)+'</td></tr>';
+  }).join('');
+}
+function renderSECharts(team,se){
+  var data=null;
+  if(se)data=SE_DATA.find(function(s){return s.se_name===se;});
+  else if(team)data=TEAM_DATA.find(function(t){return t.team===team;});
+  else if(TEAM_DATA.length){
+    var allM={};
+    TEAM_DATA.forEach(function(t){Object.entries(t.monthly_sales||{}).forEach(function(e){var yr=e[0],months=e[1];if(!allM[yr])allM[yr]={};Object.entries(months||{}).forEach(function(me){allM[yr][me[0]]=(allM[yr][me[0]]||0)+(me[1]||0);});});});
+    data={monthly_sales:allM,group_sales:PROD_DATA.by_year||{}};
+  }
+  document.getElementById('se-chart-title').textContent='Monthly sales'+(se?' - '+se:team?' - '+team:' - All');
+  document.getElementById('se-group-title').textContent='Product groups'+(se?' - '+se:team?' - '+team:'');
+  if(!data){return;}
+  var m24=data.monthly_sales&&data.monthly_sales['2024']||{};
+  var m25=data.monthly_sales&&data.monthly_sales['2025']||{};
+  var allVals=Object.values(m24).concat(Object.values(m25)).filter(Boolean);
+  var maxM=allVals.length?Math.max.apply(null,allVals):1;
+  document.getElementById('se-monthly-chart').innerHTML=MONTHS.map(function(ml,i){
+    var m=i+1,v24=m24[m]||0,v25=m25[m]||0;
+    return'<div class="m-wrap"><div class="m-bars"><div class="m-bar m-2024" style="height:'+Math.round(v24/maxM*100)+'%"></div><div class="m-bar m-2025" style="height:'+Math.round(v25/maxM*100)+'%"></div></div><div class="m-label">'+ml+'</div></div>';
+  }).join('');
+  var g24=data.group_sales&&data.group_sales['2024']||{};
+  var g25=data.group_sales&&data.group_sales['2025']||{};
+  var groups=[...new Set(Object.keys(g24).concat(Object.keys(g25)))];
+  var maxGV=Math.max.apply(null,groups.map(function(g){return Math.max(g24[g]||0,g25[g]||0);}));
+  if(!maxGV)maxGV=1;
+  document.getElementById('se-group-bars').innerHTML=groups.map(function(g){
+    var v24=g24[g]||0,v25=g25[g]||0,delta=v24>0?(v25-v24)/v24*100:null;
+    var fill=delta==null?'fill-blue':delta>=0?'fill-green':'fill-red';
+    return'<div class="bar-wrap"><div class="bar-label"><span>'+g+'</span><span>'+sar(v24)+' -> '+sar(v25)+(delta!=null?' ('+pct(delta)+')':'')+'</span></div><div class="bar-track"><div class="bar-fill fill-blue-light" style="width:'+(v24/maxGV*100)+'%"></div><div class="bar-fill '+fill+'" style="width:'+(v25/maxGV*100)+'%"></div></div></div>';
+  }).join('');
+}
+function renderSEFlags(team){
+  var ses=team?SE_DATA.filter(function(s){return s.team===team;}):SE_DATA;
+  var flags=[];
+  ses.forEach(function(s){
+    var s25=s.sales['2025']||0,s24=s.sales['2024']||0,yoy=s24>0?(s25-s24)/s24*100:null;
+    var apl=s.size_counts&&s.size_counts['A+']||0;
+    if(apl>=3&&yoy!=null&&yoy<-10)flags.push({t:'danger',m:s.se_name+' - '+apl+' A+ accounts, YoY '+pct(yoy)+'. High-value book declining.'});
+    else if(yoy!=null&&yoy<-15)flags.push({t:'warn',m:s.se_name+' - YoY '+pct(yoy)+'. Review account coverage.'});
+    else if(yoy!=null&&yoy>15)flags.push({t:'good',m:s.se_name+' - Strong growth '+pct(yoy)+'. Pipeline: '+sar(s.hot_pipeline)+'.'});
+  });
+  document.getElementById('se-flags-title').textContent='Decision flags'+(team?' - '+team:'');
+  document.getElementById('se-flags').innerHTML=flags.slice(0,8).map(function(f){return'<div class="insight '+f.t+'">'+f.m+'</div>';}).join('');
+}
+function updateSEKpis(team,se){
+  var s25=0,s24=0,pipe=0,accts=0;
+  if(se){var d=SE_DATA.find(function(x){return x.se_name===se;});if(d){s25=d.sales['2025']||0;s24=d.sales['2024']||0;pipe=d.hot_pipeline||0;accts=d.account_count;}}
+  else if(team){var d=TEAM_DATA.find(function(x){return x.team===team;});if(d){s25=d.sales['2025']||0;s24=d.sales['2024']||0;pipe=d.hot_pipeline||0;accts=d.account_count;}}
+  else{s25=TEAM_DATA.reduce(function(a,t){return a+(t.sales['2025']||0);},0);s24=TEAM_DATA.reduce(function(a,t){return a+(t.sales['2024']||0);},0);pipe=TEAM_DATA.reduce(function(a,t){return a+(t.hot_pipeline||0);},0);accts=ACCOUNTS.length;}
+  var yoy=s24>0?(s25-s24)/s24*100:null;
+  document.getElementById('se-kpis').innerHTML=[
+    {l:'Sales 2025',v:sar(s25),s:pct(yoy),sc:yoy>=0?'kpi-pos':'kpi-neg'},
+    {l:'Sales 2024',v:sar(s24),s:'prior year',sc:'kpi-sub'},
+    {l:'Hot pipeline',v:sar(pipe),s:'50%+70%',sc:'kpi-sub'},
+    {l:'Account count',v:accts,s:'selected',sc:'kpi-sub'},
+  ].map(function(k){return'<div class="kpi"><div class="kpi-label">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="'+k.sc+'">'+k.s+'</div></div>';}).join('');
+}
+
+function applyTransferFilters(){
+  var fType=document.getElementById('tr-f-type').value;
+  var fOld=document.getElementById('tr-f-oldteam').value;
+  var fNew=document.getElementById('tr-f-newteam').value;
+  var fSz=document.getElementById('tr-f-size').value;
+  var filtered=ACCOUNTS.filter(function(a){
+    if(fType){if(a.transfer_type!==fType)return false;}
+    else if(a.transfer_type==='same'||a.transfer_type==='new')return false;
+    if(fOld&&a.old_team!==fOld)return false;
+    if(fNew&&a.curr_team!==fNew)return false;
+    if(fSz&&a.size_tier!==fSz)return false;
+    return true;
+  });
+  document.getElementById('tr-count').textContent=filtered.length+' transferred accounts';
+  var improved=filtered.filter(function(a){return a.sales&&a.sales['2024']&&a.sales['2025']&&a.sales['2025']>a.sales['2024'];});
+  var aAplus=filtered.filter(function(a){return a.size_tier==='A+'&&a.cust_status==='Inactive';});
+  var withBoth=filtered.filter(function(a){return a.sales&&a.sales['2024']&&a.sales['2025'];});
+  var avgChg=withBoth.length?withBoth.reduce(function(s,a){return s+(a.sales['2025']-a.sales['2024'])/a.sales['2024'];},0)/withBoth.length*100:null;
+  document.getElementById('tr-kpis').innerHTML=[
+    {l:'Transferred accounts',v:filtered.length,s:'in selection',sc:'kpi-sub'},
+    {l:'Avg sales change',v:pct(avgChg),s:'2025 vs 2024',sc:avgChg>=0?'kpi-pos':'kpi-neg'},
+    {l:'Accounts improved',v:improved.length,s:filtered.length?Math.round(improved.length/filtered.length*100)+'%':'--',sc:'kpi-pos'},
+    {l:'A+ accounts lost',v:aAplus.length,s:'now inactive',sc:'kpi-neg'},
+  ].map(function(k){return'<div class="kpi"><div class="kpi-label">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="'+k.sc+'">'+k.s+'</div></div>';}).join('');
+  document.getElementById('tr-tbody').innerHTML=filtered.slice(0,200).map(function(a){
+    var s24=a.sales&&a.sales['2024']||null,s25=a.sales&&a.sales['2025']||null;
+    var delta=s24&&s25?(s25-s24)/s24*100:null;
+    return'<tr><td style="font-weight:500">'+a.name+'</td><td>'+sizeBadge(a.size_tier,a.size_trend)+'</td><td style="font-size:10px;color:var(--text2)">'+a.old_se+'</td><td style="font-size:10px">'+a.curr_se+'</td><td class="r">'+sar(s24)+'</td><td class="r">'+sar(s25)+'</td><td class="r '+(delta!=null?posNeg(delta):'dim')+'">'+pct(delta)+'</td><td class="r dim">--</td><td class="r dim">--</td></tr>';
+  }).join('');
+  var routeMap={};
+  filtered.forEach(function(a){
+    if(!a.old_team||!a.curr_team||a.old_team===a.curr_team)return;
+    var key=a.old_team+' -> '+a.curr_team;
+    if(!routeMap[key])routeMap[key]={count:0,deltas:[]};
+    routeMap[key].count++;
+    if(a.sales&&a.sales['2024']&&a.sales['2025'])routeMap[key].deltas.push((a.sales['2025']-a.sales['2024'])/a.sales['2024']*100);
+  });
+  var routes=Object.entries(routeMap).sort(function(a,b){return b[1].count-a[1].count;});
+  document.getElementById('tr-routes-tbody').innerHTML=routes.slice(0,8).map(function(e){
+    var avg=e[1].deltas.length?e[1].deltas.reduce(function(a,b){return a+b;},0)/e[1].deltas.length:null;
+    return'<tr><td style="font-size:11px">'+e[0]+'</td><td class="r">'+e[1].count+'</td><td class="r '+(avg!=null?posNeg(avg):'dim')+'">'+pct(avg)+'</td></tr>';
+  }).join('');
+  var insHtml='';
+  if(avgChg!=null&&avgChg<-20)insHtml+='<div class="insight danger">Average sales decline of '+pct(avgChg)+' across transferred accounts.</div>';
+  var posRoutes=routes.filter(function(e){var a=e[1].deltas.reduce(function(x,y){return x+y;},0)/(e[1].deltas.length||1);return a>0;});
+  if(posRoutes.length)insHtml+='<div class="insight good">'+posRoutes.length+' transfer routes with positive avg sales change.</div>';
+  if(aAplus.length)insHtml+='<div class="insight warn">'+aAplus.length+' A+ accounts became inactive post-transfer.</div>';
+  document.getElementById('tr-insights').innerHTML=insHtml;
+}
+function clearTransferFilters(){document.getElementById('tr-f-type').value='inter';['tr-f-oldteam','tr-f-newteam','tr-f-size'].forEach(function(id){document.getElementById(id).value='';});applyTransferFilters();}
+
+function applyPipelineFilters(){
+  var fTeam=document.getElementById('pl-f-team').value;
+  var fSE=document.getElementById('pl-f-se').value;
+  var seF=SE_DATA.filter(function(s){if(fTeam&&s.team!==fTeam)return false;if(fSE&&s.se_name!==fSE)return false;return true;});
+  var tPipe=seF.reduce(function(a,s){return a+(s.hot_pipeline||0);},0);
+  var tAward=seF.reduce(function(a,s){return a+(s.award||0);},0);
+  var tBL=seF.reduce(function(a,s){return a+(s.backlog||0);},0);
+  var tS25=seF.reduce(function(a,s){return a+(s.sales['2025']||0);},0);
+  var cov=tS25>0?(tPipe/tS25).toFixed(1)+'x':'--';
+  document.getElementById('pl-kpis').innerHTML=[
+    {l:'Hot pipeline',v:sar(tPipe),s:'50%+70%',sc:'kpi-sub'},
+    {l:'Award',v:sar(tAward),s:'90%+100%',sc:'kpi-sub'},
+    {l:'Backlog',v:sar(tBL),s:'current',sc:'kpi-sub'},
+    {l:'Coverage ratio',v:cov,s:'pipeline / 2025 sales',sc:'kpi-sub'},
+  ].map(function(k){return'<div class="kpi"><div class="kpi-label">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="'+k.sc+'">'+k.s+'</div></div>';}).join('');
+  var teams=fTeam?TEAM_DATA.filter(function(t){return t.team===fTeam;}):TEAM_DATA;
+  var maxP=Math.max.apply(null,teams.map(function(t){return t.hot_pipeline||0;}))||1;
+  document.getElementById('pl-team-bars').innerHTML=teams.map(function(t){return'<div class="bar-wrap"><div class="bar-label"><span>'+t.team+'</span><span>'+sar(t.hot_pipeline)+'</span></div><div class="bar-track"><div class="bar-fill fill-blue" style="width:'+((t.hot_pipeline||0)/maxP*100)+'%"></div></div></div>';}).join('');
+  var alerts='';
+  var noLowPipe=ACCOUNTS.filter(function(a){return a.size_tier&&['A+','A'].includes(a.size_tier)&&(!a.hot_pipeline||a.hot_pipeline===0);});
+  if(noLowPipe.length)alerts+='<div class="insight danger">'+noLowPipe.length+' A+/A accounts with zero hot pipeline</div>';
+  seF.forEach(function(s){var rat=s.sales['2025']>0?s.hot_pipeline/s.sales['2025']:0;if(rat<1.5&&rat>0)alerts+='<div class="insight warn">'+s.se_name+' - coverage '+rat.toFixed(1)+'x (below 1.5x threshold)</div>';});
+  document.getElementById('pl-alerts').innerHTML=alerts||'<div class="insight good">No critical coverage gaps detected</div>';
+  document.getElementById('pl-tbody').innerHTML=seF.map(function(s){var cov=s.sales['2025']>0?((s.hot_pipeline||0)/s.sales['2025']).toFixed(1)+'x':'--';return'<tr><td>'+s.se_name+'</td><td style="font-size:10px;color:var(--text2)">'+s.team+'</td><td class="r">'+sar(s.sales['2025'])+'</td><td class="r">'+sar(s.hot_pipeline)+'</td><td class="r">'+sar(s.award)+'</td><td class="r">'+sar(s.backlog)+'</td><td class="r '+(parseFloat(cov)>=2?'pos':parseFloat(cov)<1.5?'neg':'')+'">'+cov+'</td></tr>';}).join('');
+}
+function clearPipelineFilters(){['pl-f-team','pl-f-se'].forEach(function(id){document.getElementById(id).value='';});applyPipelineFilters();}
+
+function applyProductFilters(){
+  var fTeam=document.getElementById('prod-f-team').value;
+  var fSE=document.getElementById('prod-f-se').value;
+  var accs=ACCOUNTS.filter(function(a){if(fTeam&&a.curr_team!==fTeam)return false;if(fSE&&a.curr_se!==fSE)return false;return true;});
+  var g25=PROD_DATA.by_year&&PROD_DATA.by_year['2025']||{};
+  var g24=PROD_DATA.by_year&&PROD_DATA.by_year['2024']||{};
+  var g23=PROD_DATA.by_year&&PROD_DATA.by_year['2023']||{};
+  var top25=Object.entries(g25).sort(function(a,b){return b[1]-a[1];})[0];
+  var fastest=Object.keys(g25).map(function(g){return{g:g,d:g24[g]>0?(g25[g]-g24[g])/g24[g]*100:null};}).filter(function(x){return x.d!=null;}).sort(function(a,b){return b.d-a.d;})[0];
+  var slowest=Object.keys(g25).map(function(g){return{g:g,d:g24[g]>0?(g25[g]-g24[g])/g24[g]*100:null};}).filter(function(x){return x.d!=null;}).sort(function(a,b){return a.d-b.d;})[0];
+  var shifted=accs.filter(function(a){return a.group_shifted;}).length;
+  document.getElementById('prod-kpis').innerHTML=[
+    {l:'Top group 2025',v:top25?top25[0]:'--',s:top25?sar(top25[1]):'--',sc:'kpi-sub'},
+    {l:'Fastest growing',v:fastest?fastest.g:'--',s:fastest?pct(fastest.d):'--',sc:'kpi-pos'},
+    {l:'Fastest declining',v:slowest?slowest.g:'--',s:slowest?pct(slowest.d):'--',sc:'kpi-neg'},
+    {l:'Accounts shifted group',v:shifted,s:'2024 to 2025',sc:'kpi-sub'},
+  ].map(function(k){return'<div class="kpi"><div class="kpi-label">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="'+k.sc+'">'+k.s+'</div></div>';}).join('');
+  var groups=[...new Set(Object.keys(g24).concat(Object.keys(g25)))];
+  var maxGV=Math.max.apply(null,groups.map(function(g){return Math.max(g23[g]||0,g24[g]||0,g25[g]||0);}));if(!maxGV)maxGV=1;
+  document.getElementById('prod-group-bars').innerHTML=groups.map(function(g){
+    var v23=g23[g]||0,v24=g24[g]||0,v25=g25[g]||0,delta=v24>0?(v25-v24)/v24*100:null;
+    var fill=delta==null?'fill-blue':delta>=0?'fill-green':'fill-red';
+    return'<div class="bar-wrap"><div class="bar-label"><span>'+g+'</span><span>'+sar(v23)+' -> '+sar(v24)+' -> <b>'+sar(v25)+'</b>'+(delta!=null?' ('+pct(delta)+')':'')+'</span></div><div class="bar-track"><div class="bar-fill fill-gray" style="width:'+(v23/maxGV*100)+'%"></div><div class="bar-fill fill-blue-light" style="width:'+(v24/maxGV*100)+'%"></div><div class="bar-fill '+fill+'" style="width:'+(v25/maxGV*100)+'%"></div></div></div>';
+  }).join('');
+  var shifts=PROD_DATA.shifts||{};
+  document.getElementById('prod-shifts').innerHTML=Object.entries(shifts).slice(0,8).map(function(e){var parts=e[0].split(' -> ');return'<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2);min-width:100px">'+(parts[0]||'')+'</span><span style="color:var(--text3)">-&gt;</span><span style="font-weight:500;min-width:100px;color:var(--warn)">'+(parts[1]||'')+'</span><span style="margin-left:auto;color:var(--text3)">'+e[1]+' accts</span></div>';}).join('');
+  document.getElementById('prod-tbody').innerHTML=accs.filter(function(a){return a.group_2024||a.group_2025;}).slice(0,200).map(function(a){return'<tr><td style="font-weight:500">'+a.name+'</td><td style="font-size:10px;color:var(--text2)">'+a.description+'</td><td style="font-size:10px;color:var(--text2)">'+a.curr_se+(a.curr_team?' / '+a.curr_team:'')+'</td><td style="font-size:11px;color:var(--text2)">'+(a.group_2024||'--')+'</td><td style="font-size:11px">'+(a.group_2024||'--')+'</td><td style="font-size:11px">'+(a.group_2025||'--')+'</td><td class="c">'+(a.group_shifted?'<span class="badge b-warn">Shifted</span>':'<span class="dim">--</span>')+'</td><td class="r">'+sar(a.sales&&a.sales['2025'])+'</td></tr>';}).join('');
+}
+function clearProductFilters(){['prod-f-team','prod-f-se'].forEach(function(id){document.getElementById(id).value='';});applyProductFilters();}
+
+function tableToXLSX(tableId,filename){var tbl=document.getElementById(tableId);if(!tbl)return;var wb=XLSX.utils.book_new();var ws=XLSX.utils.table_to_sheet(tbl);XLSX.utils.book_append_sheet(wb,ws,'Data');XLSX.writeFile(wb,filename+'_'+new Date().toISOString().slice(0,10)+'.xlsx');}
+function exportAccTable(){
+  var rows=ACC_FILTERED.map(function(a){return{'Customer No':a.customer,'Customer Name':a.name,'Description':a.description,'Current SE':a.curr_se,'Current Team':a.curr_team,'Old SE':a.old_se,'Old Team':a.old_team,'Transfer Type':a.transfer_type,'Size':a.size_tier,'Status':a.cust_status,'2023 Sales':a.sales&&a.sales['2023'],'2024 Sales':a.sales&&a.sales['2024'],'2025 Sales':a.sales&&a.sales['2025'],'2026 YTD':a.sales&&a.sales['2026'],'YoY 25v24%':a.yoy_25v24,'Hot Pipeline':a.hot_pipeline,'Award':a.award,'Backlog':a.backlog,'Group 2024':a.group_2024,'Group 2025':a.group_2025};});
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Accounts');XLSX.writeFile(wb,'asap_accounts_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+function exportTeamTable(){tableToXLSX('se-team-table','asap_teams');}
+function exportSETable(){tableToXLSX('se-se-table','asap_se');}
+function exportSEAccTable(){tableToXLSX('se-acc-table','asap_se_accounts');}
+function exportTransferTable(){tableToXLSX('tr-table','asap_transfers');}
+function exportPipelineTable(){tableToXLSX('pl-table','asap_pipeline');}
+function exportProductTable(){tableToXLSX('prod-table','asap_products');}
+
+function loadAll(){
+  var base='data/';
+  Promise.all([
+    fetch(base+'asap_accounts.json').then(function(r){return r.json();}),
+    fetch(base+'asap_se.json').then(function(r){return r.json();}),
+    fetch(base+'asap_teams.json').then(function(r){return r.json();}),
+    fetch(base+'asap_products.json').then(function(r){return r.json();}),
+  ]).then(function(results){
+    ACCOUNTS=results[0];SE_DATA=results[1];TEAM_DATA=results[2];PROD_DATA=results[3];
+    ACCOUNTS.forEach(function(a,i){ACC_INDEX[a.customer]=i;});
+    initFilters();
+    ACC_FILTERED=ACCOUNTS.slice();
+    document.getElementById('acc-count').textContent=ACCOUNTS.length+' accounts shown';
+    renderAccTable();renderHome();renderSEPage();applyTransferFilters();applyPipelineFilters();applyProductFilters();
+  }).catch(function(err){
+    console.error('Data load error:',err);
+    document.querySelector('.nav-updated').textContent='ERROR: '+err.message;
+  });
+}
+loadAll();
+</script>
+</body>
+</html>
