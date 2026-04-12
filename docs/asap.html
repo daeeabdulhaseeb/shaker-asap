@@ -572,7 +572,7 @@ function applyAccFilters(){
   if(fSz)chips.push({l:'Size: '+fSz,f:'acc-f-size'});
   if(fTy)chips.push({l:'Type: '+fTy,f:'acc-f-type'});
   if(fSrch)chips.push({l:'Search: '+fSrch,f:'acc-f-search',isText:true});
-  document.getElementById('acc-chips').innerHTML=chips.map(function(c){return'<span class="chip">'+c.l+'<span class="chip-x" onclick="clearChip(''+c.f+'','+!!c.isText+')">x</span></span>';}).join('');
+  document.getElementById('acc-chips').innerHTML=chips.map(function(c){return'<span class="chip">'+c.l+'<span class="chip-x" onclick="clearChip(&quot;'+c.f+'&quot;,'+!!c.isText+')">x</span></span>';}).join('');
 }
 function clearAccFilters(){['acc-f-transfer','acc-f-team','acc-f-oldteam','acc-f-se','acc-f-status','acc-f-size','acc-f-type'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('acc-f-search').value='';applyAccFilters();}
 function clearChip(fieldId,isText){document.getElementById(fieldId).value='';applyAccFilters();}
@@ -653,7 +653,7 @@ function renderSEPage(){renderTeamTable();renderSETable(null);renderSEAccs(null,
 function renderTeamTable(){
   document.getElementById('se-team-tbody').innerHTML=TEAM_DATA.map(function(t){
     var isSel=SEL_TEAM===t.team;
-    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectTeam(''+t.team.replace(/'/g,"\'")+'')"><td style="font-weight:'+(isSel?'500':'400')+'">'+t.team+'</td><td class="r">'+t.account_count+'</td><td class="r">'+sar(t.sales['2024'])+'</td><td class="r">'+sar(t.sales['2025'])+'</td><td class="r '+(t.yoy_25v24!=null?posNeg(t.yoy_25v24):'dim')+'">'+pct(t.yoy_25v24)+'</td><td class="r">'+sar(t.hot_pipeline)+'</td></tr>';
+    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectTeam(&quot;'+t.team.replace(/"/g,'&quot;')+'&quot;)"><td style="font-weight:'+(isSel?'500':'400')+'">'+t.team+'</td><td class="r">'+t.account_count+'</td><td class="r">'+sar(t.sales['2024'])+'</td><td class="r">'+sar(t.sales['2025'])+'</td><td class="r '+(t.yoy_25v24!=null?posNeg(t.yoy_25v24):'dim')+'">'+pct(t.yoy_25v24)+'</td><td class="r">'+sar(t.hot_pipeline)+'</td></tr>';
   }).join('');
 }
 function selectTeam(team){SEL_TEAM=(SEL_TEAM===team)?null:team;SEL_SE=null;renderTeamTable();renderSETable(SEL_TEAM);renderSEAccs(SEL_TEAM,null);renderSECharts(SEL_TEAM,null);renderSEFlags(SEL_TEAM);updateSEKpis(SEL_TEAM,null);}
@@ -663,7 +663,7 @@ function renderSETable(team){
   document.getElementById('se-se-tbody').innerHTML=ses.map(function(s){
     var isSel=SEL_SE===s.se_name;
     var mx=Object.entries(s.size_counts||{}).slice(0,2).map(function(e){var cls={'A+':'b-aplus','A':'b-a','B':'b-b','C':'b-c','D':'b-d'}[e[0]]||'b-c';return'<span class="badge '+cls+'" style="font-size:9px">'+e[0]+'x'+e[1]+'</span>';}).join(' ');
-    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectSE(''+s.se_name.replace(/'/g,"\'")+'')"><td>'+s.se_name+'</td><td class="r">'+s.account_count+'</td><td class="r">'+sar(s.sales['2025'])+'</td><td class="r '+(s.yoy_25v24!=null?posNeg(s.yoy_25v24):'dim')+'">'+pct(s.yoy_25v24)+'</td><td class="r">'+sar(s.hot_pipeline)+'</td><td>'+mx+'</td></tr>';
+    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectSE(&quot;'+s.se_name.replace(/"/g,'&quot;')+'&quot;)"><td>'+s.se_name+'</td><td class="r">'+s.account_count+'</td><td class="r">'+sar(s.sales['2025'])+'</td><td class="r '+(s.yoy_25v24!=null?posNeg(s.yoy_25v24):'dim')+'">'+pct(s.yoy_25v24)+'</td><td class="r">'+sar(s.hot_pipeline)+'</td><td>'+mx+'</td></tr>';
   }).join('');
 }
 function selectSE(se){SEL_SE=(SEL_SE===se)?null:se;renderSETable(SEL_TEAM);renderSEAccs(SEL_TEAM,SEL_SE);renderSECharts(SEL_TEAM,SEL_SE);updateSEKpis(SEL_TEAM,SEL_SE);}
