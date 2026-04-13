@@ -258,36 +258,42 @@ th{user-select:none}
   <div class="page-title">SE &amp; team performance</div>
   <div class="page-sub">Click a team to filter SE panel, click an SE to filter accounts and charts</div>
   <div class="kpi-grid g5" id="se-kpis"></div>
-  <div class="three-col" style="align-items:start">
+  <div class="half" style="align-items:start;margin-bottom:12px">
     <div class="card" style="padding:0;overflow:hidden">
       <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
         <div><div class="card-title">Team summary</div><div class="card-sub">Click to filter</div></div>
         <button class="btn-export" onclick="exportTeamTable()">Export</button>
       </div>
+      <div style="max-height:220px;overflow-y:auto">
       <table id="se-team-table">
-        <thead><tr><th>Team</th><th class="r">Accts</th><th class="r">2024</th><th class="r">2025</th><th class="r">2026</th><th class="r">GR% 25v24</th><th class="r">Award</th></tr></thead>
+        <thead style="position:sticky;top:0;z-index:1"><tr><th>Team</th><th class="r">Accts</th><th class="r">2024</th><th class="r">2025</th><th class="r">2026</th><th class="r">GR% 25v24</th><th class="r">Award</th></tr></thead>
         <tbody id="se-team-tbody"></tbody>
       </table>
+      </div>
     </div>
     <div class="card" style="padding:0;overflow:hidden">
       <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
         <div><div class="card-title" id="se-se-title">SE breakdown</div><div class="card-sub">Click to filter</div></div>
         <button class="btn-export" onclick="exportSETable()">Export</button>
       </div>
+      <div style="max-height:220px;overflow-y:auto">
       <table id="se-se-table">
-        <thead><tr><th>SE</th><th class="r">Accts</th><th class="r">2025</th><th class="r">2026</th><th class="r">GR% 25v24</th><th class="r">Award</th><th class="r">Backlog</th><th class="r">Hot Pipeline</th></tr></thead>
+        <thead style="position:sticky;top:0;z-index:1"><tr><th>SE</th><th class="r">Accts</th><th class="r">2025</th><th class="r">2026</th><th class="r">GR% 25v24</th><th class="r">Awd 25</th><th class="r">Awd 26</th><th class="r">Backlog</th><th class="r">Hot Pipeline</th></tr></thead>
         <tbody id="se-se-tbody"></tbody>
       </table>
-    </div>
-    <div class="card" style="padding:0;overflow:hidden">
-      <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
-        <div><div class="card-title" id="se-acc-title">Accounts</div><div class="card-sub">Click to drill down</div></div>
-        <button class="btn-export" onclick="exportSEAccTable()">Export</button>
       </div>
-      <table id="se-acc-table">
-        <thead><tr><th>Account</th><th>Type</th><th class="r">2025</th><th class="r">2026</th><th class="r">GR% 25v24</th><th class="r">Awd 25</th><th class="r">Awd 26</th></tr></thead>
-        <tbody id="se-acc-tbody"></tbody>
-      </table>
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+    <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
+      <div><div class="card-title" id="se-acc-title">Accounts</div><div class="card-sub">Click any row to drill down</div></div>
+      <button class="btn-export" onclick="exportSEAccTable()">Export</button>
+    </div>
+    <div style="max-height:300px;overflow-y:auto">
+    <table id="se-acc-table">
+      <thead style="position:sticky;top:0;z-index:1"><tr><th>Account</th><th>Type</th><th class="r">2025</th><th class="r">2026</th><th class="r">GR% 25v24</th><th class="r">Awd 25</th><th class="r">Awd 26</th></tr></thead>
+      <tbody id="se-acc-tbody"></tbody>
+    </table>
     </div>
   </div>
   <div class="half">
@@ -814,7 +820,7 @@ function renderDrilldown(a){
     +(cBar?'<div style="margin-top:8px"><div style="font-size:10px;color:var(--text2);margin-bottom:4px">Sales contribution</div><div class="contrib-bar">'+cBar+'</div><div style="display:flex;gap:10px;flex-wrap:wrap">'+cLeg+'</div></div>':'')
     +'</div>'
     +'<div id="'+ddId+'"><div class="card-title" style="margin-bottom:6px">Projects ('+projs.length+')</div>'
-    +'<div style="overflow-x:auto"><table><thead><tr><th>Project</th><th>Group</th><th>Probability</th><th class="r">Pipeline val</th><th class="r">Backlog</th><th class="r">Exp. award</th><th class="r">Valid from</th></tr></thead>'
+    +'<div style="overflow-x:auto;max-height:340px;overflow-y:auto"><table><thead style="position:sticky;top:0;z-index:1"><tr><th>Project</th><th>Group</th><th>Probability</th><th class="r">Pipeline val</th><th class="r">Backlog</th><th class="r">Exp. award</th><th class="r">Valid from</th></tr></thead>'
     +'<tbody>'+projFilterHtml+(projRows||'<tr><td colspan="7" class="dim" style="text-align:center;padding:12px">No pipeline data</td></tr>')+'</tbody></table></div>'
     +'</div></div></div>';
 }
@@ -863,15 +869,16 @@ function renderSETable(team){
   document.getElementById('se-se-title').textContent='SE breakdown'+(team?' - '+team:'');
   document.getElementById('se-se-tbody').innerHTML=ses.map(function(s){
     var isSel=SEL_SE===s.se_name;
-    var seBadges='<div style="display:flex;gap:3px;margin-top:2px"><span style="font-size:9px;background:#dbeafe;color:#1e3a8a;padding:1px 5px;border-radius:8px">25:'+sar(s.award_25||0)+'</span><span style="font-size:9px;background:#dcfce7;color:#14532d;padding:1px 5px;border-radius:8px">26:'+sar(s.award_26||0)+'</span></div>';
-    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectSE(&quot;'+s.se_name.replace(/"/g,'&quot;')+'&quot;)"><td>'+s.se_name+'</td><td class="r">'+s.account_count+'</td><td class="r">'+sar(s.sales['2025'])+'</td><td class="r">'+sar(s.sales['2026'])+'</td><td class="r '+(s.yoy_25v24!=null?posNeg(s.yoy_25v24):'dim')+'">'+pct(s.yoy_25v24)+'</td><td class="r"><div>'+sar(s.award||0)+'</div>'+seBadges+'</td><td class="r">'+sar(s.backlog||0)+'</td><td class="r">'+sar(s.hot_pipeline||0)+'</td></tr>';
+    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectSE(&quot;'+s.se_name.replace(/"/g,'&quot;')+'&quot;)"><td>'+s.se_name+'</td><td class="r">'+s.account_count+'</td><td class="r">'+sar(s.sales['2025'])+'</td><td class="r">'+sar(s.sales['2026'])+'</td><td class="r '+(s.yoy_25v24!=null?posNeg(s.yoy_25v24):'dim')+'">'+pct(s.yoy_25v24)+'</td><td class="r" style="color:#1e3a8a">'+sar(s.award_25||0)+'</td><td class="r" style="color:#14532d">'+sar(s.award_26||0)+'</td><td class="r">'+sar(s.backlog||0)+'</td><td class="r">'+sar(s.hot_pipeline||0)+'</td></tr>';
   }).join('');
 }
 function selectSE(se){SEL_SE=(SEL_SE===se)?null:se;renderSETable(SEL_TEAM);renderSEAccs(SEL_TEAM,SEL_SE);renderSECharts(SEL_TEAM,SEL_SE);updateSEKpis(SEL_TEAM,SEL_SE);}
+var SE_ACC_SHOWN=10;
 function renderSEAccs(team,se){
   var accs=ACCOUNTS.filter(function(a){if(se)return a.curr_se===se;if(team)return a.curr_team===team;return false;}).sort(function(a,b){return(b.sales&&b.sales['2025']||0)-(a.sales&&a.sales['2025']||0);});
+  SE_ACC_SHOWN=10;
   document.getElementById('se-acc-title').textContent='Accounts ('+accs.length+')'+(se?' - '+se:team?' - '+team:'');
-  document.getElementById('se-acc-tbody').innerHTML=accs.slice(0,100).map(function(a){
+  document.getElementById('se-acc-tbody').innerHTML=accs.slice(0,SE_ACC_SHOWN).map(function(a){
     var idx=ACC_INDEX[a.customer];
     var awd25=(a.award_by_year&&a.award_by_year['2025'])||0;
     var awd26=(a.award_by_year&&a.award_by_year['2026'])||0;
@@ -884,8 +891,13 @@ function renderSEAccs(team,se){
       +'<td class="r">'+sar(awd25)+'</td>'
       +'<td class="r">'+sar(awd26)+'</td>'
       +'</tr>'
-      +'<tr id="se-dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="7">'+renderDrilldown(a)+'</td></tr>';
+      +'<tr id="se-dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="7" style="padding:0">'+renderDrilldown(a)+'</td></tr>';
   }).join('');
+  if(SE_ACC_SHOWN<accs.length){
+    document.getElementById('se-acc-tbody').innerHTML+='<tr><td colspan="7" style="text-align:center;padding:8px">'
+      +'<button class="btn-clear" onclick="SE_ACC_SHOWN+=10;renderSEAccs(SEL_TEAM,SEL_SE)">Load more ('+(accs.length-SE_ACC_SHOWN)+' remaining)</button>'
+      +'</td></tr>';
+  }
 }
 var OPEN_SE_DD=null;
 function toggleSEDD(idx){
@@ -954,7 +966,7 @@ function updateSEKpis(team,se){
     +'<span style="font-size:9px;background:#dcfce7;color:#14532d;padding:1px 6px;border-radius:10px">26: '+sar(awd26)+'</span>'
     +'</div>';
   var seKpiHtml=[
-    {l:'Sales 2025',v:sar(s25),s:pct(yoy),sc:yoy!=null?(yoy>=0?'kpi-pos':'kpi-neg'):'kpi-sub'},
+    {l:'Sales 2025',v:sar(s25),s:'GR% 25v24: '+pct(yoy),sc:yoy!=null?(yoy>=0?'kpi-pos':'kpi-neg'):'kpi-sub'},
     {l:'Sales 2026 YTD',v:sar(s26),s:'Jan-Feb actuals',sc:'kpi-sub'},
     {l:'Hot pipeline',v:sar(pipe),s:'50%+70%',sc:'kpi-sub'},
     {l:'Backlog',v:sar(bl),s:'90%+100%',sc:'kpi-sub'},
