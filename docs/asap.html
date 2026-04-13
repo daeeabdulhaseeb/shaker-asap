@@ -125,6 +125,8 @@ tr.selected td{background:var(--accent-light)!important}
 .legend-dot{width:10px;height:6px;border-radius:2px;display:inline-block;margin-right:4px}
 .contrib-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:6px 0}
 .seg-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:8px 0}
+.sort-arrow{font-size:9px;color:var(--text3);margin-left:2px}
+th{user-select:none}
 </style>
 </head>
 <body>
@@ -150,15 +152,17 @@ tr.selected td{background:var(--accent-light)!important}
       <div class="card-sub">Annual invoiced value - 2026 = Jan-Feb actuals</div>
       <div id="home-trend-chart" style="height:120px;display:flex;align-items:flex-end;gap:8px;padding-top:8px"></div>
       <div class="divider"></div>
-      <div class="kpi-grid g3" style="margin-bottom:0" id="home-mom-kpis"></div>
+      <div class="kpi-grid g4" style="margin-bottom:0" id="home-mom-kpis"></div>
     </div>
     <div>
       <div class="card">
         <div class="card-title">Account status breakdown</div>
         <div class="card-sub" id="home-status-sub"></div>
+        <div style="font-size:10px;font-weight:500;color:var(--text2);margin-bottom:4px">Breakdown by Activity</div>
         <div class="seg-bar" id="home-status-bar"></div>
         <div id="home-status-legend" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-size:10px"></div>
         <div class="divider"></div>
+        <div style="font-size:10px;font-weight:500;color:var(--text2);margin-bottom:6px">Breakdown by Transfer</div>
         <div id="home-transfer-bars"></div>
       </div>
       <div class="card">
@@ -180,17 +184,17 @@ tr.selected td{background:var(--accent-light)!important}
   <div class="page-sub">Click any row to drill down into SE history and project breakdown</div>
   <div class="filter-bar">
     <select id="acc-f-transfer" onchange="applyAccFilters()">
-      <option value="">All transfer types</option>
+      <option value="">Account Transfer Type</option>
       <option value="inter">Inter-team</option>
       <option value="intra">Intra-team</option>
       <option value="same">Same SE</option>
       <option value="new">New account</option>
     </select>
-    <select id="acc-f-team" onchange="applyAccFilters()"><option value="">All teams (current)</option></select>
-    <select id="acc-f-oldteam" onchange="applyAccFilters()"><option value="">All teams (old)</option></select>
+    <select id="acc-f-team" onchange="applyAccFilters()"><option value="">Current Team</option></select>
+    <select id="acc-f-oldteam" onchange="applyAccFilters()"><option value="">Previous Team</option></select>
     <select id="acc-f-se" onchange="applyAccFilters()"><option value="">All SEs</option></select>
     <select id="acc-f-status" onchange="applyAccFilters()">
-      <option value="">All statuses</option>
+      <option value="">Account Activity</option>
       <option value="Active">Active</option>
       <option value="Inactive">Inactive</option>
       <option value="New">New</option>
@@ -198,12 +202,12 @@ tr.selected td{background:var(--accent-light)!important}
       <option value="Active/Potential">Active/Potential</option>
     </select>
     <select id="acc-f-size" onchange="applyAccFilters()">
-      <option value="">All sizes</option>
+      <option value="">Contractor Size</option>
       <option value="A+">A+</option><option value="A">A</option>
       <option value="B">B</option><option value="C">C</option><option value="D">D</option>
     </select>
     <select id="acc-f-type" onchange="applyAccFilters()">
-      <option value="">All types</option>
+      <option value="">Contractor Type</option>
       <option value="MEP Contractor">MEP Contractor</option>
       <option value="Main Contractor">Main Contractor</option>
       <option value="AC Specialist">AC Specialist</option>
@@ -218,18 +222,18 @@ tr.selected td{background:var(--accent-light)!important}
   <div id="acc-chips" class="filter-chips" style="margin-bottom:8px"></div>
   <div class="tbl-wrap">
     <table id="acc-table">
-      <thead><tr>
-        <th style="width:200px;cursor:pointer" onclick="sortAcc('name')">Customer</th>
-        <th>Size</th><th>Status</th><th>Type</th><th>Transfer</th>
-        <th class="r" style="cursor:pointer" onclick="sortAcc('s2023')">2023</th>
-        <th class="r" style="cursor:pointer" onclick="sortAcc('s2024')">2024</th>
-        <th class="r" style="cursor:pointer" onclick="sortAcc('s2025')">2025</th>
-        <th class="r">2026 YTD</th>
-        <th class="r" style="cursor:pointer" onclick="sortAcc('yoy_25v24')">GR% 25v24</th>
-        <th class="r" style="cursor:pointer" onclick="sortAcc('hot_pipeline')">Hot pipeline</th>
-        <th class="r" style="cursor:pointer" onclick="sortAcc('award')">Award</th>
-        <th class="r" style="cursor:pointer" onclick="sortAcc('backlog')">Backlog</th>
-        <th>Group 24-&gt;25</th><th>Current SE / team</th>
+      <thead id="acc-thead"><tr>
+        <th style="width:200px;cursor:pointer;font-size:11px" onclick="sortAcc('name')">Customer <span id="sort-name" class="sort-arrow"></span></th>
+        <th style="font-size:11px">Size</th><th style="font-size:11px">Status</th><th style="font-size:11px">Type</th><th style="font-size:11px">Transfer</th>
+        <th class="r" style="cursor:pointer;font-size:11px" onclick="sortAcc('s2023')">2023 <span id="sort-s2023" class="sort-arrow"></span></th>
+        <th class="r" style="cursor:pointer;font-size:11px" onclick="sortAcc('s2024')">2024 <span id="sort-s2024" class="sort-arrow"></span></th>
+        <th class="r" style="cursor:pointer;font-size:11px" onclick="sortAcc('s2025')">2025 <span id="sort-s2025" class="sort-arrow"></span></th>
+        <th class="r" style="font-size:11px">2026 YTD</th>
+        <th class="r" style="cursor:pointer;font-size:11px" onclick="sortAcc('yoy_25v24')">GR% 25v24 <span id="sort-yoy_25v24" class="sort-arrow"></span></th>
+        <th class="r" style="cursor:pointer;font-size:11px" onclick="sortAcc('hot_pipeline')">Hot pipeline <span id="sort-hot_pipeline" class="sort-arrow"></span></th>
+        <th class="r" style="cursor:pointer;font-size:11px" onclick="sortAcc('award')">Award <span id="sort-award" class="sort-arrow"></span></th>
+        <th class="r" style="cursor:pointer;font-size:11px" onclick="sortAcc('backlog')">Backlog <span id="sort-backlog" class="sort-arrow"></span></th>
+        <th style="font-size:11px">Product Trend</th><th style="font-size:11px">Current SE / team</th>
       </tr></thead>
       <tbody id="acc-tbody"></tbody>
     </table>
@@ -490,13 +494,20 @@ function renderHome(){
   var yoy25=total24>0?((total25-total24)/total24*100):null;
   document.getElementById('home-sub').textContent=ACCOUNTS.length+' accounts - Sales 2022-2026 - Pipeline & Award';
   document.getElementById('last-updated').textContent='Generated: '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-  document.getElementById('home-kpis').innerHTML=[
+  var totalAward25=TEAM_DATA.reduce(function(s,t){return s+(t.award_25||0);},0);
+  var totalAward26=TEAM_DATA.reduce(function(s,t){return s+(t.award_26||0);},0);
+  var awardSubHtml='<div style="display:flex;gap:10px;margin-top:3px">'
+    +'<span style="font-size:10px;color:var(--text2)">2025: <b>'+sar(totalAward25)+'</b></span>'
+    +'<span style="font-size:10px;color:var(--text2)">2026: <b>'+sar(totalAward26)+'</b></span>'
+    +'</div>';
+  var kpiHtml=[
     {l:'2025 sales (SAR)',v:sar(total25),s:yoy25!=null?(yoy25>=0?"+ ":"- ")+Math.abs(yoy25).toFixed(1)+"% vs 2024":"--",sc:yoy25>=0?"kpi-pos":"kpi-neg"},
     {l:'2024 sales (SAR)',v:sar(total24),s:'vs 2023: '+pct(total23>0?(total24-total23)/total23*100:null),sc:'kpi-sub'},
-    {l:'Hot pipeline',v:sar(totalPipe),s:'50% + 70% stages',sc:'kpi-sub'},
-    {l:'Award',v:sar(totalAward),s:'90% + 100%',sc:'kpi-sub'},
-    {l:'Backlog',v:sar(totalBL),s:'current',sc:'kpi-sub'},
+    {l:'Hot pipeline',v:sar(totalPipe),s:'50% + 70% | rolling window',sc:'kpi-sub'},
+    {l:'Backlog',v:sar(totalBL),s:'90%+100% | 2022-2026',sc:'kpi-sub'},
   ].map(function(k){return'<div class="kpi"><div class="kpi-label">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="'+k.sc+'">'+k.s+'</div></div>';}).join('');
+  kpiHtml+='<div class="kpi"><div class="kpi-label">Award (2025+2026)</div><div class="kpi-val">'+sar(totalAward)+'</div>'+awardSubHtml+'</div>';
+  document.getElementById('home-kpis').innerHTML=kpiHtml;
   var yrs=[{y:2022,v:total22},{y:2023,v:total23},{y:2024,v:total24},{y:2025,v:total25},{y:2026,v:total26}];
   var maxV=Math.max.apply(null,yrs.map(function(x){return x.v||0;}))||1;
   document.getElementById('home-trend-chart').innerHTML=yrs.map(function(yr){
@@ -511,21 +522,24 @@ function renderHome(){
   var gr2524=total24>0?((total25-total24)/total24*100):null;
   var gr2423=total23>0?((total24-total23)/total23*100):null;
   // MoM: compare monthly totals from team monthly_sales
-  var m_jan26=0,m_feb26=0,m_dec25=0,m_q1_26=0,m_q4_25=0;
+  var m_jan26=0,m_feb26=0,m_q1_26=0,m_q4_25=0;
   TEAM_DATA.forEach(function(t){
     var ms=t.monthly_sales||{};
-    m_jan26+=(ms['2026']&&ms['2026'][1])||0;
-    m_feb26+=(ms['2026']&&ms['2026'][2])||0;
-    m_dec25+=(ms['2025']&&ms['2025'][12])||0;
-    [10,11,12].forEach(function(m){m_q4_25+=(ms['2025']&&ms['2025'][m])||0;});
-    [1,2,3].forEach(function(m){m_q1_26+=(ms['2026']&&ms['2026'][m])||0;});
+    var ms26=ms['2026']||{};
+    var ms25=ms['2025']||{};
+    m_jan26+=(ms26['1']||ms26[1]||0);
+    m_feb26+=(ms26['2']||ms26[2]||0);
+    [10,11,12].forEach(function(m){m_q4_25+=(ms25[String(m)]||ms25[m]||0);});
+    [1,2].forEach(function(m){m_q1_26+=(ms26[String(m)]||ms26[m]||0);});
   });
   var mom=m_jan26>0?((m_feb26-m_jan26)/m_jan26*100):null;
   var qoq=m_q4_25>0?((m_q1_26-m_q4_25)/m_q4_25*100):null;
+  var gr2423=total23>0?((total24-total23)/total23*100):null;
   document.getElementById('home-mom-kpis').innerHTML=[
-    {l:'GR% 25v24',v:pct(gr2524),c:gr2524>=0?'kpi-pos':'kpi-neg'},
-    {l:'MoM (Feb vs Jan 26)',v:pct(mom),c:mom>=0?'kpi-pos':'kpi-neg'},
-    {l:'QoQ (Q1 26 vs Q4 25)',v:pct(qoq),c:qoq>=0?'kpi-pos':'kpi-neg'},
+    {l:'GR% 25v24',v:pct(gr2524),c:gr2524!=null?(gr2524>=0?'kpi-pos':'kpi-neg'):'kpi-sub'},
+    {l:'GR% 24v23',v:pct(gr2423),c:gr2423!=null?(gr2423>=0?'kpi-pos':'kpi-neg'):'kpi-sub'},
+    {l:'MoM (Feb vs Jan 26)',v:pct(mom),c:mom!=null?(mom>=0?'kpi-pos':'kpi-neg'):'kpi-sub'},
+    {l:'QoQ (Q1 26 vs Q4 25)',v:pct(qoq),c:qoq!=null?(qoq>=0?'kpi-pos':'kpi-neg'):'kpi-sub'},
   ].map(function(k){return'<div><div class="kpi-label">'+k.l+'</div><div style="font-size:14px;font-weight:500" class="'+k.c+'">'+k.v+'</div></div>';}).join('');
   var statusCounts={'Active':0,'Inactive':0,'New':0,'Reactivated':0,'Active/Potential':0};
   ACCOUNTS.forEach(function(a){if(a.cust_status&&statusCounts.hasOwnProperty(a.cust_status))statusCounts[a.cust_status]++;});
@@ -564,6 +578,10 @@ function renderHome(){
 var ACC_SORT={col:'transfer_type',dir:1};
 function sortAcc(col){
   if(ACC_SORT.col===col){ACC_SORT.dir*=-1;}else{ACC_SORT.col=col;ACC_SORT.dir=-1;}
+  // Update sort arrows
+  document.querySelectorAll('.sort-arrow').forEach(function(el){el.textContent='';});
+  var arrowEl=document.getElementById('sort-'+col);
+  if(arrowEl)arrowEl.textContent=ACC_SORT.dir===-1?' v':' ^';
   renderAccTable();
 }
 function getAccSortVal(a,col){
@@ -598,7 +616,7 @@ function applyAccFilters(){
     return true;
   });
   document.getElementById('acc-count').textContent=ACC_FILTERED.length+' accounts shown';
-  renderAccTable();
+  renderAccTable(true);
   var chips=[];
   if(fTr)chips.push({l:'Transfer: '+fTr,f:'acc-f-transfer'});
   if(fTeam)chips.push({l:'Team: '+fTeam,f:'acc-f-team'});
@@ -613,7 +631,10 @@ function applyAccFilters(){
 function clearAccFilters(){['acc-f-transfer','acc-f-team','acc-f-oldteam','acc-f-se','acc-f-status','acc-f-size','acc-f-type'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('acc-f-search').value='';applyAccFilters();}
 function clearChip(fieldId,isText){document.getElementById(fieldId).value='';applyAccFilters();}
 
-function renderAccTable(){
+var ACC_PAGE=20;
+var ACC_SHOWN=20;
+function renderAccTable(resetPage){
+  if(resetPage)ACC_SHOWN=ACC_PAGE;
   var SORT_ORDER={inter:0,intra:1,same:2,new:3};
   var sorted=ACC_FILTERED.slice().sort(function(a,b){
     if(ACC_SORT.col==='transfer_type'){
@@ -625,17 +646,30 @@ function renderAccTable(){
     if(typeof va==='string')return ACC_SORT.dir*va.localeCompare(vb);
     return ACC_SORT.dir*(vb-va);
   });
-  var rows='',prevSec='';
-  sorted.forEach(function(a,i){
+  // Totals row (always on top)
+  var tot23=ACC_FILTERED.reduce(function(s,a){return s+(a.sales&&a.sales['2023']||0);},0);
+  var tot24=ACC_FILTERED.reduce(function(s,a){return s+(a.sales&&a.sales['2024']||0);},0);
+  var tot25=ACC_FILTERED.reduce(function(s,a){return s+(a.sales&&a.sales['2025']||0);},0);
+  var tot26=ACC_FILTERED.reduce(function(s,a){return s+(a.sales&&a.sales['2026']||0);},0);
+  var totHot=ACC_FILTERED.reduce(function(s,a){return s+(a.hot_pipeline||0);},0);
+  var totAwd=ACC_FILTERED.reduce(function(s,a){return s+(a.award||0);},0);
+  var totBL=ACC_FILTERED.reduce(function(s,a){return s+(a.backlog||0);},0);
+  var rows='<tr style="background:var(--surface2);font-weight:500;border-bottom:2px solid var(--border2)">'
+    +'<td style="font-size:11px">Total ('+ACC_FILTERED.length+')</td><td></td><td></td><td></td><td></td>'
+    +'<td class="r">'+sar(tot23)+'</td><td class="r">'+sar(tot24)+'</td><td class="r">'+sar(tot25)+'</td><td class="r">'+sar(tot26)+'</td>'
+    +'<td></td><td class="r">'+sar(totHot)+'</td><td class="r">'+sar(totAwd)+'</td><td class="r">'+sar(totBL)+'</td>'
+    +'<td></td><td></td></tr>';
+  var prevSec='';
+  sorted.slice(0,ACC_SHOWN).forEach(function(a,i){
     var sec=a.transfer_type;
-    if(sec!==prevSec){
+    if(sec!==prevSec&&ACC_SORT.col==='transfer_type'){
       var secLabels={inter:'Inter-team transfers',intra:'Intra-team transfers',same:'Same SE',new:'New accounts'};
       rows+='<tr class="section-head"><td colspan="15">'+secLabels[sec]+' - '+sorted.filter(function(x){return x.transfer_type===sec;}).length+' accounts</td></tr>';
       prevSec=sec;
     }
     var idx=ACC_INDEX[a.customer]!==undefined?ACC_INDEX[a.customer]:i;
     rows+='<tr class="clickable" onclick="toggleDD('+idx+')">'
-      +'<td style="font-weight:500">'+a.name+'</td>'
+      +'<td style="font-weight:500;font-size:11px">'+a.name+'</td>'
       +'<td>'+sizeBadge(a.size_tier,a.size_trend)+'</td>'
       +'<td>'+statusBadge(a.cust_status)+'</td>'
       +'<td><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--surface2);color:var(--text2)">'+a.description+'</span></td>'
@@ -653,50 +687,68 @@ function renderAccTable(){
       +'</tr>'
       +'<tr id="dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="15">'+renderDrilldown(a)+'</td></tr>';
   });
-  // Totals row
-  var tot23=ACC_FILTERED.reduce(function(s,a){return s+(a.sales&&a.sales['2023']||0);},0);
-  var tot24=ACC_FILTERED.reduce(function(s,a){return s+(a.sales&&a.sales['2024']||0);},0);
-  var tot25=ACC_FILTERED.reduce(function(s,a){return s+(a.sales&&a.sales['2025']||0);},0);
-  var tot26=ACC_FILTERED.reduce(function(s,a){return s+(a.sales&&a.sales['2026']||0);},0);
-  var totHot=ACC_FILTERED.reduce(function(s,a){return s+(a.hot_pipeline||0);},0);
-  var totAwd=ACC_FILTERED.reduce(function(s,a){return s+(a.award||0);},0);
-  var totBL=ACC_FILTERED.reduce(function(s,a){return s+(a.backlog||0);},0);
-  rows+='<tr style="background:var(--surface2);font-weight:500;border-top:2px solid var(--border2)">'
-    +'<td>Total ('+ACC_FILTERED.length+')</td><td></td><td></td><td></td><td></td>'
-    +'<td class="r">'+sar(tot23)+'</td><td class="r">'+sar(tot24)+'</td><td class="r">'+sar(tot25)+'</td><td class="r">'+sar(tot26)+'</td>'
-    +'<td></td><td class="r">'+sar(totHot)+'</td><td class="r">'+sar(totAwd)+'</td><td class="r">'+sar(totBL)+'</td>'
-    +'<td></td><td></td></tr>';
+  if(ACC_SHOWN<sorted.length){
+    rows+='<tr><td colspan="15" style="text-align:center;padding:10px">'
+      +'<button class="btn-clear" onclick="ACC_SHOWN+=ACC_PAGE;renderAccTable()">Load more ('+(sorted.length-ACC_SHOWN)+' remaining)</button>'
+      +'</td></tr>';
+  }
   document.getElementById('acc-tbody').innerHTML=rows;
 }
 
 function renderDrilldown(a){
   var v=a.verdict;
   var vHtml=v?'<div class="verdict '+v.type+'">'+v.text+'</div>':'';
+  // SE history with column sums
+  var seSums={2022:0,2023:0,2024:0,2025:0,2026:0};
+  (a.se_history||[]).forEach(function(s){[2022,2023,2024,2025,2026].forEach(function(yr){seSums[yr]+=(s.yr_sales[yr]||0);});});
   var seRows=(a.se_history||[]).map(function(s){
     var ob=s.is_owner?'<span class="badge b-owner">Owner</span>':'<span class="badge b-transact">Transacted</span>';
     var yrs=[2022,2023,2024,2025,2026].map(function(yr){return'<td class="r '+(s.yr_sales[yr]?'':'dim')+'">'+sar(s.yr_sales[yr])+'</td>';}).join('');
     return'<tr><td>'+s.se_name+'</td><td>'+ob+'</td>'+yrs+'<td class="r"><b>'+s.contrib_pct+'%</b></td></tr>';
   }).join('');
+  var seSumRow='<tr style="font-weight:500;background:var(--surface2);border-top:1px solid var(--border2)">'
+    +'<td>Total</td><td></td>'
+    +[2022,2023,2024,2025,2026].map(function(yr){return'<td class="r">'+sar(seSums[yr])+'</td>';}).join('')
+    +'<td></td></tr>';
   var colors=['#3b82f6','#22c55e','#f59e0b','#9ca3af','#ef4444'];
   var cBar=(a.se_history||[]).slice(0,5).map(function(s,i){return'<div style="flex:'+(s.contrib_pct/100)+';background:'+colors[i]+'" class="contrib-seg"></div>';}).join('');
   var cLeg=(a.se_history||[]).slice(0,5).map(function(s,i){return'<span style="font-size:10px;color:var(--text2)"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+colors[i]+';margin-right:3px"></span>'+s.se_name.split(' ')[0]+' '+s.contrib_pct+'%</span>';}).join(' ');
-  // Project summary totals
-  var projAward=0,projBL=0,projHot=0;
-  (a.projects||[]).forEach(function(p){
-    if(p.is_award)projAward+=(p.q_gross_value||0);
-    projBL+=(p.backlog_val||0);
-    if(p.is_hot&&p.in_hot_window)projHot+=(p.q_gross_value||0);
-  });
-  var summaryHtml='<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px">'
-    +'<div class="kpi"><div class="kpi-label">Award (all yrs)</div><div class="kpi-val" style="font-size:16px">'+sar(projAward)+'</div></div>'
-    +'<div class="kpi"><div class="kpi-label">Backlog</div><div class="kpi-val" style="font-size:16px">'+sar(projBL)+'</div></div>'
-    +'<div class="kpi"><div class="kpi-label">Expected award (50%+70%)</div><div class="kpi-val" style="font-size:16px">'+sar(projHot)+'</div></div>'
+  // Project summary - using account-level aggregates (accurate)
+  var awd25=a.award_by_year&&a.award_by_year['2025']||0;
+  var awd26=a.award_by_year&&a.award_by_year['2026']||0;
+  var awardBadges='<div style="display:flex;gap:6px;margin-top:4px">'
+    +'<span style="font-size:10px;background:#dbeafe;color:#1e3a8a;padding:2px 8px;border-radius:12px">2025: '+sar(awd25)+'</span>'
+    +'<span style="font-size:10px;background:#dcfce7;color:#14532d;padding:2px 8px;border-radius:12px">2026: '+sar(awd26)+'</span>'
     +'</div>';
-  var projRows=(a.projects||[]).map(function(p){
-    var tb=p.is_award?'<span class="badge b-a" style="font-size:9px">Award</span>':p.is_hot?'<span class="badge b-new" style="font-size:9px">Hot</span>':'';
-    return'<tr><td style="font-size:10px">'+(p.project_name||'--')+'</td>'
+  var summaryHtml='<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px">'
+    +'<div class="kpi"><div class="kpi-label">Award (2025+2026)</div><div class="kpi-val" style="font-size:16px">'+sar(a.award||0)+'</div>'+awardBadges+'</div>'
+    +'<div class="kpi"><div class="kpi-label">Backlog</div><div class="kpi-val" style="font-size:16px">'+sar(a.backlog||0)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-label">Expected award (50%+70%)</div><div class="kpi-val" style="font-size:16px">'+sar(a.hot_pipeline||0)+'</div></div>'
+    +'</div>';
+  // Projects sorted by Valid From desc, with filter row
+  var projs=(a.projects||[]).slice().sort(function(x,y){
+    var dx=x.valid_from||'',dy=y.valid_from||'';
+    return dy.localeCompare(dx);
+  });
+  var ddId='dd-proj-'+ACC_INDEX[a.customer];
+  var projFilterHtml='<tr style="background:var(--surface2)">'
+    +'<td><input type="text" placeholder="Project..." style="width:100%;font-size:10px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px" oninput="filterDDProj(''+ddId+'')" id="'+ddId+'-name"></td>'
+    +'<td><select style="width:100%;font-size:10px;padding:3px;border:1px solid var(--border2);border-radius:4px" onchange="filterDDProj(''+ddId+'')" id="'+ddId+'-group"><option value="">All groups</option>'
+    +[...new Set(projs.map(function(p){return p.group;}).filter(Boolean))].map(function(g){return'<option>'+g+'</option>';}).join('')
+    +'</select></td>'
+    +'<td><select style="width:100%;font-size:10px;padding:3px;border:1px solid var(--border2);border-radius:4px" onchange="filterDDProj(''+ddId+'')" id="'+ddId+'-prob"><option value="">All probs</option>'
+    +[...new Set(projs.map(function(p){return p.probability;}).filter(Boolean))].sort().map(function(p){return'<option>'+p+'</option>';}).join('')
+    +'</select></td>'
+    +'<td></td><td></td>'
+    +'<td><input type="text" placeholder="Exp award..." style="width:90px;font-size:10px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px" oninput="filterDDProj(''+ddId+'')" id="'+ddId+'-eawd"></td>'
+    +'<td><input type="text" placeholder="Valid from..." style="width:90px;font-size:10px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px" oninput="filterDDProj(''+ddId+'')" id="'+ddId+'-vfrom"></td>'
+    +'</tr>';
+  var projRows=projs.map(function(p){
+    var pb=p.is_award?'<span class="badge b-a" style="font-size:9px">Award</span>':p.is_hot?'<span class="badge b-new" style="font-size:9px">Hot</span>':'';
+    return'<tr class="proj-row-'+ddId+'">'
+      +'<td style="font-size:10px">'+(p.project_name||'--')+'</td>'
       +'<td style="font-size:10px;color:var(--text2)">'+(p.group||'--')+'</td>'
-      +'<td>'+tb+'</td>'
+      +'<td style="font-size:10px">'+(p.probability||'--')+'</td>'
       +'<td class="r">'+sar(p.q_gross_value)+'</td>'
       +'<td class="r">'+sar(p.backlog_val)+'</td>'
       +'<td class="r dim">'+(p.expected_award||'--')+'</td>'
@@ -708,13 +760,35 @@ function renderDrilldown(a){
     +summaryHtml
     +'<div class="half">'
     +'<div><div class="card-title" style="margin-bottom:6px">SE history</div>'
-    +'<div style="overflow-x:auto"><table><thead><tr><th>Salesman</th><th>Role</th><th class="r">2022</th><th class="r">2023</th><th class="r">2024</th><th class="r">2025</th><th class="r">2026</th><th class="r">Contrib%</th></tr></thead><tbody>'+seRows+'</tbody></table></div>'
+    +'<div style="overflow-x:auto"><table><thead><tr><th>Salesman</th><th>Role</th><th class="r">2022</th><th class="r">2023</th><th class="r">2024</th><th class="r">2025</th><th class="r">2026</th><th class="r">Contrib%</th></tr></thead>'
+    +'<tbody>'+seSumRow+seRows+'</tbody></table></div>'
     +(cBar?'<div style="margin-top:8px"><div style="font-size:10px;color:var(--text2);margin-bottom:4px">Sales contribution</div><div class="contrib-bar">'+cBar+'</div><div style="display:flex;gap:10px;flex-wrap:wrap">'+cLeg+'</div></div>':'')
     +'</div>'
-    +'<div><div class="card-title" style="margin-bottom:6px">Projects</div>'
-    +'<div style="overflow-x:auto"><table><thead><tr><th>Project</th><th>Group</th><th>Type</th><th class="r">Pipeline val</th><th class="r">Backlog</th><th class="r">Exp. award</th><th class="r">Valid from</th></tr></thead>'
-    +'<tbody>'+(projRows||'<tr><td colspan="7" class="dim" style="text-align:center;padding:12px">No pipeline data</td></tr>')+'</tbody></table></div>'
+    +'<div id="'+ddId+'"><div class="card-title" style="margin-bottom:6px">Projects ('+projs.length+')</div>'
+    +'<div style="overflow-x:auto"><table><thead><tr><th>Project</th><th>Group</th><th>Probability</th><th class="r">Pipeline val</th><th class="r">Backlog</th><th class="r">Exp. award</th><th class="r">Valid from</th></tr></thead>'
+    +'<tbody>'+projFilterHtml+(projRows||'<tr><td colspan="7" class="dim" style="text-align:center;padding:12px">No pipeline data</td></tr>')+'</tbody></table></div>'
     +'</div></div></div>';
+}
+function filterDDProj(ddId){
+  var name=(document.getElementById(ddId+'-name')||{}).value||'';
+  var grp=(document.getElementById(ddId+'-group')||{}).value||'';
+  var prob=(document.getElementById(ddId+'-prob')||{}).value||'';
+  var eawd=(document.getElementById(ddId+'-eawd')||{}).value||'';
+  var vfrom=(document.getElementById(ddId+'-vfrom')||{}).value||'';
+  document.querySelectorAll('.proj-row-'+ddId).forEach(function(tr){
+    var tds=tr.querySelectorAll('td');
+    var pname=(tds[0]&&tds[0].textContent)||'';
+    var pgrp=(tds[1]&&tds[1].textContent)||'';
+    var pprob=(tds[2]&&tds[2].textContent)||'';
+    var peawd=(tds[5]&&tds[5].textContent)||'';
+    var pvfrom=(tds[6]&&tds[6].textContent)||'';
+    var show=(!name||pname.toLowerCase().includes(name.toLowerCase()))
+      &&(!grp||pgrp===grp)
+      &&(!prob||pprob===prob)
+      &&(!eawd||peawd.includes(eawd))
+      &&(!vfrom||pvfrom.includes(vfrom));
+    tr.style.display=show?'':'none';
+  });
 }
 
 function toggleDD(idx){
