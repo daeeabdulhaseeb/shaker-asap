@@ -732,16 +732,16 @@ function renderDrilldown(a){
   });
   var ddId='dd-proj-'+ACC_INDEX[a.customer];
   var projFilterHtml='<tr style="background:var(--surface2)">'
-    +'<td><input type="text" placeholder="Project..." style="width:100%;font-size:10px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px" oninput="filterDDProj(''+ddId+'')" id="'+ddId+'-name"></td>'
-    +'<td><select style="width:100%;font-size:10px;padding:3px;border:1px solid var(--border2);border-radius:4px" onchange="filterDDProj(''+ddId+'')" id="'+ddId+'-group"><option value="">All groups</option>'
+    +'<td><input type="text" placeholder="Project..." style="width:100%;font-size:10px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px" oninput="filterDDProj(&quot;'+ddId+'&quot;)" id="'+ddId+'-name"></td>'
+    +'<td><select style="width:100%;font-size:10px;padding:3px;border:1px solid var(--border2);border-radius:4px" onchange="filterDDProj(&quot;'+ddId+'&quot;)" id="'+ddId+'-group"><option value="">All groups</option>'
     +[...new Set(projs.map(function(p){return p.group;}).filter(Boolean))].map(function(g){return'<option>'+g+'</option>';}).join('')
     +'</select></td>'
-    +'<td><select style="width:100%;font-size:10px;padding:3px;border:1px solid var(--border2);border-radius:4px" onchange="filterDDProj(''+ddId+'')" id="'+ddId+'-prob"><option value="">All probs</option>'
+    +'<td><select style="width:100%;font-size:10px;padding:3px;border:1px solid var(--border2);border-radius:4px" onchange="filterDDProj(&quot;'+ddId+'&quot;)" id="'+ddId+'-prob"><option value="">All probs</option>'
     +[...new Set(projs.map(function(p){return p.probability;}).filter(Boolean))].sort().map(function(p){return'<option>'+p+'</option>';}).join('')
     +'</select></td>'
     +'<td></td><td></td>'
-    +'<td><input type="text" placeholder="Exp award..." style="width:90px;font-size:10px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px" oninput="filterDDProj(''+ddId+'')" id="'+ddId+'-eawd"></td>'
-    +'<td><input type="text" placeholder="Valid from..." style="width:90px;font-size:10px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px" oninput="filterDDProj(''+ddId+'')" id="'+ddId+'-vfrom"></td>'
+    +'<td><input type="text" placeholder="Exp award..." style="width:90px;font-size:10px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px" oninput="filterDDProj(&quot;'+ddId+'&quot;)" id="'+ddId+'-eawd"></td>'
+    +'<td><input type="text" placeholder="Valid from..." style="width:90px;font-size:10px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px" oninput="filterDDProj(&quot;'+ddId+'&quot;)" id="'+ddId+'-vfrom"></td>'
     +'</tr>';
   var projRows=projs.map(function(p){
     var pb=p.is_award?'<span class="badge b-a" style="font-size:9px">Award</span>':p.is_hot?'<span class="badge b-new" style="font-size:9px">Hot</span>':'';
