@@ -257,7 +257,7 @@ th{user-select:none}
 <div id="page-se" class="page">
   <div class="page-title">SE &amp; team performance</div>
   <div class="page-sub">Click a team to filter SE panel, click an SE to filter accounts and charts</div>
-  <div class="kpi-grid g4" id="se-kpis"></div>
+  <div class="kpi-grid g5" id="se-kpis"></div>
   <div class="three-col" style="align-items:start">
     <div class="card" style="padding:0;overflow:hidden">
       <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
@@ -265,7 +265,7 @@ th{user-select:none}
         <button class="btn-export" onclick="exportTeamTable()">Export</button>
       </div>
       <table id="se-team-table">
-        <thead><tr><th>Team</th><th class="r">Accts</th><th class="r">2024</th><th class="r">2025</th><th class="r">GR% 25v24</th><th class="r">Pipeline</th></tr></thead>
+        <thead><tr><th>Team</th><th class="r">Accts</th><th class="r">2024</th><th class="r">2025</th><th class="r">2026</th><th class="r">GR% 25v24</th><th class="r">Award</th></tr></thead>
         <tbody id="se-team-tbody"></tbody>
       </table>
     </div>
@@ -275,17 +275,17 @@ th{user-select:none}
         <button class="btn-export" onclick="exportSETable()">Export</button>
       </div>
       <table id="se-se-table">
-        <thead><tr><th>SE</th><th class="r">Accts</th><th class="r">2025</th><th class="r">GR% 25v24</th><th class="r">Pipeline</th><th>Mix</th></tr></thead>
+        <thead><tr><th>SE</th><th class="r">Accts</th><th class="r">2025</th><th class="r">2026</th><th class="r">GR% 25v24</th><th class="r">Award</th><th class="r">Backlog</th><th class="r">Hot Pipeline</th></tr></thead>
         <tbody id="se-se-tbody"></tbody>
       </table>
     </div>
     <div class="card" style="padding:0;overflow:hidden">
       <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
-        <div><div class="card-title" id="se-acc-title">Accounts</div><div class="card-sub">Owner vs transacted</div></div>
+        <div><div class="card-title" id="se-acc-title">Accounts</div><div class="card-sub">Click to drill down</div></div>
         <button class="btn-export" onclick="exportSEAccTable()">Export</button>
       </div>
       <table id="se-acc-table">
-        <thead><tr><th>Account</th><th>Owner?</th><th class="r">2025</th><th class="r">YoY</th><th class="r">Pipeline</th></tr></thead>
+        <thead><tr><th>Account</th><th>Type</th><th class="r">2025</th><th class="r">2026</th><th class="r">GR% 25v24</th><th class="r">Awd 25</th><th class="r">Awd 26</th></tr></thead>
         <tbody id="se-acc-tbody"></tbody>
       </table>
     </div>
@@ -853,7 +853,8 @@ function renderSEPage(){renderTeamTable();renderSETable(null);renderSEAccs(null,
 function renderTeamTable(){
   document.getElementById('se-team-tbody').innerHTML=TEAM_DATA.map(function(t){
     var isSel=SEL_TEAM===t.team;
-    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectTeam(&quot;'+t.team.replace(/"/g,'&quot;')+'&quot;)"><td style="font-weight:'+(isSel?'500':'400')+'">'+t.team+'</td><td class="r">'+t.account_count+'</td><td class="r">'+sar(t.sales['2024'])+'</td><td class="r">'+sar(t.sales['2025'])+'</td><td class="r '+(t.yoy_25v24!=null?posNeg(t.yoy_25v24):'dim')+'">'+pct(t.yoy_25v24)+'</td><td class="r">'+sar(t.hot_pipeline)+'</td></tr>';
+    var aBadges='<div style="display:flex;gap:3px;margin-top:2px"><span style="font-size:9px;background:#dbeafe;color:#1e3a8a;padding:1px 5px;border-radius:8px">25:'+sar(t.award_25||0)+'</span><span style="font-size:9px;background:#dcfce7;color:#14532d;padding:1px 5px;border-radius:8px">26:'+sar(t.award_26||0)+'</span></div>';
+    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectTeam(&quot;'+t.team.replace(/"/g,'&quot;')+'&quot;)"><td style="font-weight:'+(isSel?'500':'400')+'">'+t.team+'</td><td class="r">'+t.account_count+'</td><td class="r">'+sar(t.sales['2024'])+'</td><td class="r">'+sar(t.sales['2025'])+'</td><td class="r">'+sar(t.sales['2026'])+'</td><td class="r '+(t.yoy_25v24!=null?posNeg(t.yoy_25v24):'dim')+'">'+pct(t.yoy_25v24)+'</td><td class="r"><div>'+sar(t.award||0)+'</div>'+aBadges+'</td></tr>';
   }).join('');
 }
 function selectTeam(team){SEL_TEAM=(SEL_TEAM===team)?null:team;SEL_SE=null;renderTeamTable();renderSETable(SEL_TEAM);renderSEAccs(SEL_TEAM,null);renderSECharts(SEL_TEAM,null);renderSEFlags(SEL_TEAM);updateSEKpis(SEL_TEAM,null);}
@@ -862,17 +863,37 @@ function renderSETable(team){
   document.getElementById('se-se-title').textContent='SE breakdown'+(team?' - '+team:'');
   document.getElementById('se-se-tbody').innerHTML=ses.map(function(s){
     var isSel=SEL_SE===s.se_name;
-    var mx=Object.entries(s.size_counts||{}).slice(0,2).map(function(e){var cls={'A+':'b-aplus','A':'b-a','B':'b-b','C':'b-c','D':'b-d'}[e[0]]||'b-c';return'<span class="badge '+cls+'" style="font-size:9px">'+e[0]+'x'+e[1]+'</span>';}).join(' ');
-    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectSE(&quot;'+s.se_name.replace(/"/g,'&quot;')+'&quot;)"><td>'+s.se_name+'</td><td class="r">'+s.account_count+'</td><td class="r">'+sar(s.sales['2025'])+'</td><td class="r '+(s.yoy_25v24!=null?posNeg(s.yoy_25v24):'dim')+'">'+pct(s.yoy_25v24)+'</td><td class="r">'+sar(s.hot_pipeline)+'</td><td>'+mx+'</td></tr>';
+    var seBadges='<div style="display:flex;gap:3px;margin-top:2px"><span style="font-size:9px;background:#dbeafe;color:#1e3a8a;padding:1px 5px;border-radius:8px">25:'+sar(s.award_25||0)+'</span><span style="font-size:9px;background:#dcfce7;color:#14532d;padding:1px 5px;border-radius:8px">26:'+sar(s.award_26||0)+'</span></div>';
+    return'<tr class="clickable'+(isSel?' selected':'')+'" onclick="selectSE(&quot;'+s.se_name.replace(/"/g,'&quot;')+'&quot;)"><td>'+s.se_name+'</td><td class="r">'+s.account_count+'</td><td class="r">'+sar(s.sales['2025'])+'</td><td class="r">'+sar(s.sales['2026'])+'</td><td class="r '+(s.yoy_25v24!=null?posNeg(s.yoy_25v24):'dim')+'">'+pct(s.yoy_25v24)+'</td><td class="r"><div>'+sar(s.award||0)+'</div>'+seBadges+'</td><td class="r">'+sar(s.backlog||0)+'</td><td class="r">'+sar(s.hot_pipeline||0)+'</td></tr>';
   }).join('');
 }
 function selectSE(se){SEL_SE=(SEL_SE===se)?null:se;renderSETable(SEL_TEAM);renderSEAccs(SEL_TEAM,SEL_SE);renderSECharts(SEL_TEAM,SEL_SE);updateSEKpis(SEL_TEAM,SEL_SE);}
 function renderSEAccs(team,se){
   var accs=ACCOUNTS.filter(function(a){if(se)return a.curr_se===se;if(team)return a.curr_team===team;return false;}).sort(function(a,b){return(b.sales&&b.sales['2025']||0)-(a.sales&&a.sales['2025']||0);});
-  document.getElementById('se-acc-title').textContent='Accounts'+(se?' - '+se:team?' - '+team:'');
-  document.getElementById('se-acc-tbody').innerHTML=accs.slice(0,50).map(function(a){
-    return'<tr class="clickable"><td style="font-size:11px">'+a.name+'</td><td><span class="badge b-owner">Owner</span></td><td class="r">'+sar(a.sales&&a.sales['2025'])+'</td><td class="r '+(a.yoy_25v24!=null?posNeg(a.yoy_25v24):'dim')+'">'+pct(a.yoy_25v24)+'</td><td class="r">'+sar(a.hot_pipeline)+'</td></tr>';
+  document.getElementById('se-acc-title').textContent='Accounts ('+accs.length+')'+(se?' - '+se:team?' - '+team:'');
+  document.getElementById('se-acc-tbody').innerHTML=accs.slice(0,100).map(function(a){
+    var idx=ACC_INDEX[a.customer];
+    var awd25=(a.award_by_year&&a.award_by_year['2025'])||0;
+    var awd26=(a.award_by_year&&a.award_by_year['2026'])||0;
+    return'<tr class="clickable" onclick="toggleSEDD('+idx+')">'
+      +'<td style="font-size:11px;font-weight:500">'+a.name+'</td>'
+      +'<td style="font-size:10px;color:var(--text2)">'+a.description+'</td>'
+      +'<td class="r">'+sar(a.sales&&a.sales['2025'])+'</td>'
+      +'<td class="r dim">'+sar(a.sales&&a.sales['2026'])+'</td>'
+      +'<td class="r '+(a.yoy_25v24!=null?posNeg(a.yoy_25v24):'dim')+'">'+pct(a.yoy_25v24)+'</td>'
+      +'<td class="r">'+sar(awd25)+'</td>'
+      +'<td class="r">'+sar(awd26)+'</td>'
+      +'</tr>'
+      +'<tr id="se-dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="7">'+renderDrilldown(a)+'</td></tr>';
   }).join('');
+}
+var OPEN_SE_DD=null;
+function toggleSEDD(idx){
+  var row=document.getElementById('se-dd-'+idx);
+  if(!row)return;
+  if(OPEN_SE_DD!==null&&OPEN_SE_DD!==idx){var prev=document.getElementById('se-dd-'+OPEN_SE_DD);if(prev)prev.style.display='none';}
+  row.style.display=(row.style.display==='none'||row.style.display==='')?'table-row':'none';
+  OPEN_SE_DD=(row.style.display==='table-row')?idx:null;
 }
 function renderSECharts(team,se){
   var data=null;
@@ -923,13 +944,23 @@ function updateSEKpis(team,se){
   if(se){var d=SE_DATA.find(function(x){return x.se_name===se;});if(d){s25=d.sales['2025']||0;s24=d.sales['2024']||0;pipe=d.hot_pipeline||0;accts=d.account_count;}}
   else if(team){var d=TEAM_DATA.find(function(x){return x.team===team;});if(d){s25=d.sales['2025']||0;s24=d.sales['2024']||0;pipe=d.hot_pipeline||0;accts=d.account_count;}}
   else{s25=TEAM_DATA.reduce(function(a,t){return a+(t.sales['2025']||0);},0);s24=TEAM_DATA.reduce(function(a,t){return a+(t.sales['2024']||0);},0);pipe=TEAM_DATA.reduce(function(a,t){return a+(t.hot_pipeline||0);},0);accts=ACCOUNTS.length;}
+  var s26=0,awd=0,awd25=0,awd26=0,bl=0;
+  if(se){var d=SE_DATA.find(function(x){return x.se_name===se;});if(d){s26=d.sales['2026']||0;awd=d.award||0;awd25=d.award_25||0;awd26=d.award_26||0;bl=d.backlog||0;}}
+  else if(team){var d=TEAM_DATA.find(function(x){return x.team===team;});if(d){s26=d.sales['2026']||0;awd=d.award||0;awd25=d.award_25||0;awd26=d.award_26||0;bl=d.backlog||0;}}
+  else{s26=TEAM_DATA.reduce(function(a,t){return a+(t.sales['2026']||0);},0);awd=TEAM_DATA.reduce(function(a,t){return a+(t.award||0);},0);awd25=TEAM_DATA.reduce(function(a,t){return a+(t.award_25||0);},0);awd26=TEAM_DATA.reduce(function(a,t){return a+(t.award_26||0);},0);bl=TEAM_DATA.reduce(function(a,t){return a+(t.backlog||0);},0);}
   var yoy=s24>0?(s25-s24)/s24*100:null;
-  document.getElementById('se-kpis').innerHTML=[
-    {l:'Sales 2025',v:sar(s25),s:pct(yoy),sc:yoy>=0?'kpi-pos':'kpi-neg'},
-    {l:'Sales 2024',v:sar(s24),s:'prior year',sc:'kpi-sub'},
+  var awardBadges='<div style="display:flex;gap:5px;margin-top:3px">'
+    +'<span style="font-size:9px;background:#dbeafe;color:#1e3a8a;padding:1px 6px;border-radius:10px">25: '+sar(awd25)+'</span>'
+    +'<span style="font-size:9px;background:#dcfce7;color:#14532d;padding:1px 6px;border-radius:10px">26: '+sar(awd26)+'</span>'
+    +'</div>';
+  var seKpiHtml=[
+    {l:'Sales 2025',v:sar(s25),s:pct(yoy),sc:yoy!=null?(yoy>=0?'kpi-pos':'kpi-neg'):'kpi-sub'},
+    {l:'Sales 2026 YTD',v:sar(s26),s:'Jan-Feb actuals',sc:'kpi-sub'},
     {l:'Hot pipeline',v:sar(pipe),s:'50%+70%',sc:'kpi-sub'},
-    {l:'Account count',v:accts,s:'selected',sc:'kpi-sub'},
+    {l:'Backlog',v:sar(bl),s:'90%+100%',sc:'kpi-sub'},
   ].map(function(k){return'<div class="kpi"><div class="kpi-label">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="'+k.sc+'">'+k.s+'</div></div>';}).join('');
+  seKpiHtml+='<div class="kpi"><div class="kpi-label">Award</div><div class="kpi-val">'+sar(awd)+'</div>'+awardBadges+'</div>';
+  document.getElementById('se-kpis').innerHTML=seKpiHtml;
 }
 
 function applyTransferFilters(){
