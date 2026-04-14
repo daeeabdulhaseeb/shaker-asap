@@ -127,8 +127,8 @@ tr.selected td{background:var(--accent-light)!important}
 .seg-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:8px 0}
 .sort-arrow{font-size:9px;color:var(--text3);margin-left:2px}
 th{user-select:none}
-.focus-mode{position:fixed!important;top:0;left:0;width:100vw;height:100vh;z-index:999;background:var(--bg);overflow-y:auto;padding:16px 24px}
-.focus-mode .tbl-wrap{max-height:calc(100vh - 180px);overflow-y:auto}
+.focus-mode{display:block!important;position:fixed!important;top:0;left:0;width:100vw;height:100vh;z-index:999;background:var(--bg);overflow-y:auto;padding:16px 24px}
+.focus-mode .tbl-wrap{max-height:calc(100vh - 220px);overflow-y:auto}
 </style>
 </head>
 <body>
@@ -787,9 +787,10 @@ function renderAccTable(resetPage){
       +'</tr>'
       +'<tr id="dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="15">'+renderDrilldown(a)+'</td></tr>';
   });
-  if(ACC_SHOWN<sorted.length){
+  var ACC_TOTAL=sorted.length;
+  if(ACC_SHOWN<ACC_TOTAL){
     rows+='<tr><td colspan="15" style="text-align:center;padding:10px">'
-      +'<button class="btn-clear" onclick="ACC_SHOWN+=ACC_PAGE;renderAccTable()">Load more ('+(sorted.length-ACC_SHOWN)+' remaining)</button>'
+      +'<button class="btn-clear" onclick="ACC_SHOWN+=ACC_PAGE;renderAccTable()" style="padding:6px 20px">Load more ('+(ACC_TOTAL-ACC_SHOWN)+' remaining)</button>'
       +'</td></tr>';
   }
   document.getElementById('acc-tbody').innerHTML=rows;
@@ -994,9 +995,10 @@ function renderSEAccs(team,se){
       +'</tr>'
       +'<tr id="se-dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="7" style="padding:0">'+renderDrilldown(a)+'</td></tr>';
   }).join('');
-  if(SE_ACC_SHOWN<accs.length){
+  var SE_ACC_TOTAL=accs.length;
+  if(SE_ACC_SHOWN<SE_ACC_TOTAL){
     document.getElementById('se-acc-tbody').innerHTML+='<tr><td colspan="7" style="text-align:center;padding:8px">'
-      +'<button class="btn-clear" onclick="SE_ACC_SHOWN+=10;renderSEAccs(SEL_TEAM,SEL_SE)">Load more ('+(accs.length-SE_ACC_SHOWN)+' remaining)</button>'
+      +'<button class="btn-clear" onclick="SE_ACC_SHOWN+=10;renderSEAccs(SEL_TEAM,SEL_SE)" style="padding:6px 20px">Load more ('+(SE_ACC_TOTAL-SE_ACC_SHOWN)+' remaining)</button>'
       +'</td></tr>';
   }
 }
