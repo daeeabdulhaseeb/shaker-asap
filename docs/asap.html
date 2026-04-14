@@ -733,6 +733,8 @@ function clearChip(fieldId,isText){document.getElementById(fieldId).value='';app
 
 var ACC_PAGE=20;
 var ACC_SHOWN=20;
+var ACC_TOTAL=0;
+var SE_ACC_TOTAL=0;
 function renderAccTable(resetPage){
   if(resetPage)ACC_SHOWN=ACC_PAGE;
   var SORT_ORDER={inter:0,intra:1,same:2,new:3};
@@ -787,7 +789,7 @@ function renderAccTable(resetPage){
       +'</tr>'
       +'<tr id="dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="15">'+renderDrilldown(a)+'</td></tr>';
   });
-  var ACC_TOTAL=sorted.length;
+  ACC_TOTAL=sorted.length;
   if(ACC_SHOWN<ACC_TOTAL){
     rows+='<tr><td colspan="15" style="text-align:center;padding:10px">'
       +'<button class="btn-clear" onclick="ACC_SHOWN+=ACC_PAGE;renderAccTable()" style="padding:6px 20px">Load more ('+(ACC_TOTAL-ACC_SHOWN)+' remaining)</button>'
@@ -995,7 +997,7 @@ function renderSEAccs(team,se){
       +'</tr>'
       +'<tr id="se-dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="7" style="padding:0">'+renderDrilldown(a)+'</td></tr>';
   }).join('');
-  var SE_ACC_TOTAL=accs.length;
+  SE_ACC_TOTAL=accs.length;
   if(SE_ACC_SHOWN<SE_ACC_TOTAL){
     document.getElementById('se-acc-tbody').innerHTML+='<tr><td colspan="7" style="text-align:center;padding:8px">'
       +'<button class="btn-clear" onclick="SE_ACC_SHOWN+=10;renderSEAccs(SEL_TEAM,SEL_SE)" style="padding:6px 20px">Load more ('+(SE_ACC_TOTAL-SE_ACC_SHOWN)+' remaining)</button>'
