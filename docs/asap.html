@@ -238,9 +238,9 @@ th{user-select:none}
     <span class="filter-count" id="acc-count"></span>
   </div>
   <div id="acc-chips" class="filter-chips" style="margin-bottom:8px"></div>
-  <div class="tbl-wrap">
+  <div class="tbl-wrap" style="max-height:calc(100vh - 320px);overflow-y:auto">
     <table id="acc-table">
-      <thead id="acc-thead"><tr>
+      <thead id="acc-thead" style="position:sticky;top:0;z-index:2"><tr>
         <th style="width:200px;cursor:pointer;font-size:11px" onclick="sortAcc('name')">Customer <span id="sort-name" class="sort-arrow"></span></th>
         <th style="font-size:11px">Size</th><th style="font-size:11px">Status</th><th style="font-size:11px">Type</th><th style="font-size:11px">Transfer</th>
         <th class="r" style="cursor:pointer;font-size:11px" onclick="sortAcc('s2023')">2023 <span id="sort-s2023" class="sort-arrow"></span></th>
@@ -762,7 +762,7 @@ function renderAccTable(resetPage){
     +'<td></td><td class="r">'+sar(totHot)+'</td><td class="r">'+sar(totAwd)+'</td><td class="r">'+sar(totBL)+'</td>'
     +'<td></td><td></td></tr>';
   var prevSec='';
-  sorted.slice(0,ACC_SHOWN).forEach(function(a,i){
+  sorted.forEach(function(a,i){
     var sec=a.transfer_type;
     if(sec!==prevSec&&ACC_SORT.col==='transfer_type'){
       var secLabels={inter:'Inter-team transfers',intra:'Intra-team transfers',same:'Same SE',new:'New accounts'};
@@ -789,15 +789,7 @@ function renderAccTable(resetPage){
       +'</tr>'
       +'<tr id="dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="15">'+renderDrilldown(a)+'</td></tr>';
   });
-  ACC_TOTAL=sorted.length;
-  if(ACC_SHOWN<ACC_TOTAL){
-    rows+='<tr><td colspan="15" style="text-align:center;padding:10px">'
-      +'<button class="btn-clear" id="acc-load-more-btn" style="padding:6px 20px">Load more ('+(ACC_TOTAL-ACC_SHOWN)+' remaining)</button>'
-      +'</td></tr>';
-  }
   document.getElementById('acc-tbody').innerHTML=rows;
-  var lmb=document.getElementById('acc-load-more-btn');
-  if(lmb)lmb.addEventListener('click',function(){ACC_SHOWN+=ACC_PAGE;renderAccTable();});
 }
 
 function renderDrilldown(a){
