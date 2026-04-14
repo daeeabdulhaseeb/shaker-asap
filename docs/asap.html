@@ -792,10 +792,12 @@ function renderAccTable(resetPage){
   ACC_TOTAL=sorted.length;
   if(ACC_SHOWN<ACC_TOTAL){
     rows+='<tr><td colspan="15" style="text-align:center;padding:10px">'
-      +'<button class="btn-clear" onclick="ACC_SHOWN+=ACC_PAGE;renderAccTable()" style="padding:6px 20px">Load more ('+(ACC_TOTAL-ACC_SHOWN)+' remaining)</button>'
+      +'<button class="btn-clear" id="acc-load-more-btn" style="padding:6px 20px">Load more ('+(ACC_TOTAL-ACC_SHOWN)+' remaining)</button>'
       +'</td></tr>';
   }
   document.getElementById('acc-tbody').innerHTML=rows;
+  var lmb=document.getElementById('acc-load-more-btn');
+  if(lmb)lmb.addEventListener('click',function(){ACC_SHOWN+=ACC_PAGE;renderAccTable();});
 }
 
 function renderDrilldown(a){
@@ -1000,8 +1002,10 @@ function renderSEAccs(team,se){
   SE_ACC_TOTAL=accs.length;
   if(SE_ACC_SHOWN<SE_ACC_TOTAL){
     document.getElementById('se-acc-tbody').innerHTML+='<tr><td colspan="7" style="text-align:center;padding:8px">'
-      +'<button class="btn-clear" onclick="SE_ACC_SHOWN+=10;renderSEAccs(SEL_TEAM,SEL_SE)" style="padding:6px 20px">Load more ('+(SE_ACC_TOTAL-SE_ACC_SHOWN)+' remaining)</button>'
+      +'<button class="btn-clear" id="se-load-more-btn" style="padding:6px 20px">Load more ('+(SE_ACC_TOTAL-SE_ACC_SHOWN)+' remaining)</button>'
       +'</td></tr>';
+    var slmb=document.getElementById('se-load-more-btn');
+    if(slmb)slmb.addEventListener('click',function(){SE_ACC_SHOWN+=10;renderSEAccs(SEL_TEAM,SEL_SE);});
   }
 }
 var OPEN_SE_DD=null;
