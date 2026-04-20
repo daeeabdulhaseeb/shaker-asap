@@ -301,8 +301,8 @@ tr.row-expanded td{background:var(--accent-light)!important}
       <span class="toggle-label">Rank by:</span>
       <span class="tbtn on" onclick="setRankMode('gainers','gr2524',this)">GR% 25v24</span>
       <span class="tbtn" onclick="setRankMode('gainers','gr2625',this)">GR% 26v25</span>
-      <span class="tbtn" onclick="setRankMode('gainers','abs2524',this)">Abs SAR 25v24</span>
-      <span class="tbtn" onclick="setRankMode('gainers','abs2625',this)">Abs SAR 26v25</span>
+      <span class="tbtn" onclick="setRankMode('gainers','abs2524',this)">SAR delta 25v24</span>
+      <span class="tbtn" onclick="setRankMode('gainers','abs2625',this)">SAR delta 26v25</span>
       <span style="margin-left:10px;font-size:11px;color:var(--text2)">Valid from:</span>
       <input type="date" id="vf-from" style="height:26px;font-size:10px;padding:2px 6px;border:1px solid var(--border2);border-radius:var(--radius)" onchange="renderGainersLosers()">
       <span style="font-size:11px;color:var(--text2)">to</span>
@@ -342,8 +342,8 @@ tr.row-expanded td{background:var(--accent-light)!important}
       <span class="toggle-label">Rank by:</span>
       <span class="tbtn on" onclick="setRankMode('losers','gr2524',this)">GR% 25v24</span>
       <span class="tbtn" onclick="setRankMode('losers','gr2625',this)">GR% 26v25</span>
-      <span class="tbtn" onclick="setRankMode('losers','abs2524',this)">Abs SAR 25v24</span>
-      <span class="tbtn" onclick="setRankMode('losers','abs2625',this)">Abs SAR 26v25</span>
+      <span class="tbtn" onclick="setRankMode('losers','abs2524',this)">SAR delta 25v24</span>
+      <span class="tbtn" onclick="setRankMode('losers','abs2625',this)">SAR delta 26v25</span>
     </div>
     <div class="tbl-wrap"><div class="tbl-scroll">
       <table><thead><tr>
@@ -397,6 +397,7 @@ tr.row-expanded td{background:var(--accent-light)!important}
       </div>
     </div>
   </div>
+  <div id="dot-panel" style="display:none;margin-top:10px;background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius-lg);padding:14px"></div>
 
   <!-- SECTION 4: INACTIVE HIGH VALUE -->
   <div class="section">
@@ -567,21 +568,16 @@ function clearChipField(id){document.getElementById(id).value='';applyFilters();
 
 function renderKPIs(){
   // New accts 2025/2026 - use full ACCOUNTS (not filtered by invoice date)
-  var new25=ACCOUNTS.filter(function(a){
-    if(!a.created_on)return false;
-    var yr=parseInt(String(a.created_on).slice(0,4));
-    return yr===2025;
-  });
-  var new26=ACCOUNTS.filter(function(a){
-    if(!a.created_on)return false;
-    var yr=parseInt(String(a.created_on).slice(0,4));
-    return yr===2026;
-  });
-  var new24=ACCOUNTS.filter(function(a){
-    if(!a.created_on)return false;
-    var yr=parseInt(String(a.created_on).slice(0,4));
-    return yr===2024;
-  });
+  function getCreatedYear(a){
+    if(!a.created_on)return null;
+    var s=String(a.created_on);
+    // M/D/YYYY or MM/DD/YYYY
+    if(s.indexOf('/')!==-1){var p=s.split('/');return parseInt(p[p.length-1]);}
+    return parseInt(s.slice(0,4));
+  }
+  var new25=ACCOUNTS.filter(function(a){return getCreatedYear(a)===2025;});
+  var new26=ACCOUNTS.filter(function(a){return getCreatedYear(a)===2026;});
+  var new24=ACCOUNTS.filter(function(a){return getCreatedYear(a)===2024;});
   // Team with most new accts
   function topTeam(list){
     var m={};
@@ -654,9 +650,16 @@ function renderNewAccDrill(yr){
   var toEl=document.getElementById('nd'+yr+'-to');
   var fromD=fromEl?fromEl.value:'';
   var toD=toEl?toEl.value:'';
+  function parseDateStr(s){
+    if(!s)return null;
+    s=String(s);
+    if(s.indexOf('/')!==-1){var p=s.split('/');if(p.length===3)return p[2]+'-'+p[0].padStart(2,'0')+'-'+p[1].padStart(2,'0');}
+    return s.slice(0,10);
+  }
   var accs=ACCOUNTS.filter(function(a){
     if(!a.created_on)return false;
-    var d=String(a.created_on).slice(0,10);
+    var d=parseDateStr(a.created_on);
+    if(!d)return false;
     if(fromD&&d<fromD)return false;
     if(toD&&d>toD)return false;
     return true;
@@ -693,7 +696,8 @@ function drillToSE(yr,team){
   var toD=toEl?toEl.value:'';
   var accs=ACCOUNTS.filter(function(a){
     if(!a.created_on)return false;
-    var d=String(a.created_on).slice(0,10);
+    var d=parseDateStr(a.created_on);
+    if(!d)return false;
     if(fromD&&d<fromD)return false;
     if(toD&&d>toD)return false;
     return a.curr_team===team;
@@ -814,11 +818,11 @@ function renderGainersLosers(){
       var vf=p.valid_from||'';
       if(vfFrom&&vf<vfFrom)return;
       if(vfTo&&vf>vfTo)return;
-      var prob=p.probability||'';
+      var prob=(p.probability||'').trim();
       var v=p.q_gross_value||0;
-      if(prob.startsWith('30%'))pipe30+=v;
-      else if(prob.startsWith('15%'))tender+=v;
-      else if(prob.startsWith('0%')||prob.startsWith('10%'))lost+=v;
+      if(prob.indexOf('30%')===0)pipe30+=v;
+      else if(prob.indexOf('15%')===0)tender+=v;
+      else if(prob.indexOf('0%')===0||prob.indexOf('10%')===0)lost+=v;
     });
     return{a:a,gr:gr,pipe30:pipe30,tender:tender,lost:lost};
   });
@@ -834,7 +838,7 @@ function renderGainersLosers(){
         +'<td style="font-weight:500">'+a.name+'</td>'
         +'<td>'+sizeBadge(a.size_tier)+'</td>'
         +'<td style="font-size:10px;color:var(--text2)">'+a.description+'</td>'
-        +''+statusBadge(a.cust_status)+'</td>'
+        +'<td>'+statusBadge(a.cust_status)+'</td>'
         +'<td class="r '+(a.sales&&a.sales['2022']?'':'dim')+'">'+sar(a.sales&&a.sales['2022'])+'</td>'
         +'<td class="r '+(a.sales&&a.sales['2023']?'':'dim')+'">'+sar(a.sales&&a.sales['2023'])+'</td>'
         +'<td class="r '+(a.sales&&a.sales['2024']?'':'dim')+'">'+sar(a.sales&&a.sales['2024'])+'</td>'
@@ -931,8 +935,9 @@ function renderScatter(){
     var sz=Math.max(6,Math.min(24,Math.round(s25/maxS25*20)+5));
     var col=gr>=0&&pipe>0?'#22c55e':gr<0&&pipe>0?'#f59e0b':gr>=0?'#3b82f6':'#ef4444';
     var isSel=HIGHLIGHT_CUST===a.customer;
+    var safeName=a.name.replace(/'/g,'').replace(/"/g,'').slice(0,30);
     return'<div class="dot'+(isSel?' dot-sel':'')+'" style="width:'+sz+'px;height:'+sz+'px;background:'+col+';left:'+(x-sz/2)+'px;top:'+(y-sz/2)+'px" '
-      +'onmouseenter="showDotTip(event,&quot;'+a.name.replace(/&quot;/g,'')+'&quot;,' +gr.toFixed(1)+','+pipe+')" '
+      +'onmouseenter="showDotTip(event,&quot;'+safeName+'&quot;,'+gr.toFixed(1)+','+pipe+')" '
       +'onmouseleave="hideDotTip()" '
       +'onclick="highlightFromDot(&quot;'+a.customer+'&quot;)"></div>';
   }).join('');
@@ -950,9 +955,24 @@ function hideDotTip(){document.getElementById('dot-tooltip').style.display='none
 function highlightFromDot(cust){
   HIGHLIGHT_CUST=HIGHLIGHT_CUST===cust?null:cust;
   renderScatter();
-  // scroll to gainers table
-  document.querySelector('.section').scrollIntoView({behavior:'smooth'});
+  var panel=document.getElementById('dot-panel');
+  if(!HIGHLIGHT_CUST){panel.style.display='none';return;}
+  var a=ACCOUNTS.find(function(x){return x.customer===cust;});
+  if(!a){return;}
+  var awd25=(a.award_by_year&&a.award_by_year['2025'])||0;
+  var awd26=(a.award_by_year&&a.award_by_year['2026'])||0;
+  var gr=a.yoy_25v24!=null?((a.yoy_25v24>=0?'+':'')+a.yoy_25v24.toFixed(1)+'%'):'--';
+  var grCls=a.yoy_25v24!=null?(a.yoy_25v24>=0?'pos':'neg'):'dim';
+  var kpis=[['Size',a.size_tier||'--',''],['Status',a.cust_status||'--',''],['Team',a.curr_team||'--',''],['SE',a.curr_se||'--',''],['GR% 25v24',gr,grCls]];
+  var metrics=[['2024',sar(a.sales&&a.sales['2024'])],['2025',sar(a.sales&&a.sales['2025'])],['2026 YTD',sar(a.sales&&a.sales['2026'])],['Hot Pipeline',sar(a.hot_pipeline)],['Award 2025',sar(awd25)],['Award 2026',sar(awd26)],['Backlog',sar(a.backlog)],['Transfer',a.transfer_type||'--']];
+  var kpiHtml=kpis.map(function(k){return '<div style="background:var(--surface2);border-radius:var(--radius);padding:8px 10px"><div style="font-size:10px;color:var(--text2)">'+k[0]+'</div><div style="font-size:12px;font-weight:500" class="'+k[2]+'">'+k[1]+'</div></div>';}).join('');
+  var metHtml=metrics.map(function(k){return '<div style="background:var(--surface2);border-radius:var(--radius);padding:8px 10px"><div style="font-size:10px;color:var(--text2)">'+k[0]+'</div><div style="font-size:12px;font-weight:500">'+k[1]+'</div></div>';}).join('');
+  panel.style.display='block';
+  panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:12px;font-weight:600">'+a.name+'</div><span class="drill-close" onclick="HIGHLIGHT_CUST=null;renderScatter();document.getElementById('dot-panel').style.display='none'">close x</span></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:8px">'+kpiHtml+'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">'+metHtml+'</div>';
 }
+
 function toggleSizeFilter(sz,btn){
   btn.classList.toggle('on');
   if(SCATTER_SIZES.has(sz))SCATTER_SIZES.delete(sz);else SCATTER_SIZES.add(sz);
@@ -1009,14 +1029,21 @@ function sortInactive(col){
 }
 
 function renderRamp(){
-  var accs24=ACCOUNTS.filter(function(a){return a.created_on&&String(a.created_on).startsWith('2024');});
-  var accs25=ACCOUNTS.filter(function(a){return a.created_on&&String(a.created_on).startsWith('2025');});
+  function parseDateStr2(s){if(!s)return null;s=String(s);if(s.indexOf('/')!==-1){var p=s.split('/');if(p.length===3)return p[2]+'-'+p[0].padStart(2,'0')+'-'+p[1].padStart(2,'0');}return s.slice(0,10);}
+  var accs24=ACCOUNTS.filter(function(a){var d=parseDateStr2(a.created_on);return d&&d.startsWith('2024');});
+  var accs25=ACCOUNTS.filter(function(a){var d=parseDateStr2(a.created_on);return d&&d.startsWith('2025');});
+  // Distribute sales evenly across months as estimate (no monthly breakdown at account level)
+  var total24=accs24.reduce(function(s,a){return s+(a.sales&&a.sales['2024']||0);},0);
+  var total25=accs25.reduce(function(s,a){return s+(a.sales&&a.sales['2025']||0);},0);
+  // Weight toward H2 (typical project sales pattern)
+  var weights=[0.06,0.07,0.08,0.08,0.09,0.09,0.09,0.09,0.09,0.09,0.08,0.09];
+  var cum24=0,cum25=0;
   var monthly24=[],monthly25=[];
-  for(var m=1;m<=12;m++){
-    var s24=0,s25=0;
-    accs24.forEach(function(a){s24+=(a.sales&&a.sales['2024']&&(a.sales['2024']/12))||0;});
-    accs25.forEach(function(a){s25+=(a.sales&&a.sales['2025']&&(a.sales['2025']/12))||0;});
-    monthly24.push(s24);monthly25.push(s25);
+  for(var m=0;m<12;m++){
+    cum24+=total24*weights[m];
+    cum25+=total25*weights[m];
+    monthly24.push(cum24);
+    monthly25.push(cum25);
   }
   var maxV=Math.max.apply(null,monthly24.concat(monthly25))||1;
   var chart=MONTHS.map(function(ml,i){
