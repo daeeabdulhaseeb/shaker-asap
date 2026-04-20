@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Account Analysis - Shaker Group</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f9fa;--surface:#fff;--surface2:#f1f3f5;
+  --border:#e5e7eb;--border2:#d1d5db;
+  --text:#111827;--text2:#6b7280;--text3:#9ca3af;
+  --accent:#1d4ed8;--accent-light:#eff6ff;
+  --success:#16a34a;--success-bg:#f0fdf4;
+  --warn:#d97706;--warn-bg:#fffbeb;
+  --danger:#dc2626;--danger-bg:#fef2f2;
+  --radius:8px;--radius-lg:12px;
+  --font:'DM Sans',sans-serif;
+}
+body{font-family:var(--font);font-size:13px;color:var(--text);background:var(--bg)}
+.nav{display:flex;align-items:center;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;position:sticky;top:0;z-index:200}
+.nav-brand{font-size:12px;font-weight:500;color:var(--text2);padding:14px 16px 14px 0;border-right:1px solid var(--border);margin-right:4px;white-space:nowrap}
+.nav-link{font-size:12px;padding:14px 12px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;text-decoration:none}
+.nav-link:hover{color:var(--text)}
+.nav-link.active{color:var(--text);font-weight:500;border-bottom:2px solid var(--accent)}
+.nav-updated{margin-left:auto;font-size:11px;color:var(--text3)}
+.page{padding:20px 24px 60px}
+.page-title{font-size:15px;font-weight:600;margin-bottom:2px}
+.page-sub{font-size:11px;color:var(--text2);margin-bottom:14px}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.filter-bar select,.filter-bar input{font-size:11px;padding:5px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);height:30px}
+.filter-bar input[type=text]{width:130px}
+.date-range{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)}
+.date-range input[type=date]{font-size:11px;padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);height:28px}
+.filter-note{font-size:9px;color:var(--text3);font-style:italic}
+.btn-clear{font-size:11px;padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text2);cursor:pointer;height:30px}
+.btn-export{font-size:11px;padding:4px 12px;border:1px solid var(--accent);border-radius:var(--radius);background:var(--accent-light);color:var(--accent);cursor:pointer;height:28px;font-weight:500}
+.chips-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:24px;margin-bottom:10px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:20px;background:var(--accent-light);color:var(--accent);border:1px solid #bfdbfe}
+.chip-x{cursor:pointer;font-size:12px;opacity:.7}
+.kpi-row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:11px 12px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative;overflow:hidden}
+.kpi-card:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(29,78,216,.1)}
+.kpi-card.kc-active{border-color:var(--accent);background:var(--accent-light)}
+.kpi-label{font-size:10px;color:var(--text2);margin-bottom:3px}
+.kpi-val{font-size:17px;font-weight:600;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-sub{font-size:10px;color:var(--text2);margin-top:1px}
+.kpi-sub.pos{color:var(--success)}
+.kpi-sub.neg{color:var(--danger)}
+.kpi-arrow{position:absolute;top:8px;right:8px;font-size:9px;color:var(--text3)}
+.kpi-drill{background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px;display:none}
+.kpi-drill.open{display:block}
+.drill-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.drill-title{font-size:12px;font-weight:500}
+.drill-actions{display:flex;gap:8px;align-items:center}
+.drill-date{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)}
+.drill-date input{height:24px;font-size:10px;padding:2px 5px;border:1px solid var(--border2);border-radius:var(--radius)}
+.drill-close{font-size:11px;color:var(--text2);cursor:pointer;padding:2px 8px;border:1px solid var(--border2);border-radius:var(--radius)}
+.drill-back{font-size:11px;color:var(--accent);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-bottom:8px}
+.section{margin-bottom:20px}
+.section-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.section-title{font-size:13px;font-weight:500}
+.section-sub{font-size:10px;color:var(--text2);margin-top:2px}
+.toggle-row{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.toggle-label{font-size:11px;color:var(--text2);margin-right:2px}
+.tbtn{font-size:11px;padding:3px 10px;border:1px solid var(--border2);border-radius:20px;background:var(--surface);color:var(--text2);cursor:pointer;user-select:none}
+.tbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tbl-wrap{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.tbl-scroll{overflow-x:auto;max-height:360px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:11px;background:var(--surface);min-width:900px}
+th{font-size:10px;font-weight:500;color:var(--text2);text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;z-index:1}
+th:hover{color:var(--text)}
+td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:var(--surface2)}
+tr.row-expanded td{background:var(--accent-light)!important}
+.r{text-align:right;font-variant-numeric:tabular-nums}
+.c{text-align:center}
+.pos{color:var(--success)}
+.neg{color:var(--danger)}
+.dim{color:var(--text3)}
+.badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 6px;border-radius:20px;white-space:nowrap}
+.b-aplus{background:#dbeafe;color:#1e3a8a}
+.b-a{background:#dcfce7;color:#14532d}
+.b-b{background:#fef3c7;color:#92400e}
+.b-c{background:#f3f4f6;color:#374151}
+.b-d{background:#fee2e2;color:#991b1b}
+.b-active{background:#dcfce7;color:#14532d}
+.b-inactive{background:#f3f4f6;color:#374151}
+.b-new{background:#dbeafe;color:#1e3a8a}
+.b-react{background:#fef3c7;color:#92400e}
+.b-pot{background:#ede9fe;color:#4c1d95}
+.expand-row td{padding:0;background:var(--surface2)!important}
+.expand-inner{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:14px}
+.expand-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px}
+.expand-panel-title{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.expand-panel table{min-width:0;font-size:10px}
+.scatter-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px}
+.scatter-area{width:100%;height:300px;position:relative;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.qbox{position:absolute;display:flex;align-items:flex-start;padding:5px 8px;font-size:10px;font-weight:500;pointer-events:none}
+.q-star{top:0;right:0;color:var(--success);background:#f0fdf4cc;border-radius:0 0 0 var(--radius)}
+.q-recovery{top:0;left:0;color:var(--warn);background:#fffbebcc;border-radius:0 0 var(--radius) 0}
+.q-momentum{bottom:0;right:0;color:var(--accent);background:#eff6ffcc;border-radius:var(--radius) 0 0 0}
+.q-atrisk{bottom:0;left:0;color:var(--danger);background:#fef2f2cc;border-radius:0 var(--radius) 0 0}
+.dot{position:absolute;border-radius:50%;cursor:pointer;border:1.5px solid rgba(255,255,255,.7);transition:transform .15s,box-shadow .15s}
+.dot:hover{transform:scale(1.3);box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:10}
+.dot.dot-sel{transform:scale(1.4);box-shadow:0 0 0 3px var(--accent);z-index:20}
+.dot-tooltip{position:absolute;background:var(--text);color:#fff;font-size:10px;padding:4px 8px;border-radius:var(--radius);pointer-events:none;white-space:nowrap;z-index:50;display:none}
+.axis-line-h{position:absolute;left:0;right:0;top:50%;height:1px;background:var(--border2)}
+.axis-line-v{position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--border2)}
+.axis-lbl{position:absolute;font-size:9px;color:var(--text3)}
+.bar-track{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-top:3px}
+.bar-fill{height:100%;border-radius:3px;background:var(--accent)}
+.trend-bars{display:flex;align-items:flex-end;gap:3px;height:60px}
+.trend-bar{flex:1;border-radius:2px 2px 0 0;min-height:2px}
+.trend-lbl{font-size:9px;color:var(--text3);text-align:center;margin-top:2px}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-brand">Shaker / ASAP Sales</span>
+  <a class="nav-link" href="asap.html">Home</a>
+  <a class="nav-link" href="asap.html">Account explorer</a>
+  <a class="nav-link" href="asap.html">SE &amp; team</a>
+  <a class="nav-link" href="asap.html">Pipeline &amp; coverage</a>
+  <a class="nav-link active" href="#">Account analysis</a>
+  <span class="nav-updated" id="last-updated"></span>
+</nav>
+
+<div class="page">
+  <div class="page-title">Account analysis</div>
+  <div class="page-sub">EVP-level account intelligence - invoice date filter does not affect new account visuals</div>
+
+  <!-- FILTERS -->
+  <div class="filter-bar">
+    <div class="date-range">
+      <span>Invoice date:</span>
+      <input type="date" id="f-date-from" value="2025-01-01" onchange="applyFilters()">
+      <span>to</span>
+      <input type="date" id="f-date-to" value="2026-02-28" onchange="applyFilters()">
+    </div>
+    <select id="f-team" onchange="applyFilters()"><option value="">All teams</option></select>
+    <select id="f-se" onchange="applyFilters()"><option value="">All SEs</option></select>
+    <select id="f-status" onchange="applyFilters()">
+      <option value="">Account Activity</option>
+      <option value="Active">Active</option><option value="Inactive">Inactive</option>
+      <option value="New">New</option><option value="Reactivated">Reactivated</option>
+      <option value="Active/Potential">Active/Potential</option>
+    </select>
+    <select id="f-size" onchange="applyFilters()">
+      <option value="">Contractor Size</option>
+      <option value="A+">A+</option><option value="A">A</option>
+      <option value="B">B</option><option value="C">C</option><option value="D">D</option>
+    </select>
+    <select id="f-type" onchange="applyFilters()">
+      <option value="">Contractor Type</option>
+      <option value="MEP Contractor">MEP Contractor</option>
+      <option value="Main Contractor">Main Contractor</option>
+      <option value="AC Specialist">AC Specialist</option>
+      <option value="Developer">Developer</option>
+      <option value="End Customer">End Customer</option>
+    </select>
+    <select id="f-group" onchange="applyFilters()">
+      <option value="">All groups</option>
+      <option value="Applied">Applied</option>
+      <option value="CAC Ducted">CAC Ducted</option>
+      <option value="CAC Non-Ducted">CAC Non-Ducted</option>
+      <option value="RAC">RAC</option>
+    </select>
+    <input type="text" id="f-search" placeholder="Search account..." oninput="applyFilters()">
+    <button class="btn-clear" onclick="clearFilters()">Clear</button>
+    <span style="font-size:10px;color:var(--text3);margin-left:4px" id="filter-count"></span>
+  </div>
+  <div class="chips-row" id="chips-row"></div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-row" id="kpi-row">
+    <div class="kpi-card" id="kc-new25" onclick="toggleDrill('drill-new25','kc-new25')">
+      <div class="kpi-arrow">v</div>
+      <div class="kpi-label">New accounts 2025</div>
+      <div class="kpi-val" id="kv-new25">--</div>
+      <div class="kpi-sub" id="ks-new25">--</div>
+    </div>
+    <div class="kpi-card" id="kc-new26" onclick="toggleDrill('drill-new26','kc-new26')">
+      <div class="kpi-arrow">v</div>
+      <div class="kpi-label">New accounts 2026</div>
+      <div class="kpi-val" id="kv-new26">--</div>
+      <div class="kpi-sub" id="ks-new26">--</div>
+    </div>
+    <div class="kpi-card" id="kc-yoy" onclick="toggleDrill('drill-yoy','kc-yoy')">
+      <div class="kpi-arrow">v</div>
+      <div class="kpi-label">YoY new accts growth</div>
+      <div class="kpi-val" id="kv-yoy">--</div>
+      <div class="kpi-sub">2025 vs 2024 created</div>
+    </div>
+    <div class="kpi-card" id="kc-top24" onclick="toggleDrill('drill-top24','kc-top24')">
+      <div class="kpi-arrow">v</div>
+      <div class="kpi-label">Top customer 2024</div>
+      <div class="kpi-val" id="kv-top24" style="font-size:11px">--</div>
+      <div class="kpi-sub" id="ks-top24">--</div>
+    </div>
+    <div class="kpi-card" id="kc-top25" onclick="toggleDrill('drill-top25','kc-top25')">
+      <div class="kpi-arrow">v</div>
+      <div class="kpi-label">Top customer 2025</div>
+      <div class="kpi-val" id="kv-top25" style="font-size:11px">--</div>
+      <div class="kpi-sub" id="ks-top25">--</div>
+    </div>
+    <div class="kpi-card" id="kc-top26" onclick="toggleDrill('drill-top26','kc-top26')">
+      <div class="kpi-arrow">v</div>
+      <div class="kpi-label">Top customer 2026</div>
+      <div class="kpi-val" id="kv-top26" style="font-size:11px">--</div>
+      <div class="kpi-sub" id="ks-top26">--</div>
+    </div>
+    <div class="kpi-card" id="kc-worst" onclick="toggleDrill('drill-worst','kc-worst')">
+      <div class="kpi-arrow">v</div>
+      <div class="kpi-label">Worst performing</div>
+      <div class="kpi-val" id="kv-worst" style="font-size:11px">--</div>
+      <div class="kpi-sub neg" id="ks-worst">--</div>
+      <div style="display:flex;gap:4px;margin-top:4px">
+        <span class="tbtn on" style="font-size:9px;padding:1px 6px" onclick="event.stopPropagation();setWorstMode('25v24',this)">25v24</span>
+        <span class="tbtn" style="font-size:9px;padding:1px 6px" onclick="event.stopPropagation();setWorstMode('26v25',this)">26v25</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRILL PANELS -->
+  <div class="kpi-drill" id="drill-new25">
+    <div class="drill-header">
+      <div class="drill-title">New accounts 2025 - team breakdown</div>
+      <div class="drill-actions">
+        <div class="drill-date">Created: <input type="date" id="nd25-from" value="2025-01-01" onchange="renderNewAccDrill(25)"> to <input type="date" id="nd25-to" value="2025-12-31" onchange="renderNewAccDrill(25)"></div>
+        <button class="btn-export" onclick="exportDrillTable('drill-new25')">Export</button>
+        <span class="drill-close" onclick="toggleDrill('drill-new25','kc-new25')">close x</span>
+      </div>
+    </div>
+    <div id="drill-new25-body"></div>
+  </div>
+
+  <div class="kpi-drill" id="drill-new26">
+    <div class="drill-header">
+      <div class="drill-title">New accounts 2026 - team breakdown</div>
+      <div class="drill-actions">
+        <div class="drill-date">Created: <input type="date" id="nd26-from" value="2026-01-01" onchange="renderNewAccDrill(26)"> to <input type="date" id="nd26-to" value="2026-12-31" onchange="renderNewAccDrill(26)"></div>
+        <button class="btn-export" onclick="exportDrillTable('drill-new26')">Export</button>
+        <span class="drill-close" onclick="toggleDrill('drill-new26','kc-new26')">close x</span>
+      </div>
+    </div>
+    <div id="drill-new26-body"></div>
+  </div>
+
+  <div class="kpi-drill" id="drill-yoy">
+    <div class="drill-header">
+      <div class="drill-title">YoY new account growth by team</div>
+      <div class="drill-actions"><button class="btn-export" onclick="exportDrillTable('drill-yoy')">Export</button><span class="drill-close" onclick="toggleDrill('drill-yoy','kc-yoy')">close x</span></div>
+    </div>
+    <div id="drill-yoy-body"></div>
+  </div>
+
+  <div class="kpi-drill" id="drill-top24">
+    <div class="drill-header">
+      <div class="drill-title">Top 5 customers - 2024</div>
+      <div class="drill-actions"><button class="btn-export" onclick="exportDrillTable('drill-top24')">Export</button><span class="drill-close" onclick="toggleDrill('drill-top24','kc-top24')">close x</span></div>
+    </div>
+    <div id="drill-top24-body"></div>
+  </div>
+
+  <div class="kpi-drill" id="drill-top25">
+    <div class="drill-header">
+      <div class="drill-title">Top 5 customers - 2025</div>
+      <div class="drill-actions"><button class="btn-export" onclick="exportDrillTable('drill-top25')">Export</button><span class="drill-close" onclick="toggleDrill('drill-top25','kc-top25')">close x</span></div>
+    </div>
+    <div id="drill-top25-body"></div>
+  </div>
+
+  <div class="kpi-drill" id="drill-top26">
+    <div class="drill-header">
+      <div class="drill-title">Top 5 customers - 2026 YTD</div>
+      <div class="drill-actions"><button class="btn-export" onclick="exportDrillTable('drill-top26')">Export</button><span class="drill-close" onclick="toggleDrill('drill-top26','kc-top26')">close x</span></div>
+    </div>
+    <div id="drill-top26-body"></div>
+  </div>
+
+  <div class="kpi-drill" id="drill-worst">
+    <div class="drill-header">
+      <div class="drill-title" id="worst-drill-title">Worst performing accounts</div>
+      <div class="drill-actions"><button class="btn-export" onclick="exportDrillTable('drill-worst')">Export</button><span class="drill-close" onclick="toggleDrill('drill-worst','kc-worst')">close x</span></div>
+    </div>
+    <div id="drill-worst-body"></div>
+  </div>
+
+  <!-- SECTION 1: GAINERS -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">Top 20 gainers</div><div class="section-sub">Accounts with highest growth - click any row to expand</div></div>
+      <button class="btn-export" onclick="exportTable('gainers-tbody','gainers')">Export visible</button>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Rank by:</span>
+      <span class="tbtn on" onclick="setRankMode('gainers','gr2524',this)">GR% 25v24</span>
+      <span class="tbtn" onclick="setRankMode('gainers','gr2625',this)">GR% 26v25</span>
+      <span class="tbtn" onclick="setRankMode('gainers','abs2524',this)">Abs SAR 25v24</span>
+      <span class="tbtn" onclick="setRankMode('gainers','abs2625',this)">Abs SAR 26v25</span>
+      <span style="margin-left:10px;font-size:11px;color:var(--text2)">Valid from:</span>
+      <input type="date" id="vf-from" style="height:26px;font-size:10px;padding:2px 6px;border:1px solid var(--border2);border-radius:var(--radius)" onchange="renderGainersLosers()">
+      <span style="font-size:11px;color:var(--text2)">to</span>
+      <input type="date" id="vf-to" style="height:26px;font-size:10px;padding:2px 6px;border:1px solid var(--border2);border-radius:var(--radius)" onchange="renderGainersLosers()">
+    </div>
+    <div class="tbl-wrap"><div class="tbl-scroll">
+      <table><thead><tr>
+        <th onclick="sortGLTable('gainers','name')">Customer</th>
+        <th onclick="sortGLTable('gainers','size')">Size</th>
+        <th onclick="sortGLTable('gainers','type')">Type</th>
+        <th onclick="sortGLTable('gainers','status')">Status</th>
+        <th class="r" onclick="sortGLTable('gainers','s2022')">2022</th>
+        <th class="r" onclick="sortGLTable('gainers','s2023')">2023</th>
+        <th class="r" onclick="sortGLTable('gainers','s2024')">2024</th>
+        <th class="r" onclick="sortGLTable('gainers','s2025')">2025</th>
+        <th class="r" onclick="sortGLTable('gainers','s2026')">2026 YTD</th>
+        <th class="r" onclick="sortGLTable('gainers','gr')">GR%</th>
+        <th class="r" onclick="sortGLTable('gainers','awd25')">Awd 25</th>
+        <th class="r" onclick="sortGLTable('gainers','awd26')">Awd 26</th>
+        <th class="r" onclick="sortGLTable('gainers','hot')">Hot Pipe</th>
+        <th class="r" onclick="sortGLTable('gainers','bl')">Backlog</th>
+        <th class="r" onclick="sortGLTable('gainers','pipe30')">Non-Hot 30%</th>
+        <th class="r" onclick="sortGLTable('gainers','tender')">Tender 15%</th>
+        <th class="r" onclick="sortGLTable('gainers','lost')">Lost 0%+10%</th>
+      </tr></thead>
+      <tbody id="gainers-tbody"></tbody></table>
+    </div></div>
+  </div>
+
+  <!-- SECTION 2: LOSERS -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">Top 20 losers</div><div class="section-sub">Accounts with highest decline - click any row to expand</div></div>
+      <button class="btn-export" onclick="exportTable('losers-tbody','losers')">Export visible</button>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Rank by:</span>
+      <span class="tbtn on" onclick="setRankMode('losers','gr2524',this)">GR% 25v24</span>
+      <span class="tbtn" onclick="setRankMode('losers','gr2625',this)">GR% 26v25</span>
+      <span class="tbtn" onclick="setRankMode('losers','abs2524',this)">Abs SAR 25v24</span>
+      <span class="tbtn" onclick="setRankMode('losers','abs2625',this)">Abs SAR 26v25</span>
+    </div>
+    <div class="tbl-wrap"><div class="tbl-scroll">
+      <table><thead><tr>
+        <th onclick="sortGLTable('losers','name')">Customer</th>
+        <th onclick="sortGLTable('losers','size')">Size</th>
+        <th onclick="sortGLTable('losers','type')">Type</th>
+        <th onclick="sortGLTable('losers','status')">Status</th>
+        <th class="r" onclick="sortGLTable('losers','s2022')">2022</th>
+        <th class="r" onclick="sortGLTable('losers','s2023')">2023</th>
+        <th class="r" onclick="sortGLTable('losers','s2024')">2024</th>
+        <th class="r" onclick="sortGLTable('losers','s2025')">2025</th>
+        <th class="r" onclick="sortGLTable('losers','s2026')">2026 YTD</th>
+        <th class="r" onclick="sortGLTable('losers','gr')">GR%</th>
+        <th class="r" onclick="sortGLTable('losers','awd25')">Awd 25</th>
+        <th class="r" onclick="sortGLTable('losers','awd26')">Awd 26</th>
+        <th class="r" onclick="sortGLTable('losers','hot')">Hot Pipe</th>
+        <th class="r" onclick="sortGLTable('losers','bl')">Backlog</th>
+        <th class="r" onclick="sortGLTable('losers','pipe30')">Non-Hot 30%</th>
+        <th class="r" onclick="sortGLTable('losers','tender')">Tender 15%</th>
+        <th class="r" onclick="sortGLTable('losers','lost')">Lost 0%+10%</th>
+      </tr></thead>
+      <tbody id="losers-tbody"></tbody></table>
+    </div></div>
+  </div>
+
+  <!-- SECTION 3: RISK MATRIX -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">Account risk matrix</div><div class="section-sub">X = GR% 25v24 | Y = hot pipeline | dot size = 2025 sales | hover for name | click to highlight in tables above</div></div>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Show sizes:</span>
+      <span class="tbtn on" onclick="toggleSizeFilter('A+',this)">A+</span>
+      <span class="tbtn on" onclick="toggleSizeFilter('A',this)">A</span>
+      <span class="tbtn on" onclick="toggleSizeFilter('B',this)">B</span>
+      <span class="tbtn on" onclick="toggleSizeFilter('C',this)">C</span>
+      <span class="tbtn on" onclick="toggleSizeFilter('D',this)">D</span>
+    </div>
+    <div class="scatter-wrap">
+      <div class="scatter-area" id="scatter-area">
+        <div class="axis-line-h"></div>
+        <div class="axis-line-v"></div>
+        <div class="qbox q-recovery">Recovery<br><span style="font-weight:400;font-size:9px">declining + pipeline</span></div>
+        <div class="qbox q-star">Star<br><span style="font-weight:400;font-size:9px">growing + pipeline</span></div>
+        <div class="qbox q-atrisk">At Risk<br><span style="font-weight:400;font-size:9px">declining + no pipeline</span></div>
+        <div class="qbox q-momentum">Momentum<br><span style="font-weight:400;font-size:9px">growing + no pipeline</span></div>
+        <div class="axis-lbl" style="bottom:4px;right:8px">GR% 25v24 +</div>
+        <div class="axis-lbl" style="top:4px;left:8px">Hot pipeline +</div>
+        <div class="dot-tooltip" id="dot-tooltip"></div>
+        <div id="scatter-dots"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: INACTIVE HIGH VALUE -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">Inactive high-value accounts</div><div class="section-sub">Low/zero 2026 sales with strong history - revenue at risk</div></div>
+      <button class="btn-export" onclick="exportTable('inactive-tbody','inactive_hv')">Export visible</button>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Include sizes:</span>
+      <span class="tbtn on" id="sz-aplus" onclick="toggleInactiveSz('A+',this)">A+</span>
+      <span class="tbtn on" id="sz-a" onclick="toggleInactiveSz('A',this)">A</span>
+      <span class="tbtn on" id="sz-b" onclick="toggleInactiveSz('B',this)">B</span>
+      <span class="tbtn on" id="sz-c" onclick="toggleInactiveSz('C',this)">C</span>
+    </div>
+    <div class="tbl-wrap"><div class="tbl-scroll">
+      <table><thead><tr>
+        <th onclick="sortInactive('name')">Customer</th>
+        <th onclick="sortInactive('size')">Size</th>
+        <th class="r" onclick="sortInactive('peak_yr')">Peak year</th>
+        <th class="r" onclick="sortInactive('peak_val')">Peak sales</th>
+        <th class="r" onclick="sortInactive('s2025')">2025</th>
+        <th class="r" onclick="sortInactive('s2026')">2026 YTD</th>
+        <th class="r" onclick="sortInactive('awd26')">Awd 26</th>
+        <th class="r" onclick="sortInactive('hot')">Hot Pipe</th>
+        <th onclick="sortInactive('se')">Current SE</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody id="inactive-tbody"></tbody></table>
+    </div></div>
+  </div>
+
+  <!-- SECTION 5: NEW ACCOUNT RAMP -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">New account ramp</div><div class="section-sub">Monthly cumulative sales - 2025-created accounts vs 2024-created accounts</div></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px">
+      <div style="display:flex;gap:16px;margin-bottom:10px;font-size:10px;color:var(--text2)">
+        <span><span style="display:inline-block;width:20px;height:4px;background:#3b82f6;margin-right:4px;vertical-align:middle;border-radius:2px"></span>2025 cohort</span>
+        <span><span style="display:inline-block;width:20px;height:4px;background:#93c5fd;margin-right:4px;vertical-align:middle;border-radius:2px"></span>2024 cohort</span>
+      </div>
+      <div id="ramp-chart" style="display:flex;align-items:flex-end;gap:3px;height:80px;border-bottom:1px solid var(--border)"></div>
+      <div id="ramp-labels" style="display:flex;gap:3px;margin-top:4px"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: WHITESPACE -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">Whitespace / cross-sell opportunities</div><div class="section-sub">Accounts buying one product group with pipeline in other groups</div></div>
+      <button class="btn-export" onclick="exportTable('ws-tbody','whitespace')">Export visible</button>
+    </div>
+    <div class="tbl-wrap"><div class="tbl-scroll" style="max-height:240px">
+      <table><thead><tr>
+        <th>Customer</th><th>Size</th><th>Buying group</th><th>Pipeline group</th>
+        <th class="r">Pipeline value</th><th>Current SE</th><th>Team</th>
+      </tr></thead>
+      <tbody id="ws-tbody"></tbody></table>
+    </div></div>
+  </div>
+
+  <!-- SECTION 7: TRANSFER IMPACT -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">Transfer impact summary</div><div class="section-sub">Before vs after sales for transferred accounts</div></div>
+      <button class="btn-export" onclick="exportTable('transfer-tbody','transfer_impact')">Export visible</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px" id="transfer-kpis"></div>
+    <div class="tbl-wrap"><div class="tbl-scroll" style="max-height:240px">
+      <table><thead><tr>
+        <th>Route</th><th class="r">Accounts</th>
+        <th class="r">Avg 2024 sales</th><th class="r">Avg 2025 sales</th><th class="r">Avg delta</th>
+      </tr></thead>
+      <tbody id="transfer-tbody"></tbody></table>
+    </div></div>
+  </div>
+</div>
+
+<script>
+var ACCOUNTS=[], ACC_FILTERED=[];
+var GAINSORT={col:'gr',dir:-1}, LOSESORT={col:'gr',dir:1};
+var INACTIVESORT={col:'peak_val',dir:-1};
+var INACTIVE_SIZES=new Set(['A+','A','B','C']);
+var SCATTER_SIZES=new Set(['A+','A','B','C','D']);
+var RANK_GAINERS='gr2524', RANK_LOSERS='gr2524';
+var WORST_MODE='25v24';
+var HIGHLIGHT_CUST=null;
+var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function sar(v){
+  if(v==null||v===0)return '--';
+  var abs=Math.abs(v),s=v<0?'-':'';
+  if(abs>=1e9)return s+(abs/1e9).toFixed(1)+'B';
+  if(abs>=1e6)return s+(abs/1e6).toFixed(1)+'M';
+  if(abs>=1e3)return s+(abs/1e3).toFixed(0)+'K';
+  return s+abs.toFixed(0);
+}
+function pct(v){if(v==null)return '--';return(v>0?'+':'')+v.toFixed(1)+'%';}
+function posNeg(v){return v==null?'dim':v>=0?'pos':'neg';}
+function sizeBadge(t){
+  if(!t)return '';
+  var cls={'A+':'b-aplus','A':'b-a','B':'b-b','C':'b-c','D':'b-d'}[t]||'b-c';
+  return '<span class="badge '+cls+'">'+t+'</span>';
+}
+function statusBadge(s){
+  var map={'Active':'b-active','Inactive':'b-inactive','New':'b-new','Reactivated':'b-react','Active/Potential':'b-pot'};
+  return s?'<span class="badge '+(map[s]||'b-inactive')+'">'+s+'</span>':'';
+}
+function getGR(a, mode){
+  var s25=a.sales&&a.sales['2025']||0;
+  var s24=a.sales&&a.sales['2024']||0;
+  var s26=a.sales&&a.sales['2026']||0;
+  if(mode==='gr2524')return s24>0?(s25-s24)/s24*100:null;
+  if(mode==='gr2625')return s25>0?(s26-s25)/s25*100:null;
+  if(mode==='abs2524')return s25-s24;
+  if(mode==='abs2625')return s26-s25;
+  return null;
+}
+function getPipe30(a){return(a.pipeline_by_year&&((a.pipeline_by_year['2024']||0)+(a.pipeline_by_year['2025']||0)))||0;}
+
+function applyFilters(){
+  var fTeam=document.getElementById('f-team').value;
+  var fSE=document.getElementById('f-se').value;
+  var fSt=document.getElementById('f-status').value;
+  var fSz=document.getElementById('f-size').value;
+  var fTy=document.getElementById('f-type').value;
+  var fGrp=document.getElementById('f-group').value;
+  var fSrch=document.getElementById('f-search').value.toLowerCase();
+  ACC_FILTERED=ACCOUNTS.filter(function(a){
+    if(fTeam&&a.curr_team!==fTeam)return false;
+    if(fSE&&a.curr_se!==fSE)return false;
+    if(fSt&&a.cust_status!==fSt)return false;
+    if(fSz&&a.size_tier!==fSz)return false;
+    if(fTy&&a.description!==fTy)return false;
+    if(fGrp&&a.group_2025!==fGrp&&a.group_2024!==fGrp)return false;
+    if(fSrch&&!a.name.toLowerCase().includes(fSrch))return false;
+    return true;
+  });
+  document.getElementById('filter-count').textContent=ACC_FILTERED.length+' accounts';
+  renderChips();
+  renderKPIs();
+  renderGainersLosers();
+  renderScatter();
+  renderInactive();
+  renderRamp();
+  renderWhitespace();
+  renderTransfer();
+}
+function clearFilters(){
+  ['f-team','f-se','f-status','f-size','f-type','f-group'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('f-search').value='';
+  applyFilters();
+}
+function renderChips(){
+  var chips=[];
+  var fields=[
+    {id:'f-team',l:'Team'},{id:'f-se',l:'SE'},{id:'f-status',l:'Status'},
+    {id:'f-size',l:'Size'},{id:'f-type',l:'Type'},{id:'f-group',l:'Group'},
+    {id:'f-search',l:'Search',isText:true}
+  ];
+  fields.forEach(function(f){
+    var val=document.getElementById(f.id).value;
+    if(val)chips.push('<span class="chip">'+f.l+': '+val+'<span class="chip-x" onclick="clearChipField(''+f.id+'')">x</span></span>');
+  });
+  document.getElementById('chips-row').innerHTML=chips.join('');
+}
+function clearChipField(id){document.getElementById(id).value='';applyFilters();}
+
+function renderKPIs(){
+  // New accts 2025/2026 - use full ACCOUNTS (not filtered by invoice date)
+  var new25=ACCOUNTS.filter(function(a){
+    if(!a.created_on)return false;
+    var yr=parseInt(String(a.created_on).slice(0,4));
+    return yr===2025;
+  });
+  var new26=ACCOUNTS.filter(function(a){
+    if(!a.created_on)return false;
+    var yr=parseInt(String(a.created_on).slice(0,4));
+    return yr===2026;
+  });
+  var new24=ACCOUNTS.filter(function(a){
+    if(!a.created_on)return false;
+    var yr=parseInt(String(a.created_on).slice(0,4));
+    return yr===2024;
+  });
+  // Team with most new accts
+  function topTeam(list){
+    var m={};
+    list.forEach(function(a){m[a.curr_team]=(m[a.curr_team]||0)+1;});
+    var best=Object.entries(m).sort(function(x,y){return y[1]-x[1];})[0];
+    return best?best[0]:'--';
+  }
+  document.getElementById('kv-new25').textContent=new25.length;
+  document.getElementById('ks-new25').textContent='Most: '+topTeam(new25);
+  document.getElementById('kv-new26').textContent=new26.length;
+  document.getElementById('ks-new26').textContent='Most: '+topTeam(new26);
+  var yoyPct=new24.length>0?(new25.length-new24.length)/new24.length*100:null;
+  document.getElementById('kv-yoy').textContent=pct(yoyPct);
+  document.getElementById('kv-yoy').className='kpi-val '+(yoyPct>=0?'pos':'neg');
+
+  // Top customers by year
+  function topCust(yr){
+    return ACC_FILTERED.filter(function(a){return a.sales&&a.sales[String(yr)]>0;})
+      .sort(function(a,b){return(b.sales[String(yr)]||0)-(a.sales[String(yr)]||0);})[0];
+  }
+  var t24=topCust(2024),t25=topCust(2025),t26=topCust(2026);
+  if(t24){
+    document.getElementById('kv-top24').textContent=t24.name.slice(0,22)+(t24.name.length>22?'...':'');
+    var gr24=t24.sales['2024']>0&&t24.sales['2025']?(t24.sales['2025']-t24.sales['2024'])/t24.sales['2024']*100:null;
+    document.getElementById('ks-top24').innerHTML=sar(t24.sales['2024'])+'<br><span class="'+(gr24!=null?posNeg(gr24):'dim')+'">GR% 24v25: '+pct(gr24)+'</span>';
+  }
+  if(t25){
+    document.getElementById('kv-top25').textContent=t25.name.slice(0,22)+(t25.name.length>22?'...':'');
+    var gr25=t25.sales['2025']>0&&t25.sales['2026']?(t25.sales['2026']-t25.sales['2025'])/t25.sales['2025']*100:null;
+    document.getElementById('ks-top25').innerHTML=sar(t25.sales['2025'])+'<br><span class="'+(gr25!=null?posNeg(gr25):'dim')+'">YoY vs 2026: '+pct(gr25)+'</span>';
+  }
+  if(t26){
+    document.getElementById('kv-top26').textContent=t26.name.slice(0,22)+(t26.name.length>22?'...':'');
+    document.getElementById('ks-top26').innerHTML=sar(t26.sales['2026']);
+  }
+  renderWorstKPI();
+
+  // Drill panels
+  renderNewAccDrill(25);
+  renderNewAccDrill(26);
+  renderYoYDrill(new24,new25);
+  renderTopDrill(24);renderTopDrill(25);renderTopDrill(26);
+  renderWorstDrill();
+}
+
+function renderWorstKPI(){
+  var mode=WORST_MODE;
+  var candidates=ACC_FILTERED.filter(function(a){
+    if(mode==='25v24')return a.sales&&a.sales['2024']>0&&a.sales['2025']!=null;
+    return a.sales&&a.sales['2025']>0&&a.sales['2026']!=null;
+  }).map(function(a){
+    var gr=mode==='25v24'?(a.sales['2025']-a.sales['2024'])/a.sales['2024']*100:(a.sales['2026']-a.sales['2025'])/a.sales['2025']*100;
+    return{a:a,gr:gr};
+  }).sort(function(x,y){return x.gr-y.gr;})[0];
+  if(candidates){
+    document.getElementById('kv-worst').textContent=candidates.a.name.slice(0,22)+(candidates.a.name.length>22?'...':'');
+    document.getElementById('ks-worst').textContent=pct(candidates.gr)+' vs '+(mode==='25v24'?'2024':'2025');
+  }
+}
+function setWorstMode(mode,btn){
+  WORST_MODE=mode;
+  btn.parentElement.querySelectorAll('.tbtn').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  renderWorstKPI();
+  renderWorstDrill();
+}
+
+function renderNewAccDrill(yr){
+  var fromEl=document.getElementById('nd'+yr+'-from');
+  var toEl=document.getElementById('nd'+yr+'-to');
+  var fromD=fromEl?fromEl.value:'';
+  var toD=toEl?toEl.value:'';
+  var accs=ACCOUNTS.filter(function(a){
+    if(!a.created_on)return false;
+    var d=String(a.created_on).slice(0,10);
+    if(fromD&&d<fromD)return false;
+    if(toD&&d>toD)return false;
+    return true;
+  });
+  // Group by team
+  var teams={};
+  accs.forEach(function(a){
+    var t=a.curr_team||'Unknown';
+    if(!teams[t])teams[t]={count:0,s25:0,s26:0,conv:0};
+    teams[t].count++;
+    teams[t].s25+=(a.sales&&a.sales['2025'])||0;
+    teams[t].s26+=(a.sales&&a.sales['2026'])||0;
+    if((a.sales&&a.sales['2025']>0)||(a.sales&&a.sales['2026']>0))teams[t].conv++;
+  });
+  var rows=Object.entries(teams).sort(function(x,y){return y[1].count-x[1].count;}).map(function(e){
+    var convPct=e[1].count>0?Math.round(e[1].conv/e[1].count*100)+'%':'--';
+    return'<tr class="clickable" onclick="drillToSE('+yr+',''+e[0]+'')">'
+      +'<td><b>'+e[0]+'</b> <span style="font-size:9px;color:var(--text3)">&#x25B6; SE view</span></td>'
+      +'<td class="r">'+e[1].count+'</td>'
+      +'<td class="r">'+sar(e[1].s25)+'</td>'
+      +'<td class="r">'+sar(e[1].s26)+'</td>'
+      +'<td class="r">'+convPct+'</td>'
+      +'</tr>';
+  }).join('');
+  var html='<table><thead><tr><th onclick="sortNewDrill('+yr+')">Team</th><th class="r">New Accts</th><th class="r">2025 Sales</th><th class="r">2026 YTD</th><th class="r">Converted</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  var el=document.getElementById('drill-new'+yr+'-body');
+  if(el)el.innerHTML=html;
+}
+
+function drillToSE(yr,team){
+  var fromEl=document.getElementById('nd'+yr+'-from');
+  var toEl=document.getElementById('nd'+yr+'-to');
+  var fromD=fromEl?fromEl.value:'';
+  var toD=toEl?toEl.value:'';
+  var accs=ACCOUNTS.filter(function(a){
+    if(!a.created_on)return false;
+    var d=String(a.created_on).slice(0,10);
+    if(fromD&&d<fromD)return false;
+    if(toD&&d>toD)return false;
+    return a.curr_team===team;
+  });
+  var ses={};
+  accs.forEach(function(a){
+    var s=a.curr_se||'Unknown';
+    if(!ses[s])ses[s]={count:0,s25:0,s26:0,conv:0};
+    ses[s].count++;
+    ses[s].s25+=(a.sales&&a.sales['2025'])||0;
+    ses[s].s26+=(a.sales&&a.sales['2026'])||0;
+    if((a.sales&&a.sales['2025']>0)||(a.sales&&a.sales['2026']>0))ses[s].conv++;
+  });
+  var rows=Object.entries(ses).sort(function(x,y){return y[1].count-x[1].count;}).slice(0,5).map(function(e){
+    return'<tr><td>'+e[0]+'</td><td class="r">'+e[1].count+'</td><td class="r">'+sar(e[1].s25)+'</td><td class="r">'+sar(e[1].s26)+'</td><td class="r">'+(e[1].count>0?Math.round(e[1].conv/e[1].count*100)+'%':'--')+'</td></tr>';
+  }).join('');
+  var html='<div class="drill-back" onclick="renderNewAccDrill('+yr+')">&#x25C4; Back to teams</div>'
+    +'<div style="font-size:11px;font-weight:500;margin-bottom:6px">SE breakdown - '+team+'</div>'
+    +'<table><thead><tr><th>SE</th><th class="r">New Accts</th><th class="r">2025 Sales</th><th class="r">2026 YTD</th><th class="r">Converted</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  var el=document.getElementById('drill-new'+yr+'-body');
+  if(el)el.innerHTML=html;
+}
+
+function renderYoYDrill(new24,new25){
+  var teams25={},teams24={};
+  new25.forEach(function(a){var t=a.curr_team||'?';teams25[t]=(teams25[t]||0)+1;});
+  new24.forEach(function(a){var t=a.curr_team||'?';teams24[t]=(teams24[t]||0)+1;});
+  var all=new Set(Object.keys(teams25).concat(Object.keys(teams24)));
+  var rows=[...all].map(function(t){
+    var c24=teams24[t]||0,c25=teams25[t]||0;
+    var gr=c24>0?(c25-c24)/c24*100:null;
+    var s25=new25.filter(function(a){return a.curr_team===t;}).reduce(function(s,a){return s+(a.sales&&a.sales['2025']||0);},0);
+    return{t:t,c24:c24,c25:c25,gr:gr,s25:s25};
+  }).sort(function(a,b){return b.c25-a.c25;});
+  var html='<table><thead><tr><th>Team</th><th class="r">New 2024</th><th class="r">New 2025</th><th class="r">YoY%</th><th class="r">2025 Sales from new accts</th></tr></thead><tbody>'
+    +rows.map(function(r){return'<tr><td>'+r.t+'</td><td class="r">'+r.c24+'</td><td class="r">'+r.c25+'</td><td class="r '+(r.gr!=null?posNeg(r.gr):'dim')+'">'+pct(r.gr)+'</td><td class="r">'+sar(r.s25)+'</td></tr>';}).join('')
+    +'</tbody></table>';
+  var el=document.getElementById('drill-yoy-body');
+  if(el)el.innerHTML=html;
+}
+
+function renderTopDrill(yr){
+  var top5=ACC_FILTERED.filter(function(a){return a.sales&&a.sales[String(yr)]>0;})
+    .sort(function(a,b){return(b.sales[String(yr)]||0)-(a.sales[String(yr)]||0);}).slice(0,5);
+  var rows=top5.map(function(a){
+    var s=a.sales[String(yr)]||0;
+    var prev=yr===2024?a.sales['2025']:yr===2025?a.sales['2026']:null;
+    var base=yr===2024?a.sales['2024']:a.sales['2025'];
+    var gr=base>0&&prev!=null?(prev-base)/base*100:null;
+    var grLabel=yr===2024?'GR% 24v25':yr===2025?'YoY vs 2026':'QoQ%';
+    return'<tr><td style="font-weight:500">'+a.name+'</td><td>'+sizeBadge(a.size_tier)+'</td>'
+      +'<td class="r">'+sar(s)+'</td>'
+      +'<td class="r '+(gr!=null?posNeg(gr):'dim')+'">'+grLabel+': '+pct(gr)+'</td></tr>';
+  }).join('');
+  var el=document.getElementById('drill-top'+yr+'-body');
+  if(el)el.innerHTML='<table><thead><tr><th>Customer</th><th>Size</th><th class="r">'+yr+' Sales</th><th class="r">Growth</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function renderWorstDrill(){
+  var mode=WORST_MODE;
+  document.getElementById('worst-drill-title').textContent='Worst performing accounts ('+mode+')';
+  var bottom5=ACC_FILTERED.filter(function(a){
+    if(mode==='25v24')return a.sales&&a.sales['2024']>0;
+    return a.sales&&a.sales['2025']>0;
+  }).map(function(a){
+    var gr=mode==='25v24'?(a.sales['2025']||0-a.sales['2024'])/a.sales['2024']*100:((a.sales['2026']||0)-a.sales['2025'])/a.sales['2025']*100;
+    return{a:a,gr:gr};
+  }).sort(function(x,y){return x.gr-y.gr;}).slice(0,5);
+  var el=document.getElementById('drill-worst-body');
+  if(el)el.innerHTML='<table><thead><tr><th>Customer</th><th>Size</th><th class="r">2024</th><th class="r">2025</th><th class="r">2026</th><th class="r">Decline%</th></tr></thead><tbody>'
+    +bottom5.map(function(r){return'<tr><td style="font-weight:500">'+r.a.name+'</td><td>'+sizeBadge(r.a.size_tier)+'</td>'
+      +'<td class="r">'+sar(r.a.sales&&r.a.sales['2024'])+'</td>'
+      +'<td class="r">'+sar(r.a.sales&&r.a.sales['2025'])+'</td>'
+      +'<td class="r">'+sar(r.a.sales&&r.a.sales['2026'])+'</td>'
+      +'<td class="r neg">'+pct(r.gr)+'</td></tr>';}).join('')
+    +'</tbody></table>';
+}
+
+function toggleDrill(id,kcId){
+  var el=document.getElementById(id);
+  var wasOpen=el.classList.contains('open');
+  document.querySelectorAll('.kpi-drill').forEach(function(d){d.classList.remove('open');});
+  document.querySelectorAll('.kpi-card').forEach(function(c){c.classList.remove('kc-active');});
+  if(!wasOpen){el.classList.add('open');if(kcId)document.getElementById(kcId).classList.add('kc-active');}
+}
+
+function glSortVal(a,col,mode){
+  var gr=getGR(a,mode);
+  if(col==='gr')return gr!=null?gr:-999;
+  if(col==='name')return a.name||'';
+  if(col==='size')return a.size_tier||'';
+  if(col==='type')return a.description||'';
+  if(col==='status')return a.cust_status||'';
+  if(col==='s2022')return a.sales&&a.sales['2022']||0;
+  if(col==='s2023')return a.sales&&a.sales['2023']||0;
+  if(col==='s2024')return a.sales&&a.sales['2024']||0;
+  if(col==='s2025')return a.sales&&a.sales['2025']||0;
+  if(col==='s2026')return a.sales&&a.sales['2026']||0;
+  if(col==='awd25')return(a.award_by_year&&a.award_by_year['2025'])||0;
+  if(col==='awd26')return(a.award_by_year&&a.award_by_year['2026'])||0;
+  if(col==='hot')return a.hot_pipeline||0;
+  if(col==='bl')return a.backlog||0;
+  if(col==='pipe30')return getPipe30(a);
+  return 0;
+}
+
+function renderGainersLosers(){
+  var vfFrom=document.getElementById('vf-from').value;
+  var vfTo=document.getElementById('vf-to').value;
+  var ranked=ACC_FILTERED.filter(function(a){
+    var mode=RANK_GAINERS;
+    if(mode==='gr2524'||mode==='abs2524')return a.sales&&a.sales['2024']>0;
+    return a.sales&&a.sales['2025']>0;
+  }).map(function(a){
+    var gr=getGR(a,RANK_GAINERS);
+    var pipe30=0,tender=0,lost=0;
+    (a.projects||[]).forEach(function(p){
+      var vf=p.valid_from||'';
+      if(vfFrom&&vf<vfFrom)return;
+      if(vfTo&&vf>vfTo)return;
+      var prob=p.probability||'';
+      var v=p.q_gross_value||0;
+      if(prob.startsWith('30%'))pipe30+=v;
+      else if(prob.startsWith('15%'))tender+=v;
+      else if(prob.startsWith('0%')||prob.startsWith('10%'))lost+=v;
+    });
+    return{a:a,gr:gr,pipe30:pipe30,tender:tender,lost:lost};
+  });
+  var gainers=ranked.filter(function(x){return x.gr!=null&&x.gr>0;}).sort(function(x,y){return y.gr-x.gr;}).slice(0,20);
+  var losers=ranked.filter(function(x){return x.gr!=null&&x.gr<0;}).sort(function(x,y){return x.gr-y.gr;}).slice(0,20);
+  function renderRows(list,tbodyId){
+    document.getElementById(tbodyId).innerHTML=list.map(function(r){
+      var a=r.a;
+      var awd25=(a.award_by_year&&a.award_by_year['2025'])||0;
+      var awd26=(a.award_by_year&&a.award_by_year['2026'])||0;
+      var isHl=HIGHLIGHT_CUST===a.customer;
+      return'<tr class="clickable'+(isHl?' row-expanded':'')+'" onclick="toggleGLExpand(this,''+a.customer+'')">'
+        +'<td style="font-weight:500">'+a.name+'</td>'
+        +'<td>'+sizeBadge(a.size_tier)+'</td>'
+        +'<td style="font-size:10px;color:var(--text2)">'+a.description+'</td>'
+        +''+statusBadge(a.cust_status)+'</td>'
+        +'<td class="r '+(a.sales&&a.sales['2022']?'':'dim')+'">'+sar(a.sales&&a.sales['2022'])+'</td>'
+        +'<td class="r '+(a.sales&&a.sales['2023']?'':'dim')+'">'+sar(a.sales&&a.sales['2023'])+'</td>'
+        +'<td class="r '+(a.sales&&a.sales['2024']?'':'dim')+'">'+sar(a.sales&&a.sales['2024'])+'</td>'
+        +'<td class="r '+(a.sales&&a.sales['2025']?'':'dim')+'">'+sar(a.sales&&a.sales['2025'])+'</td>'
+        +'<td class="r dim">'+sar(a.sales&&a.sales['2026'])+'</td>'
+        +'<td class="r '+(r.gr!=null?posNeg(r.gr):'dim')+'">'+pct(r.gr)+'</td>'
+        +'<td class="r">'+sar(awd25)+'</td>'
+        +'<td class="r">'+sar(awd26)+'</td>'
+        +'<td class="r">'+sar(a.hot_pipeline)+'</td>'
+        +'<td class="r">'+sar(a.backlog)+'</td>'
+        +'<td class="r dim">'+sar(r.pipe30)+'</td>'
+        +'<td class="r dim">'+sar(r.tender)+'</td>'
+        +'<td class="r dim">'+sar(r.lost)+'</td>'
+        +'</tr>'
+        +'<tr class="expand-row" style="display:none"><td colspan="17">'+renderGLExpand(a)+'</td></tr>';
+    }).join('');
+  }
+  renderRows(gainers,'gainers-tbody');
+  renderRows(losers,'losers-tbody');
+}
+
+function renderGLExpand(a){
+  var seRows=(a.se_history||[]).map(function(s){
+    return'<tr><td style="font-size:10px">'+s.se_name+'</td>'
+      +[2022,2023,2024,2025,2026].map(function(yr){return'<td class="r" style="font-size:10px">'+(s.yr_sales&&s.yr_sales[yr]?sar(s.yr_sales[yr]):'--')+'</td>';}).join('')
+      +'<td class="r" style="font-size:10px">'+s.contrib_pct+'%</td></tr>';
+  }).join('');
+  var maxS=Math.max.apply(null,[2022,2023,2024,2025,2026].map(function(yr){return a.sales&&a.sales[String(yr)]||0;}))||1;
+  var trendBars=[2022,2023,2024,2025,2026].map(function(yr){
+    var v=a.sales&&a.sales[String(yr)]||0;
+    var h=Math.round(v/maxS*100);
+    var col=yr===2026?'#f59e0b':'#3b82f6';
+    return'<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">'
+      +'<div style="width:100%;height:'+h+'%;background:'+col+';border-radius:2px 2px 0 0;min-height:'+(v>0?'3':'0')+'px"></div>'
+      +'<div class="trend-lbl">'+yr+'</div></div>';
+  }).join('');
+  return'<div class="expand-inner">'
+    +'<div class="expand-panel"><div class="expand-panel-title">Sales by salesman</div>'
+    +'<table><thead><tr><th>SE</th><th class="r">2022</th><th class="r">2023</th><th class="r">2024</th><th class="r">2025</th><th class="r">2026</th><th class="r">%</th></tr></thead><tbody>'+seRows+'</tbody></table></div>'
+    +'<div class="expand-panel"><div class="expand-panel-title">Account owner history</div>'
+    +'<table><thead><tr><th>SE</th><th>Team</th><th>Type</th></tr></thead><tbody>'
+    +'<tr><td style="font-size:10px">'+a.curr_se+'</td><td style="font-size:10px">'+a.curr_team+'</td><td><span class="badge b-active">Current</span></td></tr>'
+    +(a.old_se?'<tr><td style="font-size:10px;color:var(--text3)">'+a.old_se+'</td><td style="font-size:10px;color:var(--text3)">'+a.old_team+'</td><td><span class="badge b-inactive">Previous</span></td></tr>':'')
+    +'</tbody></table></div>'
+    +'<div class="expand-panel"><div class="expand-panel-title">Sales trend</div>'
+    +'<div class="trend-bars" style="height:60px;border-bottom:1px solid var(--border)">'+trendBars+'</div></div>'
+    +'</div>';
+}
+
+function toggleGLExpand(tr,cust){
+  var next=tr.nextElementSibling;
+  if(!next||!next.classList.contains('expand-row'))return;
+  var isOpen=next.style.display==='table-row';
+  // close all
+  document.querySelectorAll('.expand-row').forEach(function(r){r.style.display='none';});
+  document.querySelectorAll('tr.clickable').forEach(function(r){r.classList.remove('row-expanded');});
+  if(!isOpen){next.style.display='table-row';tr.classList.add('row-expanded');HIGHLIGHT_CUST=cust;}
+  else{HIGHLIGHT_CUST=null;}
+  renderScatter();
+}
+
+function sortGLTable(which,col){
+  if(which==='gainers'){GAINSORT=GAINSORT.col===col?{col:col,dir:GAINSORT.dir*-1}:{col:col,dir:-1};}
+  else{LOSESORT=LOSESORT.col===col?{col:col,dir:LOSESORT.dir*-1}:{col:col,dir:-1};}
+  renderGainersLosers();
+}
+function setRankMode(which,mode,btn){
+  if(which==='gainers')RANK_GAINERS=mode;
+  else RANK_LOSERS=mode;
+  btn.parentElement.querySelectorAll('.tbtn').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  renderGainersLosers();
+}
+
+function renderScatter(){
+  var area=document.getElementById('scatter-area');
+  var W=area.offsetWidth||600,H=area.offsetHeight||300;
+  var accs=ACC_FILTERED.filter(function(a){
+    return SCATTER_SIZES.has(a.size_tier)&&a.sales&&a.sales['2024']>0;
+  });
+  if(!accs.length){document.getElementById('scatter-dots').innerHTML='';return;}
+  var grs=accs.map(function(a){return a.sales['2024']>0?(a.sales['2025']||0-a.sales['2024'])/a.sales['2024']*100:0;});
+  var pipes=accs.map(function(a){return a.hot_pipeline||0;});
+  var s25s=accs.map(function(a){return a.sales&&a.sales['2025']||0;});
+  var minGR=Math.min.apply(null,grs),maxGR=Math.max.apply(null,grs);
+  var maxPipe=Math.max.apply(null,pipes)||1;
+  var maxS25=Math.max.apply(null,s25s)||1;
+  var rangeGR=maxGR-minGR||1;
+  var pad=30;
+  var dots=accs.map(function(a,i){
+    var gr=grs[i],pipe=pipes[i],s25=s25s[i];
+    var x=pad+(gr-minGR)/rangeGR*(W-pad*2);
+    var y=(H-pad)-(pipe/maxPipe)*(H-pad*2);
+    var sz=Math.max(6,Math.min(24,Math.round(s25/maxS25*20)+5));
+    var col=gr>=0&&pipe>0?'#22c55e':gr<0&&pipe>0?'#f59e0b':gr>=0?'#3b82f6':'#ef4444';
+    var isSel=HIGHLIGHT_CUST===a.customer;
+    return'<div class="dot'+(isSel?' dot-sel':'')+'" style="width:'+sz+'px;height:'+sz+'px;background:'+col+';left:'+(x-sz/2)+'px;top:'+(y-sz/2)+'px" '
+      +'onmouseenter="showDotTip(event,''+a.name.replace(/'/g,'')+'',' +gr.toFixed(1)+','+pipe+')" '
+      +'onmouseleave="hideDotTip()" '
+      +'onclick="highlightFromDot(''+a.customer+'')"></div>';
+  }).join('');
+  document.getElementById('scatter-dots').innerHTML=dots;
+}
+
+function showDotTip(e,name,gr,pipe){
+  var tip=document.getElementById('dot-tooltip');
+  tip.textContent=name+' | GR: '+gr.toFixed(1)+'% | Pipe: '+sar(pipe);
+  tip.style.display='block';
+  tip.style.left=(e.offsetX+10)+'px';
+  tip.style.top=(e.offsetY-30)+'px';
+}
+function hideDotTip(){document.getElementById('dot-tooltip').style.display='none';}
+function highlightFromDot(cust){
+  HIGHLIGHT_CUST=HIGHLIGHT_CUST===cust?null:cust;
+  renderScatter();
+  // scroll to gainers table
+  document.querySelector('.section').scrollIntoView({behavior:'smooth'});
+}
+function toggleSizeFilter(sz,btn){
+  btn.classList.toggle('on');
+  if(SCATTER_SIZES.has(sz))SCATTER_SIZES.delete(sz);else SCATTER_SIZES.add(sz);
+  renderScatter();
+}
+
+function renderInactive(){
+  var sizes=INACTIVE_SIZES;
+  var accs=ACC_FILTERED.filter(function(a){
+    return sizes.has(a.size_tier)&&(a.sales['2026']||0)<100000;
+  });
+  var peak=function(a){
+    var best={yr:null,v:0};
+    [2022,2023,2024,2025].forEach(function(yr){var v=a.sales&&a.sales[String(yr)]||0;if(v>best.v){best={yr:yr,v:v};}});
+    return best;
+  };
+  var col=INACTIVESORT.col,dir=INACTIVESORT.dir;
+  accs=accs.slice().sort(function(x,y){
+    var pa=peak(x),pb=peak(y);
+    if(col==='name')return dir*(x.name||'').localeCompare(y.name||'');
+    if(col==='size')return dir*(x.size_tier||'').localeCompare(y.size_tier||'');
+    if(col==='peak_yr')return dir*((pa.yr||0)-(pb.yr||0));
+    if(col==='peak_val')return dir*(pa.v-pb.v);
+    if(col==='s2025')return dir*((x.sales&&x.sales['2025']||0)-(y.sales&&y.sales['2025']||0));
+    if(col==='s2026')return dir*((x.sales&&x.sales['2026']||0)-(y.sales&&y.sales['2026']||0));
+    if(col==='awd26')return dir*(((x.award_by_year&&x.award_by_year['2026'])||0)-((y.award_by_year&&y.award_by_year['2026'])||0));
+    if(col==='hot')return dir*((x.hot_pipeline||0)-(y.hot_pipeline||0));
+    if(col==='se')return dir*(x.curr_se||'').localeCompare(y.curr_se||'');
+    return 0;
+  });
+  document.getElementById('inactive-tbody').innerHTML=accs.slice(0,50).map(function(a){
+    var p=peak(a);
+    var awd26=(a.award_by_year&&a.award_by_year['2026'])||0;
+    return'<tr><td style="font-weight:500">'+a.name+'</td>'
+      +'<td>'+sizeBadge(a.size_tier)+'</td>'
+      +'<td class="r">'+p.yr+'</td>'
+      +'<td class="r">'+sar(p.v)+'</td>'
+      +'<td class="r '+(a.sales&&a.sales['2025']?'':'dim')+'">'+sar(a.sales&&a.sales['2025'])+'</td>'
+      +'<td class="r dim">'+sar(a.sales&&a.sales['2026'])+'</td>'
+      +'<td class="r">'+sar(awd26)+'</td>'
+      +'<td class="r">'+sar(a.hot_pipeline)+'</td>'
+      +'<td style="font-size:10px;color:var(--text2)">'+a.curr_se+'</td>'
+      +'<td>'+statusBadge(a.cust_status)+'</td></tr>';
+  }).join('');
+}
+function toggleInactiveSz(sz,btn){
+  btn.classList.toggle('on');
+  if(INACTIVE_SIZES.has(sz))INACTIVE_SIZES.delete(sz);else INACTIVE_SIZES.add(sz);
+  renderInactive();
+}
+function sortInactive(col){
+  INACTIVESORT=INACTIVESORT.col===col?{col:col,dir:INACTIVESORT.dir*-1}:{col:col,dir:-1};
+  renderInactive();
+}
+
+function renderRamp(){
+  var accs24=ACCOUNTS.filter(function(a){return a.created_on&&String(a.created_on).startsWith('2024');});
+  var accs25=ACCOUNTS.filter(function(a){return a.created_on&&String(a.created_on).startsWith('2025');});
+  var monthly24=[],monthly25=[];
+  for(var m=1;m<=12;m++){
+    var s24=0,s25=0;
+    accs24.forEach(function(a){s24+=(a.sales&&a.sales['2024']&&(a.sales['2024']/12))||0;});
+    accs25.forEach(function(a){s25+=(a.sales&&a.sales['2025']&&(a.sales['2025']/12))||0;});
+    monthly24.push(s24);monthly25.push(s25);
+  }
+  var maxV=Math.max.apply(null,monthly24.concat(monthly25))||1;
+  var chart=MONTHS.map(function(ml,i){
+    var h24=Math.round(monthly24[i]/maxV*100);
+    var h25=Math.round(monthly25[i]/maxV*100);
+    return'<div style="flex:1;display:flex;gap:2px;align-items:flex-end;height:100%">'
+      +'<div style="flex:1;height:'+h24+'%;background:#93c5fd;border-radius:2px 2px 0 0;min-height:2px"></div>'
+      +'<div style="flex:1;height:'+h25+'%;background:#3b82f6;border-radius:2px 2px 0 0;min-height:2px"></div>'
+      +'</div>';
+  }).join('');
+  var labels=MONTHS.map(function(ml){return'<div style="flex:1;font-size:9px;color:var(--text3);text-align:center">'+ml+'</div>';}).join('');
+  document.getElementById('ramp-chart').innerHTML=chart;
+  document.getElementById('ramp-labels').innerHTML=labels;
+}
+
+function renderWhitespace(){
+  var ws=[];
+  ACC_FILTERED.forEach(function(a){
+    var buyGrp=a.group_2025||a.group_2024;
+    if(!buyGrp)return;
+    (a.projects||[]).forEach(function(p){
+      if(p.group&&p.group!==buyGrp&&(p.is_hot||p.is_award)&&p.q_gross_value>0){
+        ws.push({a:a,buyGrp:buyGrp,pipeGrp:p.group,pipeVal:p.q_gross_value});
+      }
+    });
+  });
+  var seen={};var uniq=ws.filter(function(x){var k=x.a.customer+x.pipeGrp;if(seen[k])return false;seen[k]=1;return true;});
+  uniq.sort(function(x,y){return y.pipeVal-x.pipeVal;});
+  document.getElementById('ws-tbody').innerHTML=uniq.slice(0,30).map(function(x){
+    return'<tr><td style="font-weight:500">'+x.a.name+'</td><td>'+sizeBadge(x.a.size_tier)+'</td>'
+      +'<td>'+x.buyGrp+'</td><td style="color:var(--accent)">'+x.pipeGrp+'</td>'
+      +'<td class="r">'+sar(x.pipeVal)+'</td>'
+      +'<td style="font-size:10px;color:var(--text2)">'+x.a.curr_se+'</td>'
+      +'<td style="font-size:10px;color:var(--text2)">'+x.a.curr_team+'</td></tr>';
+  }).join('');
+}
+
+function renderTransfer(){
+  var inter=ACC_FILTERED.filter(function(a){return a.transfer_type==='inter';});
+  var intra=ACC_FILTERED.filter(function(a){return a.transfer_type==='intra';});
+  var allT=inter.concat(intra);
+  var improved=allT.filter(function(a){return a.sales&&a.sales['2024']&&a.sales['2025']&&a.sales['2025']>a.sales['2024'];});
+  var withBoth=allT.filter(function(a){return a.sales&&a.sales['2024']>0&&a.sales['2025']!=null;});
+  var avgChg=withBoth.length?withBoth.reduce(function(s,a){return s+(a.sales['2025']-a.sales['2024'])/a.sales['2024'];},0)/withBoth.length*100:null;
+  var aplus=allT.filter(function(a){return a.size_tier==='A+'&&a.cust_status==='Inactive';});
+  document.getElementById('transfer-kpis').innerHTML=[
+    {l:'Transferred accounts',v:allT.length,s:'inter + intra',sc:''},
+    {l:'Avg sales change',v:pct(avgChg),s:'2025 vs 2024',sc:avgChg>=0?'pos':'neg'},
+    {l:'Accounts improved',v:improved.length,s:allT.length?Math.round(improved.length/allT.length*100)+'% of total':'--',sc:'pos'},
+    {l:'A+ accounts lost',v:aplus.length,s:'now inactive',sc:'neg'},
+  ].map(function(k){return'<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px"><div style="font-size:10px;color:var(--text2)">'+k.l+'</div><div style="font-size:18px;font-weight:600" class="'+k.sc+'">'+k.v+'</div><div style="font-size:10px;color:var(--text2)">'+k.s+'</div></div>';}).join('');
+  var routeMap={};
+  inter.forEach(function(a){
+    var key=(a.old_team||'?')+' to '+(a.curr_team||'?');
+    if(!routeMap[key])routeMap[key]={count:0,s24:[],s25:[]};
+    routeMap[key].count++;
+    if(a.sales&&a.sales['2024'])routeMap[key].s24.push(a.sales['2024']);
+    if(a.sales&&a.sales['2025'])routeMap[key].s25.push(a.sales['2025']);
+  });
+  var routes=Object.entries(routeMap).sort(function(a,b){return b[1].count-a[1].count;});
+  document.getElementById('transfer-tbody').innerHTML=routes.slice(0,8).map(function(e){
+    var avg24=e[1].s24.length?e[1].s24.reduce(function(a,b){return a+b;},0)/e[1].s24.length:0;
+    var avg25=e[1].s25.length?e[1].s25.reduce(function(a,b){return a+b;},0)/e[1].s25.length:0;
+    var delta=avg24>0?(avg25-avg24)/avg24*100:null;
+    return'<tr><td>'+e[0]+'</td><td class="r">'+e[1].count+'</td><td class="r">'+sar(avg24)+'</td><td class="r">'+sar(avg25)+'</td><td class="r '+(delta!=null?posNeg(delta):'dim')+'">'+pct(delta)+'</td></tr>';
+  }).join('');
+}
+
+function exportTable(tbodyId,filename){
+  var tbody=document.getElementById(tbodyId);
+  if(!tbody)return;
+  var thead=tbody.closest('table').querySelector('thead');
+  var rows=[];
+  if(thead){
+    var hrow=[];
+    thead.querySelectorAll('th').forEach(function(th){hrow.push(th.textContent.trim().replace(/[v^]/g,''));});
+    rows.push(hrow);
+  }
+  tbody.querySelectorAll('tr').forEach(function(tr){
+    if(tr.classList.contains('expand-row')||tr.style.display==='none')return;
+    var row=[];
+    tr.querySelectorAll('td').forEach(function(td){row.push(td.textContent.trim());});
+    if(row.length)rows.push(row);
+  });
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Data');
+  XLSX.writeFile(wb,filename+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+function exportDrillTable(drillId){
+  var drill=document.getElementById(drillId);
+  if(!drill)return;
+  var tbody=drill.querySelector('tbody');
+  if(tbody)exportTable(tbody.id||'drill',drillId.replace('drill-',''));
+}
+
+function populateFilters(){
+  var teams=[...new Set(ACCOUNTS.map(function(a){return a.curr_team;}).filter(Boolean))].sort();
+  var ses=[...new Set(ACCOUNTS.map(function(a){return a.curr_se;}).filter(Boolean))].sort();
+  var tSel=document.getElementById('f-team'),sSel=document.getElementById('f-se');
+  teams.forEach(function(t){var o=document.createElement('option');o.value=t;o.text=t;tSel.appendChild(o);});
+  ses.forEach(function(s){var o=document.createElement('option');o.value=s;o.text=s;sSel.appendChild(o);});
+}
+
+function loadAll(){
+  document.getElementById('last-updated').textContent='Loading...';
+  fetch('data/asap_accounts.json').then(function(r){return r.json();}).then(function(data){
+    ACCOUNTS=data;
+    ACC_FILTERED=data.slice();
+    document.getElementById('last-updated').textContent='Generated: '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    populateFilters();
+    applyFilters();
+  }).catch(function(err){
+    document.getElementById('last-updated').textContent='ERROR: '+err.message;
+  });
+}
+loadAll();
+</script>
+</body>
+</html>
