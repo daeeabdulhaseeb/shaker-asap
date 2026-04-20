@@ -559,7 +559,7 @@ function renderChips(){
   ];
   fields.forEach(function(f){
     var val=document.getElementById(f.id).value;
-    if(val)chips.push('<span class="chip">'+f.l+': '+val+'<span class="chip-x" onclick="clearChipField(''+f.id+'')">x</span></span>');
+    if(val)chips.push('<span class="chip">'+f.l+': '+val+'<span class="chip-x" onclick="clearChipField(&quot;'+f.id+'&quot;)">x</span></span>');
   });
   document.getElementById('chips-row').innerHTML=chips.join('');
 }
@@ -673,7 +673,7 @@ function renderNewAccDrill(yr){
   });
   var rows=Object.entries(teams).sort(function(x,y){return y[1].count-x[1].count;}).map(function(e){
     var convPct=e[1].count>0?Math.round(e[1].conv/e[1].count*100)+'%':'--';
-    return'<tr class="clickable" onclick="drillToSE('+yr+',''+e[0]+'')">'
+    return'<tr class="clickable" onclick="drillToSE('+yr+',&quot;'+e[0]+'&quot;)">'
       +'<td><b>'+e[0]+'</b> <span style="font-size:9px;color:var(--text3)">&#x25B6; SE view</span></td>'
       +'<td class="r">'+e[1].count+'</td>'
       +'<td class="r">'+sar(e[1].s25)+'</td>'
@@ -830,7 +830,7 @@ function renderGainersLosers(){
       var awd25=(a.award_by_year&&a.award_by_year['2025'])||0;
       var awd26=(a.award_by_year&&a.award_by_year['2026'])||0;
       var isHl=HIGHLIGHT_CUST===a.customer;
-      return'<tr class="clickable'+(isHl?' row-expanded':'')+'" onclick="toggleGLExpand(this,''+a.customer+'')">'
+      return'<tr class="clickable'+(isHl?' row-expanded':'')+'" onclick="toggleGLExpand(this,&quot;'+a.customer+'&quot;)">'
         +'<td style="font-weight:500">'+a.name+'</td>'
         +'<td>'+sizeBadge(a.size_tier)+'</td>'
         +'<td style="font-size:10px;color:var(--text2)">'+a.description+'</td>'
@@ -932,9 +932,9 @@ function renderScatter(){
     var col=gr>=0&&pipe>0?'#22c55e':gr<0&&pipe>0?'#f59e0b':gr>=0?'#3b82f6':'#ef4444';
     var isSel=HIGHLIGHT_CUST===a.customer;
     return'<div class="dot'+(isSel?' dot-sel':'')+'" style="width:'+sz+'px;height:'+sz+'px;background:'+col+';left:'+(x-sz/2)+'px;top:'+(y-sz/2)+'px" '
-      +'onmouseenter="showDotTip(event,''+a.name.replace(/'/g,'')+'',' +gr.toFixed(1)+','+pipe+')" '
+      +'onmouseenter="showDotTip(event,&quot;'+a.name.replace(/&quot;/g,'')+'&quot;,' +gr.toFixed(1)+','+pipe+')" '
       +'onmouseleave="hideDotTip()" '
-      +'onclick="highlightFromDot(''+a.customer+'')"></div>';
+      +'onclick="highlightFromDot(&quot;'+a.customer+'&quot;)"></div>';
   }).join('');
   document.getElementById('scatter-dots').innerHTML=dots;
 }
