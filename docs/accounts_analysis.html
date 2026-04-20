@@ -968,11 +968,16 @@ function highlightFromDot(cust){
   var kpiHtml=kpis.map(function(k){return '<div style="background:var(--surface2);border-radius:var(--radius);padding:8px 10px"><div style="font-size:10px;color:var(--text2)">'+k[0]+'</div><div style="font-size:12px;font-weight:500" class="'+k[2]+'">'+k[1]+'</div></div>';}).join('');
   var metHtml=metrics.map(function(k){return '<div style="background:var(--surface2);border-radius:var(--radius);padding:8px 10px"><div style="font-size:10px;color:var(--text2)">'+k[0]+'</div><div style="font-size:12px;font-weight:500">'+k[1]+'</div></div>';}).join('');
   panel.style.display='block';
-  panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:12px;font-weight:600">'+a.name+'</div><span class="drill-close" onclick="HIGHLIGHT_CUST=null;renderScatter();document.getElementById('dot-panel').style.display='none'">close x</span></div>'
+  panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:12px;font-weight:600">'+a.name+'</div><span class="drill-close" onclick="closeDotPanel()">close x</span></div>'
     +'<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:8px">'+kpiHtml+'</div>'
     +'<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">'+metHtml+'</div>';
 }
 
+function closeDotPanel(){
+  HIGHLIGHT_CUST=null;
+  renderScatter();
+  document.getElementById('dot-panel').style.display='none';
+}
 function toggleSizeFilter(sz,btn){
   btn.classList.toggle('on');
   if(SCATTER_SIZES.has(sz))SCATTER_SIZES.delete(sz);else SCATTER_SIZES.add(sz);
