@@ -194,7 +194,7 @@ tr.row-expanded td{background:var(--accent-light)!important}
       <div class="kpi-arrow">v</div>
       <div class="kpi-label">YoY new accts growth</div>
       <div class="kpi-val" id="kv-yoy">--</div>
-      <div class="kpi-sub">2025 vs 2024 created</div>
+      <div class="kpi-sub" id="yoy-sub">2025 vs 2024 created</div>
     </div>
     <div class="kpi-card" id="kc-top24" onclick="toggleDrill('drill-top24','kc-top24')">
       <div class="kpi-arrow">v</div>
@@ -590,6 +590,8 @@ function renderKPIs(){
   document.getElementById('kv-new26').textContent=new26.length;
   document.getElementById('ks-new26').textContent='Most: '+topTeam(new26);
   var yoyPct=new24.length>0?(new25.length-new24.length)/new24.length*100:null;
+  // Also compute 2025 vs 2026 comparison
+  var yoy2526=new25.length>0?(new26.length-new25.length)/new25.length*100:null;
   document.getElementById('kv-yoy').textContent=pct(yoyPct);
   document.getElementById('kv-yoy').className='kpi-val '+(yoyPct>=0?'pos':'neg');
 
@@ -650,12 +652,6 @@ function renderNewAccDrill(yr){
   var toEl=document.getElementById('nd'+yr+'-to');
   var fromD=fromEl?fromEl.value:'';
   var toD=toEl?toEl.value:'';
-  function parseDateStr(s){
-    if(!s)return null;
-    s=String(s);
-    if(s.indexOf('/')!==-1){var p=s.split('/');if(p.length===3)return p[2]+'-'+p[0].padStart(2,'0')+'-'+p[1].padStart(2,'0');}
-    return s.slice(0,10);
-  }
   var accs=ACCOUNTS.filter(function(a){
     if(!a.created_on)return false;
     var d=parseDateStr(a.created_on);
@@ -743,11 +739,14 @@ function renderTopDrill(yr){
   var top5=ACC_FILTERED.filter(function(a){return a.sales&&a.sales[String(yr)]>0;})
     .sort(function(a,b){return(b.sales[String(yr)]||0)-(a.sales[String(yr)]||0);}).slice(0,5);
   var rows=top5.map(function(a){
-    var s=a.sales[String(yr)]||0;
-    var prev=yr===2024?a.sales['2025']:yr===2025?a.sales['2026']:null;
-    var base=yr===2024?a.sales['2024']:a.sales['2025'];
-    var gr=base>0&&prev!=null?(prev-base)/base*100:null;
-    var grLabel=yr===2024?'GR% 24v25':yr===2025?'YoY vs 2026':'QoQ%';
+    var s=(a.sales&&a.sales[String(yr)])||0;
+    var s25=(a.sales&&a.sales['2025'])||0;
+    var s24=(a.sales&&a.sales['2024'])||0;
+    var s26=(a.sales&&a.sales['2026'])||0;
+    var base=yr===2024?s24:yr===2025?s25:s25;
+    var next=yr===2024?s25:yr===2025?s26:s26;
+    var gr=base>0&&next>0?(next-base)/base*100:null;
+    var grLabel=yr===2024?'GR% 24v25':yr===2025?'YoY vs 2026':'vs 2025';
     return'<tr><td style="font-weight:500">'+a.name+'</td><td>'+sizeBadge(a.size_tier)+'</td>'
       +'<td class="r">'+sar(s)+'</td>'
       +'<td class="r '+(gr!=null?posNeg(gr):'dim')+'">'+grLabel+': '+pct(gr)+'</td></tr>';
@@ -827,7 +826,27 @@ function renderGainersLosers(){
     return{a:a,gr:gr,pipe30:pipe30,tender:tender,lost:lost};
   });
   var gainers=ranked.filter(function(x){return x.gr!=null&&x.gr>0;}).sort(function(x,y){return y.gr-x.gr;}).slice(0,20);
-  var losers=ranked.filter(function(x){return x.gr!=null&&x.gr<0;}).sort(function(x,y){return x.gr-y.gr;}).slice(0,20);
+  // Losers use their own rank mode
+  var rankedLosers=ACC_FILTERED.filter(function(a){
+    var mode=RANK_LOSERS;
+    if(mode==='gr2524'||mode==='abs2524')return a.sales&&a.sales['2024']>0;
+    return a.sales&&a.sales['2025']>0;
+  }).map(function(a){
+    var gr=getGR(a,RANK_LOSERS);
+    var pipe30=0,tender=0,lost=0;
+    (a.projects||[]).forEach(function(p){
+      var vf=p.valid_from||'';
+      if(vfFrom&&vf<vfFrom)return;
+      if(vfTo&&vf>vfTo)return;
+      var prob=(p.probability||'').trim();
+      var v=p.q_gross_value||0;
+      if(prob.indexOf('30%')===0)pipe30+=v;
+      else if(prob.indexOf('15%')===0)tender+=v;
+      else if(prob.indexOf('0%')===0||prob.indexOf('10%')===0)lost+=v;
+    });
+    return{a:a,gr:gr,pipe30:pipe30,tender:tender,lost:lost};
+  });
+  var losers=rankedLosers.filter(function(x){return x.gr!=null&&x.gr<0;}).sort(function(x,y){return x.gr-y.gr;}).slice(0,20);
   function renderRows(list,tbodyId){
     document.getElementById(tbodyId).innerHTML=list.map(function(r){
       var a=r.a;
@@ -1034,9 +1053,8 @@ function sortInactive(col){
 }
 
 function renderRamp(){
-  function parseDateStr2(s){if(!s)return null;s=String(s);if(s.indexOf('/')!==-1){var p=s.split('/');if(p.length===3)return p[2]+'-'+p[0].padStart(2,'0')+'-'+p[1].padStart(2,'0');}return s.slice(0,10);}
-  var accs24=ACCOUNTS.filter(function(a){var d=parseDateStr2(a.created_on);return d&&d.startsWith('2024');});
-  var accs25=ACCOUNTS.filter(function(a){var d=parseDateStr2(a.created_on);return d&&d.startsWith('2025');});
+  var accs24=ACCOUNTS.filter(function(a){var d=parseDateStr(a.created_on);return d&&d.startsWith('2024');});
+  var accs25=ACCOUNTS.filter(function(a){var d=parseDateStr(a.created_on);return d&&d.startsWith('2025');});
   // Distribute sales evenly across months as estimate (no monthly breakdown at account level)
   var total24=accs24.reduce(function(s,a){return s+(a.sales&&a.sales['2024']||0);},0);
   var total25=accs25.reduce(function(s,a){return s+(a.sales&&a.sales['2025']||0);},0);
@@ -1152,6 +1170,12 @@ function populateFilters(){
   ses.forEach(function(s){var o=document.createElement('option');o.value=s;o.text=s;sSel.appendChild(o);});
 }
 
+function parseDateStr(s){
+  if(!s)return null;
+  s=String(s);
+  if(s.indexOf('/')!==-1){var p=s.split('/');if(p.length===3)return p[2]+'-'+p[0].padStart(2,'0')+'-'+p[1].padStart(2,'0');}
+  return s.slice(0,10);
+}
 function loadAll(){
   document.getElementById('last-updated').textContent='Loading...';
   fetch('data/asap_accounts.json').then(function(r){return r.json();}).then(function(data){
