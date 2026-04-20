@@ -291,11 +291,50 @@ tr.row-expanded td{background:var(--accent-light)!important}
     <div id="drill-worst-body"></div>
   </div>
 
+  <!-- SECTION 0: TOP 20 ACCOUNTS -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">Top 20 accounts</div><div class="section-sub">Ranked by selected year sales - click row to expand - sum row always on top</div></div>
+      <button class="btn-export" onclick="exportTableVisible('top20-tbody','top20')">Export visible</button>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Rank by year:</span>
+      <span class="tbtn" onclick="setTop20Year(2023,this)">2023</span>
+      <span class="tbtn" onclick="setTop20Year(2024,this)">2024</span>
+      <span class="tbtn on" onclick="setTop20Year(2025,this)">2025</span>
+      <span class="tbtn" onclick="setTop20Year(2026,this)">2026</span>
+      <span style="margin-left:12px;font-size:11px;color:var(--text2)">Team:</span>
+      <select id="top20-team" onchange="renderTop20()" style="font-size:11px;padding:3px 8px;border:1px solid var(--border2);border-radius:var(--radius);height:28px"><option value="">All teams</option></select>
+    </div>
+    <div class="tbl-wrap"><div class="tbl-scroll">
+      <table><thead><tr>
+        <th onclick="sortTop20('name')">Customer</th>
+        <th onclick="sortTop20('size')">Size</th>
+        <th onclick="sortTop20('type')">Type</th>
+        <th onclick="sortTop20('status')">Status</th>
+        <th class="r" onclick="sortTop20('s2022')">2022</th>
+        <th class="r" onclick="sortTop20('s2023')">2023</th>
+        <th class="r" onclick="sortTop20('s2024')">2024</th>
+        <th class="r" onclick="sortTop20('s2025')">2025</th>
+        <th class="r" onclick="sortTop20('s2026')">2026 YTD</th>
+        <th class="r" onclick="sortTop20('gr2524')">GR% 25v24</th>
+        <th class="r" onclick="sortTop20('awd25')">Awd 25</th>
+        <th class="r" onclick="sortTop20('awd26')">Awd 26</th>
+        <th class="r" onclick="sortTop20('hot')">Hot Pipe</th>
+        <th class="r" onclick="sortTop20('bl')">Backlog</th>
+        <th class="r" onclick="sortTop20('pipe30')">Non-Hot 30%</th>
+        <th class="r" onclick="sortTop20('tender')">Tender 15%</th>
+        <th class="r" onclick="sortTop20('lost')">Lost 0%+10%</th>
+      </tr></thead>
+      <tbody id="top20-tbody"></tbody></table>
+    </div></div>
+  </div>
+
   <!-- SECTION 1: GAINERS -->
   <div class="section">
     <div class="section-header">
       <div><div class="section-title">Top 20 gainers</div><div class="section-sub">Accounts with highest growth - click any row to expand</div></div>
-      <button class="btn-export" onclick="exportTable('gainers-tbody','gainers')">Export visible</button>
+      <button class="btn-export" onclick="exportTableVisible('gainers-tbody','gainers')">Export visible</button>
     </div>
     <div class="toggle-row">
       <span class="toggle-label">Rank by:</span>
@@ -336,7 +375,7 @@ tr.row-expanded td{background:var(--accent-light)!important}
   <div class="section">
     <div class="section-header">
       <div><div class="section-title">Top 20 losers</div><div class="section-sub">Accounts with highest decline - click any row to expand</div></div>
-      <button class="btn-export" onclick="exportTable('losers-tbody','losers')">Export visible</button>
+      <button class="btn-export" onclick="exportTableVisible('losers-tbody','losers')">Export visible</button>
     </div>
     <div class="toggle-row">
       <span class="toggle-label">Rank by:</span>
@@ -403,7 +442,7 @@ tr.row-expanded td{background:var(--accent-light)!important}
   <div class="section">
     <div class="section-header">
       <div><div class="section-title">Inactive high-value accounts</div><div class="section-sub">Low/zero 2026 sales with strong history - revenue at risk</div></div>
-      <button class="btn-export" onclick="exportTable('inactive-tbody','inactive_hv')">Export visible</button>
+      <button class="btn-export" onclick="exportTableVisible('inactive-tbody','inactive_hv')">Export visible</button>
     </div>
     <div class="toggle-row">
       <span class="toggle-label">Include sizes:</span>
@@ -448,7 +487,7 @@ tr.row-expanded td{background:var(--accent-light)!important}
   <div class="section">
     <div class="section-header">
       <div><div class="section-title">Whitespace / cross-sell opportunities</div><div class="section-sub">Accounts buying one product group with pipeline in other groups</div></div>
-      <button class="btn-export" onclick="exportTable('ws-tbody','whitespace')">Export visible</button>
+      <button class="btn-export" onclick="exportTableVisible('ws-tbody','whitespace')">Export visible</button>
     </div>
     <div class="tbl-wrap"><div class="tbl-scroll" style="max-height:240px">
       <table><thead><tr>
@@ -463,7 +502,7 @@ tr.row-expanded td{background:var(--accent-light)!important}
   <div class="section">
     <div class="section-header">
       <div><div class="section-title">Transfer impact summary</div><div class="section-sub">Before vs after sales for transferred accounts</div></div>
-      <button class="btn-export" onclick="exportTable('transfer-tbody','transfer_impact')">Export visible</button>
+      <button class="btn-export" onclick="exportTableVisible('transfer-tbody','transfer_impact')">Export visible</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px" id="transfer-kpis"></div>
     <div class="tbl-wrap"><div class="tbl-scroll" style="max-height:240px">
@@ -479,6 +518,7 @@ tr.row-expanded td{background:var(--accent-light)!important}
 <script>
 var ACCOUNTS=[], ACC_FILTERED=[];
 var GAINSORT={col:'gr',dir:-1}, LOSESORT={col:'gr',dir:1};
+var TOP20_YEAR=2025, TOP20_SORT={col:'rank',dir:-1};
 var INACTIVESORT={col:'peak_val',dir:-1};
 var INACTIVE_SIZES=new Set(['A+','A','B','C']);
 var SCATTER_SIZES=new Set(['A+','A','B','C','D']);
@@ -539,6 +579,7 @@ function applyFilters(){
   document.getElementById('filter-count').textContent=ACC_FILTERED.length+' accounts';
   renderChips();
   renderKPIs();
+  renderTop20();
   renderGainersLosers();
   renderScatter();
   renderInactive();
@@ -783,6 +824,106 @@ function toggleDrill(id,kcId){
   if(!wasOpen){el.classList.add('open');if(kcId)document.getElementById(kcId).classList.add('kc-active');}
 }
 
+function setTop20Year(yr,btn){
+  TOP20_YEAR=yr;
+  btn.parentElement.querySelectorAll('.tbtn').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  renderTop20();
+}
+function sortTop20(col){
+  TOP20_SORT=TOP20_SORT.col===col?{col:col,dir:TOP20_SORT.dir*-1}:{col:col,dir:-1};
+  renderTop20();
+}
+function getTop20SortVal(a,col){
+  if(col==='name')return a.name||'';
+  if(col==='size')return a.size_tier||'';
+  if(col==='type')return a.description||'';
+  if(col==='status')return a.cust_status||'';
+  if(col==='s2022')return a.sales&&a.sales['2022']||0;
+  if(col==='s2023')return a.sales&&a.sales['2023']||0;
+  if(col==='s2024')return a.sales&&a.sales['2024']||0;
+  if(col==='s2025')return a.sales&&a.sales['2025']||0;
+  if(col==='s2026')return a.sales&&a.sales['2026']||0;
+  if(col==='gr2524'){var s24=a.sales&&a.sales['2024']||0;var s25=a.sales&&a.sales['2025']||0;return s24>0?(s25-s24)/s24*100:-999;}
+  if(col==='awd25')return(a.award_by_year&&a.award_by_year['2025'])||0;
+  if(col==='awd26')return(a.award_by_year&&a.award_by_year['2026'])||0;
+  if(col==='hot')return a.hot_pipeline||0;
+  if(col==='bl')return a.backlog||0;
+  if(col==='pipe30')return getPipe30(a);
+  if(col==='rank')return a.sales&&a.sales[String(TOP20_YEAR)]||0;
+  return 0;
+}
+function renderTop20(){
+  var fTeam=document.getElementById('top20-team').value;
+  var accs=ACC_FILTERED.filter(function(a){
+    if(fTeam&&a.curr_team!==fTeam)return false;
+    return a.sales&&a.sales[String(TOP20_YEAR)]>0;
+  });
+  accs.sort(function(x,y){
+    var va=getTop20SortVal(x,TOP20_SORT.col),vb=getTop20SortVal(y,TOP20_SORT.col);
+    if(typeof va==='string')return TOP20_SORT.dir*va.localeCompare(vb);
+    return TOP20_SORT.dir*(vb-va);
+  });
+  var top20=accs.slice(0,20);
+  // Sum row
+  function sumCol(key){return top20.reduce(function(s,a){return s+(getTop20SortVal(a,key)||0);},0);}
+  var pipe30vals=top20.map(function(a){
+    var v=0;(a.projects||[]).forEach(function(p){var prob=(p.probability||'').trim();if(prob.indexOf('30%')===0)v+=(p.q_gross_value||0);});return v;
+  });
+  var tendervals=top20.map(function(a){
+    var v=0;(a.projects||[]).forEach(function(p){var prob=(p.probability||'').trim();if(prob.indexOf('15%')===0)v+=(p.q_gross_value||0);});return v;
+  });
+  var lostvals=top20.map(function(a){
+    var v=0;(a.projects||[]).forEach(function(p){var prob=(p.probability||'').trim();if(prob.indexOf('0%')===0||prob.indexOf('10%')===0)v+=(p.q_gross_value||0);});return v;
+  });
+  var sumP30=pipe30vals.reduce(function(a,b){return a+b;},0);
+  var sumTender=tendervals.reduce(function(a,b){return a+b;},0);
+  var sumLost=lostvals.reduce(function(a,b){return a+b;},0);
+  var sumRow='<tr style="background:var(--surface2);font-weight:500;border-bottom:2px solid var(--border2)">'
+    +'<td style="font-size:11px">Total ('+top20.length+')</td><td></td><td></td><td></td>'
+    +'<td class="r">'+sar(sumCol('s2022'))+'</td>'
+    +'<td class="r">'+sar(sumCol('s2023'))+'</td>'
+    +'<td class="r">'+sar(sumCol('s2024'))+'</td>'
+    +'<td class="r">'+sar(sumCol('s2025'))+'</td>'
+    +'<td class="r">'+sar(sumCol('s2026'))+'</td>'
+    +'<td></td>'
+    +'<td class="r">'+sar(sumCol('awd25'))+'</td>'
+    +'<td class="r">'+sar(sumCol('awd26'))+'</td>'
+    +'<td class="r">'+sar(sumCol('hot'))+'</td>'
+    +'<td class="r">'+sar(sumCol('bl'))+'</td>'
+    +'<td class="r">'+sar(sumP30)+'</td>'
+    +'<td class="r">'+sar(sumTender)+'</td>'
+    +'<td class="r">'+sar(sumLost)+'</td>'
+    +'</tr>';
+  var rows=top20.map(function(a,i){
+    var s24=a.sales&&a.sales['2024']||0,s25=a.sales&&a.sales['2025']||0;
+    var gr=s24>0?(s25-s24)/s24*100:null;
+    var awd25=(a.award_by_year&&a.award_by_year['2025'])||0;
+    var awd26=(a.award_by_year&&a.award_by_year['2026'])||0;
+    var p30=pipe30vals[i],tender=tendervals[i],lost=lostvals[i];
+    return'<tr class="clickable" onclick="toggleGLExpand(this,&quot;'+a.customer+'&quot;)">'
+      +'<td style="font-weight:500">'+a.name+'</td>'
+      +'<td>'+sizeBadge(a.size_tier)+'</td>'
+      +'<td style="font-size:10px;color:var(--text2)">'+a.description+'</td>'
+      +'<td>'+statusBadge(a.cust_status)+'</td>'
+      +'<td class="r '+(a.sales&&a.sales['2022']?'':'dim')+'">'+sar(a.sales&&a.sales['2022'])+'</td>'
+      +'<td class="r '+(a.sales&&a.sales['2023']?'':'dim')+'">'+sar(a.sales&&a.sales['2023'])+'</td>'
+      +'<td class="r '+(a.sales&&a.sales['2024']?'':'dim')+'">'+sar(a.sales&&a.sales['2024'])+'</td>'
+      +'<td class="r '+(a.sales&&a.sales['2025']?'':'dim')+'">'+sar(a.sales&&a.sales['2025'])+'</td>'
+      +'<td class="r dim">'+sar(a.sales&&a.sales['2026'])+'</td>'
+      +'<td class="r '+(gr!=null?posNeg(gr):'dim')+'">'+pct(gr)+'</td>'
+      +'<td class="r">'+sar(awd25)+'</td>'
+      +'<td class="r">'+sar(awd26)+'</td>'
+      +'<td class="r">'+sar(a.hot_pipeline)+'</td>'
+      +'<td class="r">'+sar(a.backlog)+'</td>'
+      +'<td class="r dim">'+sar(p30)+'</td>'
+      +'<td class="r dim">'+sar(tender)+'</td>'
+      +'<td class="r dim">'+sar(lost)+'</td>'
+      +'</tr>'
+      +'<tr class="expand-row" style="display:none"><td colspan="17">'+renderGLExpand(a)+'</td></tr>';
+  }).join('');
+  document.getElementById('top20-tbody').innerHTML=sumRow+rows;
+}
 function glSortVal(a,col,mode){
   var gr=getGR(a,mode);
   if(col==='gr')return gr!=null?gr:-999;
@@ -1135,26 +1276,35 @@ function renderTransfer(){
   }).join('');
 }
 
-function exportTable(tbodyId,filename){
+function exportTableVisible(tbodyId,filename){
   var tbody=document.getElementById(tbodyId);
   if(!tbody)return;
   var thead=tbody.closest('table').querySelector('thead');
   var rows=[];
   if(thead){
     var hrow=[];
-    thead.querySelectorAll('th').forEach(function(th){hrow.push(th.textContent.trim().replace(/[v^]/g,''));});
+    thead.querySelectorAll('th').forEach(function(th){hrow.push(th.textContent.trim().replace(/[▲▼]/g,'').trim());});
     rows.push(hrow);
   }
   tbody.querySelectorAll('tr').forEach(function(tr){
-    if(tr.classList.contains('expand-row')||tr.style.display==='none')return;
+    // Skip expand rows (drilldown content) and hidden rows
+    if(tr.classList.contains('expand-row'))return;
+    if(tr.style.display==='none')return;
+    // Skip rows with only 1 cell spanning all (totals-like rows are ok but load more buttons not)
+    var tds=tr.querySelectorAll('td');
+    if(tds.length===1&&tds[0].colSpan>5)return;
     var row=[];
-    tr.querySelectorAll('td').forEach(function(td){row.push(td.textContent.trim());});
+    tds.forEach(function(td){
+      // Only text, strip badges/spans formatting noise
+      row.push(td.textContent.trim().replace(/\s+/g,' '));
+    });
     if(row.length)rows.push(row);
   });
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Data');
   XLSX.writeFile(wb,filename+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
+function exportTable(tbodyId,filename){exportTableVisible(tbodyId,filename);}
 function exportDrillTable(drillId){
   var drill=document.getElementById(drillId);
   if(!drill)return;
@@ -1166,7 +1316,11 @@ function populateFilters(){
   var teams=[...new Set(ACCOUNTS.map(function(a){return a.curr_team;}).filter(Boolean))].sort();
   var ses=[...new Set(ACCOUNTS.map(function(a){return a.curr_se;}).filter(Boolean))].sort();
   var tSel=document.getElementById('f-team'),sSel=document.getElementById('f-se');
-  teams.forEach(function(t){var o=document.createElement('option');o.value=t;o.text=t;tSel.appendChild(o);});
+  var t20Sel=document.getElementById('top20-team');
+  teams.forEach(function(t){
+    var o=document.createElement('option');o.value=t;o.text=t;tSel.appendChild(o);
+    var o2=document.createElement('option');o2.value=t;o2.text=t;t20Sel.appendChild(o2);
+  });
   ses.forEach(function(s){var o=document.createElement('option');o.value=s;o.text=s;sSel.appendChild(o);});
 }
 
