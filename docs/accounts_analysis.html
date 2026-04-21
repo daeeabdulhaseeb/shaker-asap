@@ -518,7 +518,7 @@ tr.row-expanded td{background:var(--accent-light)!important}
 <script>
 var ACCOUNTS=[], ACC_FILTERED=[];
 var GAINSORT={col:'gr',dir:-1}, LOSESORT={col:'gr',dir:1};
-var TOP20_YEAR=2025, TOP20_SORT={col:'rank',dir:-1};
+var TOP20_YEAR=2025, TOP20_SORT={col:'rank',dir:1};
 var INACTIVESORT={col:'peak_val',dir:-1};
 var INACTIVE_SIZES=new Set(['A+','A','B','C']);
 var SCATTER_SIZES=new Set(['A+','A','B','C','D']);
@@ -857,7 +857,7 @@ function renderTop20(){
   var fTeam=document.getElementById('top20-team').value;
   var accs=ACC_FILTERED.filter(function(a){
     if(fTeam&&a.curr_team!==fTeam)return false;
-    return a.sales&&a.sales[String(TOP20_YEAR)]>0;
+    return a.sales&&(a.sales[String(TOP20_YEAR)]||0)>=1;
   });
   accs.sort(function(x,y){
     var va=getTop20SortVal(x,TOP20_SORT.col),vb=getTop20SortVal(y,TOP20_SORT.col);
