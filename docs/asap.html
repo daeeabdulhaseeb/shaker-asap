@@ -253,7 +253,11 @@ th{user-select:none}
         <th class="r" style="cursor:pointer;font-size:11px" onclick="sortAcc('hot_pipeline')">Hot pipeline <span id="sort-hot_pipeline" class="sort-arrow"></span></th>
         <th class="r" style="cursor:pointer;font-size:11px" onclick="sortAcc('award')">Award <span id="sort-award" class="sort-arrow"></span></th>
         <th class="r" style="cursor:pointer;font-size:11px" onclick="sortAcc('backlog')">Backlog <span id="sort-backlog" class="sort-arrow"></span></th>
-        <th style="font-size:11px">Product Trend</th><th style="font-size:11px">Current SE / team</th>
+        <th style="font-size:11px">Product Trend</th>
+        <th class="r" style="font-size:11px;white-space:nowrap">Non-Hot 30%</th>
+        <th class="r" style="font-size:11px;white-space:nowrap">Tender 15%</th>
+        <th class="r" style="font-size:11px;white-space:nowrap">Lost 0%+10%</th>
+        <th style="font-size:11px">Current SE / team</th>
       </tr></thead>
       <tbody id="acc-tbody"></tbody>
     </table>
@@ -762,13 +766,15 @@ function renderAccTable(resetPage){
     +'<td style="font-size:11px">Total ('+ACC_FILTERED.length+')</td><td></td><td></td><td></td><td></td>'
     +'<td class="r">'+sar(tot23)+'</td><td class="r">'+sar(tot24)+'</td><td class="r">'+sar(tot25)+'</td><td class="r">'+sar(tot26)+'</td>'
     +'<td></td><td class="r">'+sar(totHot)+'</td><td class="r">'+sar(totAwd)+'</td><td class="r">'+sar(totBL)+'</td>'
-    +'<td></td><td></td></tr>';
+    +'<td></td>'
+    +(function(){var p30=ACC_FILTERED.reduce(function(s,a){return s+((a.projects||[]).reduce(function(ps,p){return ps+((p.probability||'').indexOf('30%')===0?p.q_gross_value||0:0);},0));},0);var td=ACC_FILTERED.reduce(function(s,a){return s+((a.projects||[]).reduce(function(ps,p){return ps+((p.probability||'').indexOf('15%')===0?p.q_gross_value||0:0);},0));},0);var ls=ACC_FILTERED.reduce(function(s,a){return s+((a.projects||[]).reduce(function(ps,p){var pb=p.probability||'';return ps+((pb.indexOf('0%')===0||pb.indexOf('10%')===0)?p.q_gross_value||0:0);},0));},0);return'<td class="r">'+sar(p30)+'</td><td class="r">'+sar(td)+'</td><td class="r">'+sar(ls)+'</td>';})()
+    +'<td></td></tr>';
   var prevSec='';
   sorted.forEach(function(a,i){
     var sec=a.transfer_type;
     if(sec!==prevSec&&ACC_SORT.col==='transfer_type'){
       var secLabels={inter:'Inter-team transfers',intra:'Intra-team transfers',same:'Same SE',new:'New accounts'};
-      rows+='<tr class="section-head"><td colspan="15">'+secLabels[sec]+' - '+sorted.filter(function(x){return x.transfer_type===sec;}).length+' accounts</td></tr>';
+      rows+='<tr class="section-head"><td colspan="18">'+secLabels[sec]+' - '+sorted.filter(function(x){return x.transfer_type===sec;}).length+' accounts</td></tr>';
       prevSec=sec;
     }
     var idx=ACC_INDEX[a.customer]!==undefined?ACC_INDEX[a.customer]:i;
@@ -787,9 +793,12 @@ function renderAccTable(resetPage){
       +'<td class="r">'+sar(a.award)+'</td>'
       +'<td class="r">'+sar(a.backlog)+'</td>'
       +'<td>'+groupShift(a.group_2024,a.group_2025)+'</td>'
+      +'<td class="r dim">'+sar((a.projects||[]).reduce(function(s,p){return s+((p.probability||'').indexOf('30%')===0?p.q_gross_value||0:0);},0))+'</td>'
+      +'<td class="r dim">'+sar((a.projects||[]).reduce(function(s,p){return s+((p.probability||'').indexOf('15%')===0?p.q_gross_value||0:0);},0))+'</td>'
+      +'<td class="r dim">'+sar((a.projects||[]).reduce(function(s,p){var pb=p.probability||'';return s+((pb.indexOf('0%')===0||pb.indexOf('10%')===0)?p.q_gross_value||0:0);},0))+'</td>'
       +'<td style="font-size:10px;color:var(--text2)">'+a.curr_se+(a.curr_team?' / '+a.curr_team:'')+'</td>'
       +'</tr>'
-      +'<tr id="dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="15">'+renderDrilldown(a)+'</td></tr>';
+      +'<tr id="dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="18">'+renderDrilldown(a)+'</td></tr>';
   });
   document.getElementById('acc-tbody').innerHTML=rows;
 }
