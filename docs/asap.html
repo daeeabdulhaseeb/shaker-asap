@@ -1248,7 +1248,12 @@ function clearProductFilters(){['prod-f-team','prod-f-se'].forEach(function(id){
 
 function tableToXLSX(tableId,filename){var tbl=document.getElementById(tableId);if(!tbl)return;var wb=XLSX.utils.book_new();var ws=XLSX.utils.table_to_sheet(tbl);XLSX.utils.book_append_sheet(wb,ws,'Data');XLSX.writeFile(wb,filename+'_'+new Date().toISOString().slice(0,10)+'.xlsx');}
 function exportAccTable(){
-  var rows=ACC_FILTERED.map(function(a){return{'Customer No':a.customer,'Customer Name':a.name,'Description':a.description,'Current SE':a.curr_se,'Current Team':a.curr_team,'Old SE':a.old_se,'Old Team':a.old_team,'Transfer Type':a.transfer_type,'Size':a.size_tier,'Status':a.cust_status,'2023 Sales':a.sales&&a.sales['2023'],'2024 Sales':a.sales&&a.sales['2024'],'2025 Sales':a.sales&&a.sales['2025'],'2026 YTD':a.sales&&a.sales['2026'],'YoY 25v24%':a.yoy_25v24,'Hot Pipeline':a.hot_pipeline,'Award':a.award,'Backlog':a.backlog,'Group 2024':a.group_2024,'Group 2025':a.group_2025};});
+  var rows=ACC_FILTERED.map(function(a){
+    var p30=(a.projects||[]).reduce(function(s,p){return s+((p.probability||'').indexOf('30%')===0?p.q_gross_value||0:0);},0);
+    var tender=(a.projects||[]).reduce(function(s,p){return s+((p.probability||'').indexOf('15%')===0?p.q_gross_value||0:0);},0);
+    var lost=(a.projects||[]).reduce(function(s,p){var pb=p.probability||'';return s+((pb.indexOf('0%')===0||pb.indexOf('10%')===0)?p.q_gross_value||0:0);},0);
+    return{'Customer No':a.customer,'Customer Name':a.name,'Description':a.description,'Current SE':a.curr_se,'Current Team':a.curr_team,'Old SE':a.old_se,'Old Team':a.old_team,'Transfer Type':a.transfer_type,'Size':a.size_tier,'Status':a.cust_status,'2023 Sales':a.sales&&a.sales['2023'],'2024 Sales':a.sales&&a.sales['2024'],'2025 Sales':a.sales&&a.sales['2025'],'2026 YTD':a.sales&&a.sales['2026'],'YoY 25v24%':a.yoy_25v24,'Hot Pipeline':a.hot_pipeline,'Award':a.award,'Backlog':a.backlog,'Non-Hot 30%':p30,'Tender 15%':tender,'Lost 0%+10%':lost,'Group 2024':a.group_2024,'Group 2025':a.group_2025};
+  });
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Accounts');XLSX.writeFile(wb,'asap_accounts_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 function exportTeamTable(){tableToXLSX('se-team-table','asap_teams');}
