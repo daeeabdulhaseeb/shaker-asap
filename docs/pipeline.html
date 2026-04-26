@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pipeline Dashboard — Shaker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg:#f4f6f9;--surface:#ffffff;--surface2:#f0f3f7;--border:#e2e6ed;
+  --accent:#1e3a5f;--accent2:#2563eb;--gold:#d4920a;--green:#15803d;
+  --warn:#b45309;--red:#b91c1c;--text:#1a2030;--text2:#4a5568;--text3:#94a3b8;
+  --radius:8px;--shadow:0 1px 4px rgba(0,0,0,.08);
+  --font-head:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-size:13px;min-height:100vh}
+
+/* ── Layout ── */
+.topbar{background:var(--surface);border-bottom:2px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:4px;height:46px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.logo{font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--accent);margin-right:12px;white-space:nowrap}
+.tab{padding:5px 13px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:500;color:var(--text2);border:1px solid transparent;white-space:nowrap;transition:all .15s}
+.tab:hover{background:var(--surface2)}
+.tab.active{background:var(--accent);color:#fff}
+.as-of{margin-left:auto;font-size:10px;color:var(--text3)}
+
+.page{display:none;padding:12px 14px}
+.page.active{display:block}
+
+/* ── Filters ── */
+.fbar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;box-shadow:var(--shadow)}
+.fsel{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--font-body)}
+.finp{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:3px 8px;font-size:10px;width:120px;font-family:var(--font-body)}
+.af-bar{font-size:9px;color:var(--gold);font-weight:500}
+.clr-btn{font-size:9px;color:var(--red);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:var(--font-body)}
+
+/* ── KPI Cards ── */
+.krow{display:grid;gap:8px;margin-bottom:10px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;border-top:3px solid var(--border);box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s}
+.kpi:hover{box-shadow:0 3px 10px rgba(0,0,0,.12)}
+.kpi.gold{border-top-color:var(--gold)}
+.kpi.blue{border-top-color:var(--accent2)}
+.kpi.green{border-top-color:var(--green)}
+.kpi.red{border-top-color:var(--red)}
+.kpi.warn{border-top-color:var(--warn)}
+.kpi.dark{border-top-color:var(--accent)}
+.kl{font-size:9px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.kv{font-size:18px;font-weight:700;color:var(--accent);line-height:1.1}
+.kv.gold{color:var(--gold)}.kv.blue{color:var(--accent2)}.kv.green{color:var(--green)}
+.kv.warn{color:var(--warn)}.kv.red{color:var(--red)}
+.ks{font-size:9px;color:var(--text3);margin-top:2px}
+.k-split{display:flex;gap:8px;margin-top:3px}
+.k-split span{font-size:10px;font-weight:500}
+
+/* ── Layout grid ── */
+.row{display:grid;gap:8px;margin-bottom:8px}
+.c2{grid-template-columns:1fr 1fr}
+.c3{grid-template-columns:1fr 1fr 1fr}
+.c4{grid-template-columns:1fr 1fr 1fr 1fr}
+.c13{grid-template-columns:1fr 3fr}
+.c31{grid-template-columns:3fr 1fr}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;box-shadow:var(--shadow)}
+.ct{font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--surface2)}
+
+/* ── Tables ── */
+.tbl{width:100%;border-collapse:collapse;font-size:10px}
+.tbl th{color:var(--text3);font-weight:600;padding:4px 6px;border-bottom:2px solid var(--border);text-align:right;white-space:nowrap;font-size:9px;font-family:var(--font-head)}
+.tbl th:first-child{text-align:left}
+.tbl td{padding:4px 6px;border-bottom:1px solid var(--surface2);text-align:right;color:var(--text)}
+.tbl td:first-child{text-align:left;color:var(--text2)}
+.tbl .tot td{color:var(--accent);font-weight:700;border-top:2px solid var(--border)}
+.tbl tr.cl:hover td{background:var(--surface2);cursor:pointer}
+.tbl-wrap{overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius)}
+
+/* ── Bar charts ── */
+.brow{display:flex;align-items:center;gap:5px;margin-bottom:5px;cursor:pointer}
+.brow:hover .bw{outline:1px solid var(--accent2)}
+.blbl{width:90px;font-size:9px;color:var(--text2);text-align:right;flex-shrink:0}
+.bw{flex:1;background:var(--surface2);border-radius:2px;overflow:hidden;height:11px}
+.bf{height:100%;border-radius:2px;transition:width .3s}
+.bval2{font-size:9px;width:42px;text-align:right;flex-shrink:0;color:var(--text);font-weight:600}
+
+/* ── Trend charts ── */
+.chart-area{position:relative;height:80px;margin-bottom:4px}
+.bars-wrap{display:flex;align-items:flex-end;gap:2px;height:100%;padding:0 2px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;position:relative}
+.bar-seg{width:100%;border-radius:1px 1px 0 0;min-height:2px;transition:opacity .2s}
+.bar-seg:hover{opacity:.8}
+.bar-val{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:7px;color:var(--text2);white-space:nowrap;font-weight:600}
+.svg-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.x-axis{display:flex;gap:2px;padding:2px 2px 0}
+.x-lbl{flex:1;font-size:7px;color:var(--text3);text-align:center;overflow:hidden}
+.chart-legend{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text2)}
+.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.leg-dot.round{border-radius:50%}
+
+/* ── W cards ── */
+.wcard-row{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:7px}
+.wcard{background:var(--surface2);border-radius:5px;padding:5px 8px;border:1px solid var(--border)}
+.wcl{font-size:8px;color:var(--text3);margin-bottom:1px;font-weight:600;text-transform:uppercase}
+.wcv{font-size:12px;font-weight:700;color:var(--accent)}
+
+/* ── Avg bars (M-3/6/9/12) ── */
+.avg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.avg-col{text-align:center}
+.avg-lbl{font-size:9px;color:var(--text3);margin-bottom:3px;font-weight:600}
+.avg-bar-wrap{height:48px;background:var(--surface2);border-radius:4px;display:flex;align-items:flex-end;padding:2px;overflow:hidden}
+.avg-bar{width:100%;border-radius:2px 2px 0 0;transition:height .4s}
+.avg-val{font-size:10px;font-weight:700;margin-top:3px}
+
+/* ── Badges ── */
+.bdg{display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600}
+.bdg-hot{background:#fef3c7;color:#b45309}
+.bdg-award{background:#dcfce7;color:#15803d}
+.bdg-pipe{background:#dbeafe;color:#1d4ed8}
+
+/* ── Pills ── */
+.pills{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.pill{padding:2px 9px;border-radius:10px;font-size:9px;border:1px solid var(--border);color:var(--text2);cursor:pointer;background:var(--surface);font-weight:500;transition:all .15s}
+.pill:hover{border-color:var(--accent2)}
+.pill.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── Subtabs ── */
+.subtab-bar{display:flex;gap:4px;margin-bottom:8px}
+.subtab{padding:4px 13px;border-radius:4px;font-size:10px;font-weight:500;color:var(--text2);border:1px solid var(--border);cursor:pointer;background:var(--surface);transition:all .15s}
+.subtab.active{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+.subpage{display:none}
+.subpage.active{display:block}
+
+/* ── SE Cards ── */
+.se-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+.se-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;transition:box-shadow .15s;cursor:pointer}
+.se-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.se-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px}
+.se-name{font-size:11px;font-weight:700;font-family:var(--font-head);color:var(--accent)}
+.se-team-lbl{font-size:9px;color:var(--text3);margin-top:1px}
+.sig{padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700}
+.sig-g{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.sig-a{background:#fef3c7;color:#b45309;border:1px solid #fde68a}
+.sig-r{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+.m4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-bottom:6px}
+.mc{background:var(--surface2);border-radius:4px;padding:4px;text-align:center}
+.mlbl{font-size:8px;color:var(--text3);margin-bottom:1px;font-weight:600}
+.mval{font-size:10px;font-weight:700}
+.mind{width:5px;height:5px;border-radius:50%;margin:2px auto 0}
+.mind-g{background:var(--green)}.mind-a{background:var(--warn)}.mind-r{background:var(--red)}
+.insight-box{background:#fffbeb;border-left:3px solid var(--gold);border-radius:0 4px 4px 0;padding:5px 7px;font-size:9px;color:var(--text2);line-height:1.5;margin-top:6px}
+.insight-box b{color:var(--accent)}
+.bl-mini{margin-top:6px;padding-top:6px;border-top:1px solid var(--surface2)}
+.bmtitle{font-size:8px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:3px}
+.bmrow{display:flex;align-items:center;gap:4px;margin-bottom:3px}
+.bmlbl{font-size:8px;color:var(--text2);width:45px;text-align:right;flex-shrink:0}
+.bmwrap{flex:1;height:6px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.bmfill{height:100%;border-radius:2px;transition:width .4s}
+.bmval{font-size:8px;width:28px;text-align:right;flex-shrink:0;font-weight:600}
+.mini-trend-wrap{margin-top:5px}
+.mini-trend-lbl{font-size:8px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:3px}
+.mini-trend{height:28px;display:flex;align-items:flex-end;gap:1px;background:var(--surface2);border-radius:3px;padding:2px}
+.mt-bar{flex:1;border-radius:1px 1px 0 0;min-width:3px}
+
+/* ── Team Cards ── */
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:8px;margin-bottom:10px}
+.team-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;cursor:pointer;transition:all .15s}
+.team-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1);border-color:var(--accent2)}
+.tname{font-size:12px;font-weight:700;font-family:var(--font-head);color:var(--accent);margin-bottom:6px}
+.t4{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.tc{background:var(--surface2);border-radius:4px;padding:4px 6px}
+.tcl{font-size:8px;color:var(--text3);font-weight:600;text-transform:uppercase}
+.tcv{font-size:11px;font-weight:700}
+
+/* ── Drawer ── */
+.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200}
+.drawer-overlay.open{display:flex;justify-content:flex-end}
+.drawer{background:var(--surface);width:680px;max-width:95vw;height:100%;overflow-y:auto;border-left:2px solid var(--border);display:flex;flex-direction:column;box-shadow:-4px 0 20px rgba(0,0,0,.1)}
+.dh{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--accent)}
+.dt{font-size:13px;font-weight:700;font-family:var(--font-head);color:#fff}
+.dc{background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1}
+.dbody{padding:12px 14px;flex:1;display:grid;grid-template-columns:200px 1fr;gap:12px;min-height:0}
+.dleft{border-right:1px solid var(--border);padding-right:12px;overflow-y:auto}
+.dright{overflow-y:auto}
+.dsec{font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.drow{padding:6px 8px;border-radius:5px;cursor:pointer;margin-bottom:3px;border:1px solid transparent;transition:all .1s}
+.drow:hover{background:var(--surface2);border-color:var(--border)}
+.drow.act{background:#dbeafe;border-color:var(--accent2)}
+.dname{font-size:11px;color:var(--text);font-weight:600}
+.dval{font-size:9px;color:var(--text2);margin-top:1px}
+.dbar-wrap{height:3px;background:var(--border);border-radius:1px;margin-top:4px;overflow:hidden}
+.dbar-fill{height:100%;border-radius:1px;background:var(--accent2)}
+.bc{font-size:10px;color:var(--text2);margin-bottom:8px}
+.bc span{color:var(--accent2);cursor:pointer;font-weight:600}
+.bc span:hover{text-decoration:underline}
+
+/* ── M Movement ── */
+.mov-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;height:65px}
+.mov-card{border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--border)}
+.mov-lbl{font-size:9px;font-weight:600;margin-bottom:2px}
+.mov-val{font-size:17px;font-weight:700}
+
+/* ── Month blocks (Hot by month) ── */
+.month-blocks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mblock{background:var(--surface2);border-radius:var(--radius);padding:8px;text-align:center;border:1px solid var(--border)}
+.mblock-title{font-size:10px;font-weight:700;color:var(--accent);margin-bottom:6px;font-family:var(--font-head)}
+.mblock-bars{height:70px;display:flex;align-items:flex-end;gap:4px;justify-content:center;background:var(--surface);border-radius:4px;padding:4px}
+.mblock-bar{flex:1;border-radius:2px 2px 0 0;min-height:2px;transition:height .4s}
+.mblock-vals{display:flex;justify-content:space-around;margin-top:4px}
+.mblock-v{font-size:9px;font-weight:700}
+
+/* ── Export btn ── */
+.exp-btn{background:var(--accent);color:#fff;border:none;border-radius:4px;padding:4px 12px;font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:opacity .15s}
+.exp-btn:hover{opacity:.85}
+
+/* ── Color utils ── */
+.c-gold{color:var(--gold)}.c-blue{color:var(--accent2)}.c-green{color:var(--green)}
+.c-warn{color:var(--warn)}.c-red{color:var(--red)}.c-dim{color:var(--text3)}
+.c-dx{color:#2563eb}.c-mv{color:#d97706}
+
+/* ── Loading ── */
+#loading{position:fixed;inset:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-size:12px;color:var(--text2);font-weight:500}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <div class="load-txt">Loading pipeline data...</div>
+</div>
+
+<div class="topbar">
+  <span class="logo">📋 Pipeline</span>
+  <div class="tab active" onclick="showPage('p1',this)">Pipeline</div>
+  <div class="tab" onclick="showPage('p2',this)">Award</div>
+  <div class="tab" onclick="showPage('p3',this)">Hot Projects</div>
+  <div class="tab" onclick="showPage('p4',this)">Backlog</div>
+  <div class="tab" onclick="showPage('p5',this)">ACS</div>
+  <div class="tab" onclick="showPage('p6',this)">SE Analysis</div>
+  <div class="tab" onclick="showPage('p7',this)">Projects Table</div>
+  <span class="as-of" id="as-of-lbl"></span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 1: PIPELINE -->
+<div class="page active" id="p1">
+  <div class="fbar">
+    <select class="fsel" id="p1-team" onchange="cascadeSE('p1-team','p1-se');applyPageFilter('p1')">
+      <option value="">All Teams</option>
+    </select>
+    <select class="fsel" id="p1-se" onchange="applyPageFilter('p1')"><option value="">All SEs</option></select>
+    <select class="fsel" id="p1-size" onchange="applyPageFilter('p1')">
+      <option value="">All Sizes</option>
+      <option>G</option><option>MG</option><option>L</option><option>M</option><option>S</option>
+    </select>
+    <input class="finp" id="p1-proj" placeholder="Project name..." oninput="applyPageFilter('p1')">
+    <input class="finp" id="p1-cust" placeholder="Customer name..." oninput="applyPageFilter('p1')">
+    <span class="af-bar" id="p1-af">Filters: None</span>
+    <button class="clr-btn" onclick="clearFilter('p1')">Clear all</button>
+  </div>
+
+  <div class="krow" style="grid-template-columns:repeat(6,1fr)" id="p1-kpis"></div>
+
+  <div class="row c2">
+    <div class="card">
+      <div class="ct">M-12 Trend — DX (0–100%) · bars = SAR value · line = count</div>
+      <div class="wcard-row" id="p1-dx-wcards"></div>
+      <div class="chart-area" id="p1-dx-chart"></div>
+      <div class="x-axis" id="p1-dx-xax"></div>
+      <div class="chart-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#2563eb"></div>DX Value (SAR)</div>
+        <div class="leg-item"><div class="leg-dot round" style="background:#ea580c"></div>Count (line)</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">M-12 Trend — MV excl. 15% · bars = SAR value · line = count</div>
+      <div class="wcard-row" id="p1-mv-wcards"></div>
+      <div class="chart-area" id="p1-mv-chart"></div>
+      <div class="x-axis" id="p1-mv-xax"></div>
+      <div class="chart-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#d97706"></div>MV Value (SAR)</div>
+        <div class="leg-item"><div class="leg-dot round" style="background:#ea580c"></div>Count (line)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row c2">
+    <div class="card">
+      <div class="ct">M- Avg DX · monthly average over M-3 / M-6 / M-9 / M-12</div>
+      <div class="avg-grid" id="p1-avg-dx"></div>
+    </div>
+    <div class="card">
+      <div class="ct">M- Avg MV · monthly average over M-3 / M-6 / M-9 / M-12</div>
+      <div class="avg-grid" id="p1-avg-mv"></div>
+    </div>
+  </div>
+
+  <div class="row c2">
+    <div class="card">
+      <div class="ct">YoY Quotations — Quarterly (DX / MV)</div>
+      <div class="tbl-wrap" style="max-height:200px"><table class="tbl" id="p1-yoy-tbl">
+        <thead><tr><th>Year / Qtr</th><th>DX</th><th>MV</th><th>Total</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="ct">M Movement MV — 15% migration this month vs last</div>
+      <div class="pills" id="p1-mov-pills">
+        <div class="pill on" onclick="togglePill(this,'p1-mov')">15%→30%+</div>
+        <div class="pill" onclick="togglePill(this,'p1-mov')">15%→0%/10%</div>
+      </div>
+      <div class="mov-cards" id="p1-mov-cards"></div>
+    </div>
+  </div>
+
+  <div class="row c2">
+    <div class="card">
+      <div class="ct">Pipeline by Size — DX (M-12 monthly)</div>
+      <div class="chart-area" id="p1-size-chart"></div>
+      <div class="chart-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#1e3a5f"></div>G</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#2563eb"></div>MG</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#60a5fa"></div>L</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#15803d"></div>M</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#94a3b8"></div>S</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Quotations 2026 by Team — click to drill</div>
+      <div id="p1-team-bars"></div>
+      <div class="chart-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#2563eb"></div>DX</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#d97706"></div>MV</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 2: AWARD -->
+<div class="page" id="p2">
+  <div class="fbar">
+    <select class="fsel" id="p2-team" onchange="cascadeSE('p2-team','p2-se');applyPageFilter('p2')"><option value="">All Teams</option></select>
+    <select class="fsel" id="p2-se" onchange="applyPageFilter('p2')"><option value="">All SEs</option></select>
+    <select class="fsel" id="p2-size" onchange="applyPageFilter('p2')"><option value="">All Sizes</option><option>G</option><option>MG</option><option>L</option><option>M</option><option>S</option></select>
+    <input class="finp" id="p2-proj" placeholder="Project name..." oninput="applyPageFilter('p2')">
+    <input class="finp" id="p2-cust" placeholder="Customer name..." oninput="applyPageFilter('p2')">
+    <span class="af-bar" id="p2-af">Filters: None</span>
+    <button class="clr-btn" onclick="clearFilter('p2')">Clear all</button>
+  </div>
+  <div class="krow" style="grid-template-columns:repeat(5,1fr)" id="p2-kpis"></div>
+  <div class="row c2">
+    <div class="card">
+      <div class="ct">M-12 Award Trend — DX Single · value + count</div>
+      <div class="wcard-row" style="grid-template-columns:repeat(3,1fr)" id="p2-dx-wcards"></div>
+      <div class="chart-area" id="p2-dx-chart"></div>
+      <div class="x-axis" id="p2-dx-xax"></div>
+    </div>
+    <div class="card">
+      <div class="ct">M-12 Award Trend — MV Applied · value + count</div>
+      <div class="wcard-row" style="grid-template-columns:repeat(3,1fr)" id="p2-mv-wcards"></div>
+      <div class="chart-area" id="p2-mv-chart"></div>
+      <div class="x-axis" id="p2-mv-xax"></div>
+    </div>
+  </div>
+  <div class="row c2">
+    <div class="card">
+      <div class="ct">M- Avg Award DX · M-3 / M-6 / M-9 / M-12</div>
+      <div class="avg-grid" id="p2-avg-dx"></div>
+    </div>
+    <div class="card">
+      <div class="ct">YoY Award — Quarterly (DX / MV) · click row to drill</div>
+      <div class="tbl-wrap" style="max-height:200px"><table class="tbl" id="p2-yoy-tbl">
+        <thead><tr><th>Year / Qtr</th><th>DX</th><th>MV</th><th>Total</th><th>Count</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <div id="p2-insight" style="margin-top:6px;font-size:9px;display:none;background:#fffbeb;border-left:3px solid var(--gold);padding:5px 7px;border-radius:0 4px 4px 0"></div>
+    </div>
+  </div>
+  <div class="row c2">
+    <div class="card">
+      <div class="ct">Award by Team — click to drill</div>
+      <div id="p2-team-bars"></div>
+    </div>
+    <div class="card">
+      <div class="ct">G/MG Projects Focus · toggle size</div>
+      <div class="pills"><div class="pill on" onclick="togglePill(this,'gm');renderGMProjects()">G + MG</div><div class="pill" onclick="togglePill(this,'gm');renderGMProjects()">L + M + S</div></div>
+      <div class="tbl-wrap" style="max-height:150px"><table class="tbl" id="gm-tbl">
+        <thead><tr><th>Project</th><th>Team</th><th>SE</th><th>Value</th><th>Ageing</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 3: HOT PROJECTS -->
+<div class="page" id="p3">
+  <div class="fbar">
+    <select class="fsel" id="p3-team" onchange="cascadeSE('p3-team','p3-se');applyPageFilter('p3')"><option value="">All Teams</option></select>
+    <select class="fsel" id="p3-se" onchange="applyPageFilter('p3')"><option value="">All SEs</option></select>
+    <select class="fsel" id="p3-size" onchange="applyPageFilter('p3')"><option value="">All Sizes</option><option>G</option><option>MG</option><option>L</option><option>M</option><option>S</option></select>
+    <input class="finp" id="p3-proj" placeholder="Project name...">
+    <input class="finp" id="p3-cust" placeholder="Customer name...">
+    <span class="af-bar" id="p3-af">Filters: None</span>
+    <button class="clr-btn" onclick="clearFilter('p3')">Clear all</button>
+  </div>
+  <div class="krow" style="grid-template-columns:repeat(4,1fr)" id="p3-kpis"></div>
+  <div class="row c2">
+    <div class="card">
+      <div class="ct">M+3 Hot by Month — DX vs MV per month</div>
+      <div class="month-blocks" id="p3-months"></div>
+    </div>
+    <div class="card">
+      <div class="ct">Hot Hit Ratio Trend — M award / M total hot</div>
+      <div class="chart-area" id="p3-hr-chart" style="height:100px"></div>
+      <div id="p3-hr-insight" style="margin-top:5px;font-size:9px;color:var(--red)"></div>
+    </div>
+  </div>
+  <div class="row c2">
+    <div class="card">
+      <div class="ct">M+3 Hot by Team — DX / MV · click to drill</div>
+      <div id="p3-team-bars"></div>
+    </div>
+    <div class="card">
+      <div class="ct">Hot Projects by Size</div>
+      <div id="p3-size-bars"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 4: BACKLOG -->
+<div class="page" id="p4">
+  <div class="fbar">
+    <select class="fsel" id="p4-team" onchange="applyPageFilter('p4')"><option value="">All Teams</option></select>
+    <select class="fsel" id="p4-size" onchange="applyPageFilter('p4')"><option value="">All Sizes</option><option>G</option><option>MG</option><option>L</option><option>M</option><option>S</option></select>
+    <input class="finp" id="p4-proj" placeholder="Project name...">
+    <input class="finp" id="p4-cust" placeholder="Customer name...">
+    <span class="af-bar" id="p4-af">Filters: None</span>
+    <button class="clr-btn" onclick="clearFilter('p4')">Clear all</button>
+  </div>
+  <div class="krow" style="grid-template-columns:repeat(4,1fr)" id="p4-kpis"></div>
+  <div class="row c2">
+    <div class="card">
+      <div class="ct">BL by Team · click team → SE → Customer → Projects</div>
+      <div class="tbl-wrap" style="max-height:220px"><table class="tbl" id="p4-bl-tbl">
+        <thead><tr><th>Team</th><th>DX BL</th><th>MV BL</th><th>Total BL</th><th>Award Val</th><th>Del%</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="ct">Ageing BL by Expected Award Year</div>
+      <table class="tbl" id="p4-ageing-tbl">
+        <thead><tr><th>Year</th><th>DX</th><th>MV</th><th>Total</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="row c2">
+    <div class="card">
+      <div class="ct">Ageing BL Quarterly — DX + MV · sum</div>
+      <div class="row c2" style="margin-bottom:0">
+        <div><div style="font-size:9px;color:var(--text3);margin-bottom:4px;font-weight:700">DX</div><div class="avg-grid" id="p4-ageing-dx"></div></div>
+        <div><div style="font-size:9px;color:var(--text3);margin-bottom:4px;font-weight:700">MV</div><div class="avg-grid" id="p4-ageing-mv"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Historical BL Trend — DX + MV · monthly snapshots</div>
+      <div class="chart-area" id="p4-bl-trend" style="height:90px"></div>
+      <div class="x-axis" id="p4-bl-xax"></div>
+      <div class="chart-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#2563eb"></div>DX (Single)</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#d97706"></div>MV (Applied)</div>
+        <div style="font-size:9px;color:var(--text3);margin-left:auto">TTL shown on bar</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">G/MG Projects · ageing indicator · toggle size</div>
+    <div class="pills"><div class="pill on" onclick="togglePill(this,'gm4');renderGM4()">G + MG</div><div class="pill" onclick="togglePill(this,'gm4');renderGM4()">L + M + S</div></div>
+    <div class="tbl-wrap" style="max-height:180px"><table class="tbl" id="p4-gm-tbl">
+      <thead><tr><th>Project</th><th>Customer</th><th>Team</th><th>SE</th><th>DX BL</th><th>MV BL</th><th>Exp. Award Yr</th><th>Ageing</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 5: ACS -->
+<div class="page" id="p5">
+  <div class="fbar">
+    <select class="fsel" id="p5-team"><option value="">All ACS Teams</option><option>ACS - CR</option><option>ACS - ER</option><option>ACS - WR</option></select>
+    <input class="finp" id="p5-cust" placeholder="Customer name...">
+    <span class="af-bar" id="p5-af">Filters: None</span>
+    <button class="clr-btn" onclick="clearFilter('p5')">Clear all</button>
+  </div>
+  <div class="pills" id="p5-type-pills">
+    <div class="pill on" onclick="togglePill(this,'p5-type');renderACS()">All</div>
+    <div class="pill" onclick="togglePill(this,'p5-type');renderACS()">ACS Pro</div>
+    <div class="pill" onclick="togglePill(this,'p5-type');renderACS()">ACS Old</div>
+    <div class="pill" onclick="togglePill(this,'p5-type');renderACS()">ACS New</div>
+    <div class="pill" onclick="togglePill(this,'p5-type');renderACS()">Miscellaneous</div>
+    <div class="pill" onclick="togglePill(this,'p5-type');renderACS()">TBD</div>
+  </div>
+  <div class="subtab-bar">
+    <div class="subtab active" onclick="showSub('acs-p',this)">ACS Pipeline</div>
+    <div class="subtab" onclick="showSub('acs-a',this)">ACS Award</div>
+  </div>
+
+  <div class="subpage active" id="acs-p">
+    <div class="krow" style="grid-template-columns:repeat(5,1fr)" id="p5-pipe-kpis"></div>
+    <div class="row c2">
+      <div class="card">
+        <div class="ct">LG Pro — Req. Pipeline vs ACT · Award vs TGT</div>
+        <table class="tbl" id="p5-lgpro-tbl">
+          <thead><tr><th>Metric</th><th>Target</th><th>Actual</th><th>Gap</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="ct">Run Rate Award Trend · append monthly</div>
+        <div class="chart-area" id="p5-rr-chart" style="height:90px"></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:3px">Monthly run rate — track going forward</div>
+      </div>
+    </div>
+    <div class="row c2">
+      <div class="card">
+        <div class="ct">ACS Pipeline by Customer · click to drill</div>
+        <div class="tbl-wrap" style="max-height:200px"><table class="tbl" id="p5-cust-pipe-tbl">
+          <thead><tr><th>Customer</th><th>Type</th><th>2025</th><th>2026</th><th>Total</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="ct">Contract Sign Status</div>
+        <table class="tbl" id="p5-contract-tbl">
+          <thead><tr><th>Type</th><th>Contract Status</th><th>Count</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="acs-a">
+    <div class="krow" style="grid-template-columns:repeat(4,1fr)" id="p5-awd-kpis"></div>
+    <div class="row c2">
+      <div class="card">
+        <div class="ct">ACS Award by Customer</div>
+        <div class="tbl-wrap" style="max-height:200px"><table class="tbl" id="p5-cust-awd-tbl">
+          <thead><tr><th>Customer</th><th>Type</th><th>2025</th><th>2026</th><th>Total</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="ct">Expected vs Actual Run Rate by ACS Size</div>
+        <table class="tbl" id="p5-rr-size-tbl">
+          <thead><tr><th>ACS Size</th><th>Exp. RR</th><th>ACT RR</th><th>Diff</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 6: SE ANALYSIS -->
+<div class="page" id="p6">
+  <div class="fbar">
+    <select class="fsel" id="p6-team" onchange="filterSEPage(this)"><option value="">All Teams</option></select>
+    <select class="fsel" id="p6-grp"><option value="">All Groups</option><option>CAC Ducted</option><option>CAC Non-Ducted</option><option>RAC</option><option>Applied</option></select>
+    <select class="fsel" id="p6-size"><option value="">All Sizes (LMS for quotations)</option><option>L</option><option>M</option><option>S</option></select>
+    <span class="af-bar" id="p6-af">Filters: None</span>
+  </div>
+  <div style="font-size:10px;color:var(--text2);margin-bottom:8px">Click a team to view individual SE breakdown ↓</div>
+  <div class="team-grid" id="p6-team-grid"></div>
+  <div id="p6-se-section" style="display:none">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <button onclick="hideSECards()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:3px 10px;font-size:10px;cursor:pointer;font-family:var(--font-body)">← All Teams</button>
+      <span id="p6-se-lbl" style="font-size:12px;font-weight:700;font-family:var(--font-head);color:var(--accent)"></span>
+    </div>
+    <div class="se-grid" id="p6-se-grid"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 7: PROJECTS TABLE -->
+<div class="page" id="p7">
+  <div class="fbar">
+    <select class="fsel" id="p7-team" onchange="cascadeSE('p7-team','p7-se');renderProjectsTable()"><option value="">All Teams</option></select>
+    <select class="fsel" id="p7-se" onchange="renderProjectsTable()"><option value="">All SEs</option></select>
+    <select class="fsel" id="p7-prob" onchange="renderProjectsTable()">
+      <option value="">All Probability</option>
+      <option>30% - PJT-1ST QUO</option><option>50% - PJT-2ND QUO</option>
+      <option>70% - PJT-FINAL QUO</option><option>90% - PO ONLY</option><option>100% - PO & PAYMENT</option>
+    </select>
+    <select class="fsel" id="p7-size" onchange="renderProjectsTable()"><option value="">All Sizes</option><option>G</option><option>MG</option><option>L</option><option>M</option><option>S</option></select>
+    <select class="fsel" id="p7-grp" onchange="renderProjectsTable()"><option value="">DX + MV</option><option value="dx">DX Only</option><option value="mv">MV Only</option></select>
+    <input class="finp" id="p7-proj" placeholder="Project name..." oninput="renderProjectsTable()" style="width:140px">
+    <input class="finp" id="p7-cust" placeholder="Customer name..." oninput="renderProjectsTable()" style="width:140px">
+    <button class="exp-btn" onclick="exportProjects()">Export Excel</button>
+    <span class="af-bar" id="p7-count"></span>
+  </div>
+  <div class="tbl-wrap" style="height:calc(100vh - 160px)"><table class="tbl" id="p7-tbl" style="min-width:900px">
+    <thead><tr>
+      <th style="text-align:left">Project</th><th>Customer</th><th>Team</th><th>SE</th>
+      <th>Prob.</th><th>Group</th><th>SAR Val</th><th>Size</th><th>Exp. Award</th>
+    </tr></thead>
+    <tbody id="p7-tbody"></tbody>
+  </table></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawerBg(event)">
+  <div class="drawer">
+    <div class="dh">
+      <span class="dt" id="drawer-title">Drilldown</span>
+      <button class="dc" onclick="closeDrawer()">×</button>
+    </div>
+    <div class="dbody">
+      <div class="dleft" id="drawer-left"></div>
+      <div class="dright" id="drawer-right"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Global Data Store ──────────────────────────────────────────────────────────
+var D = {}; // main JSON
+var SE_DATA = [];
+var PROJ_DATA = [];
+var ACS_DATA = {};
+var BL_HIST = [];
+var SE_TGTS = [];
+var FILTERED_PROJ = [];
+
+// ── Formatters ─────────────────────────────────────────────────────────────────
+function fsar(v) {
+  if (!v && v !== 0) return '—';
+  var n = parseFloat(v);
+  if (isNaN(n) || n === 0) return '—';
+  if (n >= 1e9) return 'SAR ' + (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return 'SAR ' + (n/1e6).toFixed(1) + 'M';
+  if (n > 0)    return 'SAR ' + (n/1e3).toFixed(0) + 'K';
+  return '—';
+}
+function fpct(v) { return v ? (v*100).toFixed(1)+'%' : '—'; }
+function fnum(v) { return v ? parseInt(v).toLocaleString() : '—'; }
+function clr(v, pos) {
+  if (!v) return '';
+  return v > 0 ? (pos ? 'c-green' : 'c-red') : (v < 0 ? (pos ? 'c-red' : 'c-green') : '');
+}
+function ageColor(s) {
+  if (!s || s === 'On time') return 'c-green';
+  var m = parseInt(s);
+  return m > 6 ? 'c-red' : 'c-warn';
+}
+
+// ── Data Fetch ─────────────────────────────────────────────────────────────────
+function fetchAll() {
+  var base = '';
+  var files = [
+    ['pipeline_main.json',    function(d){ D = d; }],
+    ['pipeline_se.json',      function(d){ SE_DATA = d; }],
+    ['pipeline_projects.json',function(d){ PROJ_DATA = d; FILTERED_PROJ = d; }],
+    ['pipeline_acs.json',     function(d){ ACS_DATA = d; }],
+    ['pipeline_bl_history.json', function(d){ BL_HIST = d; }],
+    ['pipeline_se_targets.json', function(d){ SE_TGTS = d; }],
+  ];
+  var done = 0;
+  files.forEach(function(f) {
+    fetch('data/' + f[0])
+      .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(d) { f[1](d); done++; if (done === files.length) init(); })
+      .catch(function(e) { console.error('Failed:', f[0], e); done++; if (done === files.length) init(); });
+  });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+function init() {
+  document.getElementById('loading').style.display = 'none';
+  var asOf = D.kpis ? D.kpis.as_of : '';
+  document.getElementById('as-of-lbl').textContent = asOf ? 'As of ' + asOf : '';
+
+  populateTeamFilters();
+  renderPage1();
+  renderPage2();
+  renderPage3();
+  renderPage4();
+  renderACS();
+  renderSEPage();
+  renderProjectsTable();
+}
+
+// ── Team / SE Cascade ──────────────────────────────────────────────────────────
+var SE_MAP = {};
+function populateTeamFilters() {
+  // Build SE map from SE data
+  SE_DATA.forEach(function(se) {
+    var t = se.team || '';
+    if (!SE_MAP[t]) SE_MAP[t] = [];
+    SE_MAP[t].push(se.se_name);
+  });
+  // Build team list from by_team
+  var teams = (D.by_team || []).map(function(t) { return t.team; });
+  var allSelects = ['p1-team','p2-team','p3-team','p4-team','p6-team','p7-team'];
+  allSelects.forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    teams.forEach(function(t) {
+      var o = document.createElement('option');
+      o.value = t; o.textContent = t;
+      sel.appendChild(o);
+    });
+  });
+}
+
+function cascadeSE(teamSelId, seSelId) {
+  var team = document.getElementById(teamSelId).value;
+  var sel  = document.getElementById(seSelId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="">All SEs</option>';
+  var ses = team ? (SE_MAP[team] || []) : [];
+  ses.forEach(function(s) {
+    var o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o);
+  });
+}
+
+// ── Chart Helpers ──────────────────────────────────────────────────────────────
+function renderBarChart(containerId, data, color, xAxisId, showLine) {
+  var el = document.getElementById(containerId);
+  var xa = document.getElementById(xAxisId);
+  if (!el || !data || !data.length) return;
+  var max = Math.max.apply(null, data.map(function(d){ return d.value || 0; }));
+  if (max === 0) max = 1;
+  var maxCount = Math.max.apply(null, data.map(function(d){ return d.count || 0; }));
+  if (maxCount === 0) maxCount = 1;
+
+  var barsHtml = '<div class="bars-wrap">';
+  data.forEach(function(d) {
+    var h = max > 0 ? Math.max(2, ((d.value || 0) / max) * 100) : 0;
+    barsHtml += '<div class="bar-col"><div class="bar-seg" style="height:' + h + '%;background:' + color + ';width:100%" title="' + d.label + ': ' + fsar(d.value) + ' | Count: ' + d.count + '"><div class="bar-val">' + (d.value >= 1e6 ? (d.value/1e6).toFixed(0)+'M' : '') + '</div></div></div>';
+  });
+  barsHtml += '</div>';
+
+  if (showLine && maxCount > 0) {
+    var pts = data.map(function(d, i) {
+      var x = (i / (data.length - 1)) * 100;
+      var y = 100 - ((d.count || 0) / maxCount) * 90;
+      return x + ',' + y;
+    }).join(' ');
+    barsHtml += '<svg class="svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="' + pts + '" fill="none" stroke="#ea580c" stroke-width="1.5" vector-effect="non-scaling-stroke"/>' +
+      data.map(function(d, i) {
+        var x = (i / (data.length - 1)) * 100;
+        var y = 100 - ((d.count || 0) / maxCount) * 90;
+        return '<circle cx="' + x + '" cy="' + y + '" r="2" fill="#ea580c" vector-effect="non-scaling-stroke"/>';
+      }).join('') + '</svg>';
+  }
+  el.innerHTML = barsHtml;
+
+  if (xa) {
+    xa.innerHTML = data.map(function(d) { return '<span class="x-lbl">' + d.label + '</span>'; }).join('');
+  }
+}
+
+function renderAvgBars(containerId, data, color) {
+  var el = document.getElementById(containerId);
+  if (!el || !data) return;
+  var keys = ['M-12','M-9','M-6','M-3'];
+  var vals = keys.map(function(k){ return data[k] || 0; });
+  var max  = Math.max.apply(null, vals) || 1;
+  el.innerHTML = keys.map(function(k) {
+    var v = data[k] || 0;
+    var h = max > 0 ? Math.max(4, (v/max)*100) : 4;
+    return '<div class="avg-col"><div class="avg-lbl">' + k + '</div>' +
+      '<div class="avg-bar-wrap"><div class="avg-bar" style="height:' + h + '%;background:' + color + '"></div></div>' +
+      '<div class="avg-val" style="color:' + color + '">' + fsar(v) + '</div></div>';
+  }).join('');
+}
+
+function renderSimpleBars(containerId, items, labelKey, valKey, color, clickFn) {
+  var el = document.getElementById(containerId);
+  if (!el || !items || !items.length) { if(el) el.innerHTML = '<div style="color:var(--text3);font-size:10px;padding:8px">No data</div>'; return; }
+  var max = Math.max.apply(null, items.map(function(d){ return parseFloat(d[valKey]) || 0; })) || 1;
+  el.innerHTML = items.map(function(d) {
+    var v = parseFloat(d[valKey]) || 0;
+    var w = Math.max(2, (v/max)*100);
+    var onclick = clickFn ? 'onclick="' + clickFn + '(\'' + d[labelKey].replace(/'/g,"&apos;") + '\')"' : '';
+    return '<div class="brow" ' + onclick + '>' +
+      '<div class="blbl">' + d[labelKey] + '</div>' +
+      '<div class="bw"><div class="bf" style="width:' + w + '%;background:' + color + '"></div></div>' +
+      '<div class="bval2">' + fsar(v) + '</div></div>';
+  }).join('');
+}
+
+// ── PAGE 1: PIPELINE ───────────────────────────────────────────────────────────
+function renderPage1() {
+  var k = D.kpis || {};
+  var kpis = [
+    {label:'Total Pipeline', val:fsar(k.total_pipeline), sub:'all active', cls:'dark'},
+    {label:'MTD Pipeline', val:fsar(k.mtd_pipeline), sub:'Valid From this month', cls:'blue'},
+    {label:'Hot M+3', val:fsar(k.hot_ttl), sub:'DX '+fsar(k.hot_dx)+' / MV '+fsar(k.hot_mv), cls:'warn'},
+    {label:'Req. Pipeline/mo', val:fsar(k.req_pipeline_mo), sub:'to hit award target', cls:'red'},
+    {label:'TTL Hit Ratio', val:fpct(k.ttl_hit_ratio), sub:'DX '+fpct(k.dx_hit_ratio)+' / MV '+fpct(k.mv_hit_ratio), cls:'blue'},
+    {label:'2026 Hit Ratio', val:fpct(k.hit_ratio_2026), sub:'2026 quotations only', cls:'warn'},
+  ];
+  document.getElementById('p1-kpis').innerHTML = kpis.map(function(kp) {
+    return '<div class="kpi '+kp.cls+'"><div class="kl">'+kp.label+'</div><div class="kv '+kp.cls+'">'+kp.val+'</div><div class="ks">'+kp.sub+'</div></div>';
+  }).join('');
+
+  // W cards for DX
+  var wc = document.getElementById('p1-dx-wcards');
+  if (wc) wc.innerHTML = [
+    {l:'W Projects',v:fnum(k.w_projects),c:''},
+    {l:'W Value',v:fsar(k.w_value),c:'c-blue'},
+    {l:'W-1 Value',v:fsar(k.w1_value),c:'c-dim'},
+    {l:'Change',v:fsar(k.w_change),c:parseFloat(k.w_change)>=0?'c-green':'c-red'},
+  ].map(function(w){ return '<div class="wcard"><div class="wcl">'+w.l+'</div><div class="wcv '+w.c+'">'+w.v+'</div></div>'; }).join('');
+
+  // MV W cards placeholder
+  var wm = document.getElementById('p1-mv-wcards');
+  if (wm) wm.innerHTML = '<div class="wcard"><div class="wcl">MTD MV</div><div class="wcv c-mv">'+fsar(k.mtd_pipeline)+'</div></div><div class="wcard"><div class="wcl">Hot MV</div><div class="wcv c-mv">'+fsar(k.hot_mv)+'</div></div><div class="wcard"><div class="wcl">As of</div><div class="wcv c-dim">'+(k.as_of||'')+'</div></div><div class="wcard"><div class="wcl">Hot Window</div><div class="wcv" style="font-size:9px">'+(k.hot_window_months||[]).join(' / ')+'</div></div>';
+
+  // M-12 trends
+  renderBarChart('p1-dx-chart', (D.m12_trend||{}).dx, '#2563eb', 'p1-dx-xax', true);
+  renderBarChart('p1-mv-chart', (D.m12_trend||{}).mv, '#d97706', 'p1-mv-xax', true);
+
+  // Avg
+  renderAvgBars('p1-avg-dx', (D.m_avg||{}).dx, '#2563eb');
+  renderAvgBars('p1-avg-mv', (D.m_avg||{}).mv, '#d97706');
+
+  // YoY quarterly table
+  var tb = document.querySelector('#p1-yoy-tbl tbody');
+  if (tb) tb.innerHTML = (D.yoy_quarterly||[]).map(function(r) {
+    return '<tr><td>'+r.label+'</td><td class="c-dx">'+fsar(r.dx)+'</td><td class="c-mv">'+fsar(r.mv)+'</td><td>'+fsar(r.total)+'</td></tr>';
+  }).join('');
+
+  // M Movement
+  var mv = D.m_movement || {};
+  var mc = document.getElementById('p1-mov-cards');
+  if (mc) mc.innerHTML = [
+    {l:'Moved In',v:fsar(mv.moved_in),bg:'#f0fdf4',bc:'#bbf7d0',lc:'#15803d',vc:'#15803d'},
+    {l:'Moved Out',v:fsar(mv.moved_out),bg:'#fef2f2',bc:'#fecaca',lc:'#b91c1c',vc:'#b91c1c'},
+    {l:'Net',v:fsar(mv.net),bg:'#fffbeb',bc:'#fde68a',lc:'#b45309',vc:'#b45309'},
+  ].map(function(c){ return '<div class="mov-card" style="background:'+c.bg+';border-color:'+c.bc+'"><div class="mov-lbl" style="color:'+c.lc+'">'+c.l+'</div><div class="mov-val" style="color:'+c.vc+'">'+c.v+'</div></div>'; }).join('');
+
+  // Team bars
+  var tb2 = document.getElementById('p1-team-bars');
+  if (tb2 && D.by_team) {
+    var maxT = Math.max.apply(null, D.by_team.map(function(t){ return parseFloat(t.total)||0; })) || 1;
+    tb2.innerHTML = D.by_team.map(function(t) {
+      var dxw = Math.max(2, ((parseFloat(t.dx)||0)/maxT)*100);
+      var mvw = Math.max(2, ((parseFloat(t.mv)||0)/maxT)*100);
+      return '<div class="brow" onclick="openDrawer(\'pipeline\',\''+t.team.replace(/'/g,"&apos;")+'\')">'+
+        '<div class="blbl">'+t.team+'</div>'+
+        '<div class="bw" style="height:14px;display:flex;gap:1px">'+
+          '<div style="width:'+dxw+'%;background:#2563eb;height:100%;border-radius:1px 0 0 1px"></div>'+
+          '<div style="width:'+mvw+'%;background:#d97706;height:100%"></div>'+
+        '</div>'+
+        '<div class="bval2">'+fsar(t.total)+'</div></div>';
+    }).join('');
+  }
+
+  // Size chart (placeholder bars using m12 dx data)
+  var sc = document.getElementById('p1-size-chart');
+  if (sc) {
+    var sizeColors = {G:'#1e3a5f',MG:'#2563eb',L:'#60a5fa',M:'#15803d',S:'#94a3b8'};
+    sc.innerHTML = '<div class="bars-wrap">' + (D.m12_trend&&D.m12_trend.dx||[]).map(function(d,i){
+      var h = d.value ? Math.max(4,(d.value/Math.max.apply(null,(D.m12_trend.dx||[]).map(function(x){return x.value||0;}))||1)*100) : 4;
+      return '<div class="bar-col"><div class="bar-seg" style="height:'+h+'%;background:#2563eb;width:100%"></div></div>';
+    }).join('') + '</div>';
+  }
+}
+
+// ── PAGE 2: AWARD ──────────────────────────────────────────────────────────────
+function renderPage2() {
+  var k = D.kpis || {};
+  var kpis = [
+    {label:'MTD Award', val:fsar(k.mtd_award), sub:'current month', cls:'gold'},
+    {label:'Award 2025', val:fsar(k.award_2025_ttl), sub:'DX '+fsar(k.award_2025_dx)+' / MV '+fsar(k.award_2025_mv), cls:'green'},
+    {label:'Award 2026 YTD', val:fsar(k.award_2026_ttl), sub:'DX '+fsar(k.award_2026_dx)+' / MV '+fsar(k.award_2026_mv), cls:'green'},
+    {label:'TTL Hit Ratio', val:fpct(k.ttl_hit_ratio), sub:'DX '+fpct(k.dx_hit_ratio)+' / MV '+fpct(k.mv_hit_ratio), cls:'blue'},
+    {label:'2026 Hit Ratio', val:fpct(k.hit_ratio_2026), sub:'2026 only', cls:'warn'},
+  ];
+  document.getElementById('p2-kpis').innerHTML = kpis.map(function(kp){
+    return '<div class="kpi '+kp.cls+'"><div class="kl">'+kp.label+'</div><div class="kv '+kp.cls+'">'+kp.val+'</div><div class="ks">'+kp.sub+'</div></div>';
+  }).join('');
+
+  // Award trends (use award_quarterly data for now — proper M-12 award trend needs separate metric)
+  var aq = D.award_quarterly || [];
+  var recent = aq.slice(-12);
+  renderBarChart('p2-dx-chart', recent.map(function(r){return{label:r.label,value:r.dx||0,count:r.count||0};}), '#2563eb', 'p2-dx-xax', true);
+  renderBarChart('p2-mv-chart', recent.map(function(r){return{label:r.label,value:r.mv||0,count:r.count||0};}), '#d97706', 'p2-mv-xax', false);
+
+  var wdx = document.getElementById('p2-dx-wcards');
+  if (wdx) wdx.innerHTML = '<div class="wcard"><div class="wcl">MTD Award</div><div class="wcv c-dx">'+fsar(k.mtd_award)+'</div></div><div class="wcard"><div class="wcl">Award 2025</div><div class="wcv c-green">'+fsar(k.award_2025_ttl)+'</div></div><div class="wcard"><div class="wcl">Award 2026</div><div class="wcv c-green">'+fsar(k.award_2026_ttl)+'</div></div>';
+
+  renderAvgBars('p2-avg-dx', (D.award_m_avg||{}).dx, '#2563eb');
+
+  // YoY award quarterly
+  var tb = document.querySelector('#p2-yoy-tbl tbody');
+  if (tb) tb.innerHTML = (D.award_quarterly||[]).map(function(r){
+    return '<tr class="cl" onclick="openDrawer(\'award\',\''+r.label+'\')"><td>'+r.label+'</td><td class="c-dx">'+fsar(r.dx)+'</td><td class="c-mv">'+fsar(r.mv)+'</td><td>'+fsar(r.total)+'</td><td>'+fnum(r.count)+'</td></tr>';
+  }).join('');
+
+  // insight
+  var ins = document.getElementById('p2-insight');
+  if (ins && k.hot_ttl && k.award_2026_ttl) {
+    var ratio = parseFloat(k.award_2026_ttl)/parseFloat(k.hot_ttl);
+    if (ratio < 0.3 && parseFloat(k.hot_ttl) > 0) {
+      ins.style.display = 'block';
+      ins.innerHTML = '⚠ 2026 award behind — strong hot pipeline SAR '+fsar(k.hot_ttl)+' suggests catchup possible if conversion holds';
+    }
+  }
+
+  // Award by team bars
+  renderSimpleBars('p2-team-bars', D.by_team, 'team', 'total', '#2563eb', 'openDrawer.bind(null,\'award\')');
+
+  // G/MG projects
+  renderGMProjects();
+}
+
+function renderGMProjects() {
+  var sizes = document.querySelector('#p2 .pill.on') && document.querySelector('#p2 .pill.on').textContent.includes('G') ? ['G','MG'] : ['L','M','S'];
+  var gm = D.gm_projects || {};
+  var list = sizes[0]==='G' ? (gm.gm||[]) : (gm.lms||[]);
+  var tb = document.querySelector('#gm-tbl tbody');
+  if (!tb) return;
+  tb.innerHTML = list.map(function(r){
+    return '<tr><td>'+(r.project_name||'—')+'</td><td>'+(r.team||'—')+'</td><td>'+(r.se_name||'—')+'</td><td>'+fsar(r.q_gross_value)+'</td><td class="'+ageColor(r.ageing)+'">'+(r.ageing||'—')+'</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="color:var(--text3);padding:8px">No data</td></tr>';
+}
+
+// ── PAGE 3: HOT PROJECTS ───────────────────────────────────────────────────────
+function renderPage3() {
+  var k = D.kpis || {};
+  var kpis = [
+    {label:'M+3 Hot DX', val:fsar(k.hot_dx), sub:'rolling 3 months', cls:'blue'},
+    {label:'M+3 Hot MV', val:fsar(k.hot_mv), sub:'rolling 3 months', cls:'gold'},
+    {label:'Hot Hit Ratio', val:'—', sub:'M award / M hot TTL', cls:'warn'},
+    {label:'Pipeline 26 / M+3 / Award 26', val:fsar(k.award_2026_ttl), sub:'award 2026', cls:'green'},
+  ];
+  document.getElementById('p3-kpis').innerHTML = kpis.map(function(kp){
+    return '<div class="kpi '+kp.cls+'"><div class="kl">'+kp.label+'</div><div class="kv '+kp.cls+'">'+kp.val+'</div><div class="ks">'+kp.sub+'</div></div>';
+  }).join('');
+
+  // Hot by month blocks
+  var mb = document.getElementById('p3-months');
+  if (mb) {
+    var months = D.hot_by_month || [];
+    var maxM = Math.max.apply(null, months.map(function(m){ return Math.max(parseFloat(m.dx)||0, parseFloat(m.mv)||0); })) || 1;
+    mb.innerHTML = months.map(function(m){
+      var dxh = Math.max(4, ((parseFloat(m.dx)||0)/maxM)*100);
+      var mvh = Math.max(4, ((parseFloat(m.mv)||0)/maxM)*100);
+      return '<div class="mblock"><div class="mblock-title">'+m.label+'</div>'+
+        '<div class="mblock-bars">'+
+          '<div class="mblock-bar" style="height:'+dxh+'%;background:#2563eb"></div>'+
+          '<div class="mblock-bar" style="height:'+mvh+'%;background:#d97706"></div>'+
+        '</div>'+
+        '<div class="mblock-vals"><span class="mblock-v c-dx">'+fsar(m.dx)+'</span><span class="mblock-v c-mv">'+fsar(m.mv)+'</span></div>'+
+        '<div style="font-size:8px;color:var(--text3);margin-top:2px">DX · MV</div></div>';
+    }).join('');
+  }
+
+  // Hot hit ratio trend (placeholder — needs monthly calc)
+  var hrc = document.getElementById('p3-hr-chart');
+  if (hrc) hrc.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:10px">Hot hit ratio trend — requires monthly snapshot data</div>';
+
+  // Hot by team
+  renderSimpleBars('p3-team-bars', D.hot_by_team||[], 'team', 'total', '#2563eb', null);
+
+  // Hot by size
+  var hs = D.hot_by_size || [];
+  var sizeEl = document.getElementById('p3-size-bars');
+  if (sizeEl) {
+    var maxS = Math.max.apply(null, hs.map(function(s){ return parseFloat(s.total)||0; })) || 1;
+    sizeEl.innerHTML = hs.map(function(s){
+      var w = Math.max(2, ((parseFloat(s.total)||0)/maxS)*100);
+      return '<div class="brow"><div class="blbl">'+s.size+'</div>'+
+        '<div class="bw"><div class="bf" style="width:'+w+'%;background:#2563eb"></div></div>'+
+        '<div class="bval2">'+fsar(s.total)+'</div></div>';
+    }).join('');
+  }
+}
+
+// ── PAGE 4: BACKLOG ────────────────────────────────────────────────────────────
+function renderPage4() {
+  var k = D.kpis || {};
+  var ag = D.ageing_bl || [];
+  var aged = ag.filter(function(a){ return a.year <= 2023; }).reduce(function(s,a){ return s + (parseFloat(a.total)||0); }, 0);
+  var aged24 = (ag.find(function(a){ return a.year===2024; })||{}).total || 0;
+  document.getElementById('p4-kpis').innerHTML = [
+    {label:'Total BL', val:fsar(k.bl_ttl), sub:'DX '+fsar(k.bl_dx)+' / MV '+fsar(k.bl_mv), cls:'blue'},
+    {label:'Delivery %', val:'—', sub:'1 - BL / Award', cls:'green'},
+    {label:'Ageing 2022–23', val:fsar(aged), sub:'overdue backlog', cls:'red'},
+    {label:'Ageing 2024', val:fsar(aged24), sub:'delayed delivery', cls:'warn'},
+  ].map(function(kp){ return '<div class="kpi '+kp.cls+'"><div class="kl">'+kp.label+'</div><div class="kv '+kp.cls+'">'+kp.val+'</div><div class="ks">'+kp.sub+'</div></div>'; }).join('');
+
+  // BL by team
+  var bt = document.querySelector('#p4-bl-tbl tbody');
+  if (bt) bt.innerHTML = (D.bl_by_team||[]).map(function(r){
+    var dc = parseFloat(r.del_pct)>=85?'c-green':(parseFloat(r.del_pct)>=70?'c-warn':'c-red');
+    return '<tr class="cl" onclick="openDrawer(\'bl\',\''+r.team.replace(/'/g,"&apos;")+'\')">' +
+      '<td>'+r.team+'</td><td class="c-dx">'+fsar(r.dx_bl)+'</td><td class="c-mv">'+fsar(r.mv_bl)+'</td>' +
+      '<td>'+fsar(r.ttl_bl)+'</td><td>'+fsar(r.ttl_awd)+'</td>' +
+      '<td class="'+dc+'">'+(r.del_pct!=null?r.del_pct+'%':'—')+'</td></tr>';
+  }).join('') + '<tr class="tot"><td>Total</td><td class="c-dx">'+fsar(k.bl_dx)+'</td><td class="c-mv">'+fsar(k.bl_mv)+'</td><td>'+fsar(k.bl_ttl)+'</td><td>—</td><td>—</td></tr>';
+
+  // Ageing BL by year
+  var at = document.querySelector('#p4-ageing-tbl tbody');
+  if (at) at.innerHTML = ag.map(function(r){
+    var cls = r.year<=2023?'c-red':(r.year===2024?'c-warn':'');
+    return '<tr><td>'+r.year+'</td><td class="c-dx">'+fsar(r.dx)+'</td><td class="c-mv">'+fsar(r.mv)+'</td><td class="'+cls+'">'+fsar(r.total)+'</td></tr>';
+  }).join('');
+
+  // Ageing quarterly
+  var aq = D.ageing_bl_quarterly || {};
+  renderAvgBars('p4-ageing-dx', aq.dx, '#2563eb');
+  renderAvgBars('p4-ageing-mv', aq.mv, '#d97706');
+
+  // BL history trend
+  renderBLHistoryChart();
+
+  // G/MG projects
+  renderGM4();
+}
+
+function renderBLHistoryChart() {
+  var el = document.getElementById('p4-bl-trend');
+  var xa = document.getElementById('p4-bl-xax');
+  if (!el || !BL_HIST || !BL_HIST.length) {
+    if(el) el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:10px">No BL history data yet — will populate after first month-end</div>';
+    return;
+  }
+  var ksa = BL_HIST.filter(function(r){ return r.team==='KSA'||!r.team; });
+  if (!ksa.length) ksa = BL_HIST;
+  var maxV = Math.max.apply(null, ksa.map(function(r){ return parseFloat(r.ttl)||0; })) || 1;
+  var barsHtml = '<div class="bars-wrap">';
+  ksa.forEach(function(r) {
+    var dx = parseFloat(r.single)||0; var mv = parseFloat(r.applied)||0; var ttl = parseFloat(r.ttl)||0;
+    var dxh = Math.max(2, (dx/maxV)*100); var mvh = Math.max(2, (mv/maxV)*100);
+    barsHtml += '<div class="bar-col" style="position:relative">'+
+      '<div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:7px;color:var(--text2);font-weight:600;white-space:nowrap">'+(ttl>=1e6?(ttl/1e6).toFixed(0)+'M':'')+'</div>'+
+      '<div style="width:100%;height:'+dxh+'%;background:#2563eb;border-radius:1px 1px 0 0;min-height:2px"></div>'+
+      '<div style="width:100%;height:'+mvh+'%;background:#d97706;min-height:2px"></div>'+
+      '</div>';
+  });
+  barsHtml += '</div>';
+  el.innerHTML = barsHtml;
+  if (xa) xa.innerHTML = ksa.map(function(r){ return '<span class="x-lbl">'+r.month+'</span>'; }).join('');
+}
+
+function renderGM4() {
+  var sizes = document.querySelector('#p4 .pill.on') && document.querySelector('#p4 .pill.on').textContent.includes('G') ? 'gm' : 'lms';
+  var list = (D.gm_projects||{})[sizes] || [];
+  var tb = document.querySelector('#p4-gm-tbl tbody');
+  if (!tb) return;
+  tb.innerHTML = list.map(function(r){
+    return '<tr><td>'+(r.project_name||'—')+'</td><td>'+(r.customer_name||'—')+'</td><td>'+(r.team||'—')+'</td><td>'+(r.se_name||'—')+'</td>'+
+      '<td class="c-dx">'+fsar(r.dx_bl)+'</td><td class="c-mv">'+fsar(r.mv_bl)+'</td>'+
+      '<td>'+(r.award_year||'—')+'</td><td class="'+ageColor(r.ageing)+'">'+(r.ageing||'—')+'</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="color:var(--text3);padding:8px">No data</td></tr>';
+}
+
+// ── PAGE 5: ACS ────────────────────────────────────────────────────────────────
+function renderACS() {
+  var a = ACS_DATA || {};
+  var k = D.kpis || {};
+  var selType = (document.querySelector('#p5-type-pills .pill.on')||{}).textContent||'All';
+
+  // Filter customer lists by type
+  function filterByType(list) {
+    if (selType==='All') return list;
+    return list.filter(function(r){ return r.type && r.type.toLowerCase().includes(selType.toLowerCase()); });
+  }
+
+  // Pipeline KPIs
+  document.getElementById('p5-pipe-kpis').innerHTML = [
+    {label:'Total ACS Pipeline', val:fsar(a.lg_pro_pipeline), sub:'all probs', cls:'gold'},
+    {label:'LG Pro ACT Pipeline', val:fsar(a.lg_pro_pipeline), sub:'Pro customers', cls:'blue'},
+    {label:'LG Pro TGT 26', val:fsar(a.lg_pro_tgt_26), sub:'from acs_cx file', cls:'warn'},
+    {label:'LG Pro ACT Award', val:fsar(a.lg_pro_award), sub:'90%+100%', cls:'green'},
+    {label:'Contracts Signed', val:'—', sub:'from contract status', cls:'dark'},
+  ].map(function(kp){ return '<div class="kpi '+kp.cls+'"><div class="kl">'+kp.label+'</div><div class="kv '+kp.cls+'">'+kp.val+'</div><div class="ks">'+kp.sub+'</div></div>'; }).join('');
+
+  // LG Pro table
+  var lgt = document.querySelector('#p5-lgpro-tbl tbody');
+  if (lgt) {
+    var lgTgt = parseFloat(a.lg_pro_tgt_26)||0;
+    var lgAct = parseFloat(a.lg_pro_award)||0;
+    var lgPipe = parseFloat(a.lg_pro_pipeline)||0;
+    var hr = parseFloat(k.ttl_hit_ratio)||0;
+    var reqPipe = hr > 0 ? lgTgt/hr : 0;
+    var gap = lgAct - lgTgt;
+    lgt.innerHTML = [
+      ['LG Pro Award TGT 26', fsar(lgTgt), '—', '—'],
+      ['LG Pro Req. Pipeline', fsar(reqPipe), '(TGT÷Hit%)', ''],
+      ['LG Pro ACT Pipeline', '—', fsar(lgPipe), lgPipe>=reqPipe?'<span class="c-green">On track</span>':'<span class="c-red">Below req.</span>'],
+      ['LG Pro ACT Award', fsar(lgTgt), fsar(lgAct), '<span class="'+(gap>=0?'c-green':'c-red')+'">'+fsar(Math.abs(gap))+(gap>=0?' above':' below')+'</span>'],
+    ].map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td></tr>'; }).join('');
+  }
+
+  // Run rate chart placeholder
+  var rrc = document.getElementById('p5-rr-chart');
+  if (rrc) rrc.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:10px">Run rate trend — tracking starts this month</div>';
+
+  // Customer pipeline table
+  var cpt = document.querySelector('#p5-cust-pipe-tbl tbody');
+  if (cpt) cpt.innerHTML = filterByType(a.cust_pipeline||[]).map(function(r){
+    var tc = r.type==='Pro'?'c-gold':(r.type==='New'?'c-blue':'c-dim');
+    return '<tr><td>'+r.customer_name+'</td><td class="'+tc+'">'+(r.type||'—')+'</td><td>'+fsar(r.val_2025)+'</td><td>'+fsar(r.val_2026)+'</td><td>'+fsar(r.total)+'</td></tr>';
+  }).join('');
+
+  // Contract status
+  var cst = document.querySelector('#p5-contract-tbl tbody');
+  if (cst) cst.innerHTML = (a.contract_status||[]).map(function(r){
+    return '<tr><td>'+(r.type||'—')+'</td><td>'+(r.contract_status||'—')+'</td><td>'+r.count+'</td></tr>';
+  }).join('');
+
+  // Award KPIs
+  document.getElementById('p5-awd-kpis').innerHTML = [
+    {label:'LG Pro ACT Award', val:fsar(a.lg_pro_award), sub:'Pro customers', cls:'green'},
+    {label:'LG Pro TGT 26', val:fsar(a.lg_pro_tgt_26), sub:'target', cls:'warn'},
+    {label:'Total ACS Award', val:fsar(a.lg_pro_award), sub:'2025+2026', cls:'green'},
+    {label:'Award vs TGT', val:'—', sub:'gap', cls:'blue'},
+  ].map(function(kp){ return '<div class="kpi '+kp.cls+'"><div class="kl">'+kp.label+'</div><div class="kv '+kp.cls+'">'+kp.val+'</div><div class="ks">'+kp.sub+'</div></div>'; }).join('');
+
+  // Customer award table
+  var cat = document.querySelector('#p5-cust-awd-tbl tbody');
+  if (cat) cat.innerHTML = filterByType(a.cust_award||[]).map(function(r){
+    var tc = r.type==='Pro'?'c-gold':(r.type==='New'?'c-blue':'c-dim');
+    return '<tr><td>'+r.customer_name+'</td><td class="'+tc+'">'+(r.type||'—')+'</td><td>'+fsar(r.val_2025)+'</td><td>'+fsar(r.val_2026)+'</td><td>'+fsar(r.total)+'</td></tr>';
+  }).join('');
+}
+
+// ── PAGE 6: SE ANALYSIS ────────────────────────────────────────────────────────
+function renderSEPage() {
+  // Build team-level signals from SE data
+  var teamMap = {};
+  SE_DATA.forEach(function(se) {
+    var t = se.team || 'Unknown';
+    if (!teamMap[t]) teamMap[t] = {team:t,ses:[],signals:{green:0,amber:0,red:0},awd:0,quo:0,hot:0,bl:0,hr:0,hrCount:0};
+    teamMap[t].ses.push(se);
+    teamMap[t].signals[se.signal]++;
+    teamMap[t].awd += parseFloat(se.awd_2026_ttl)||0;
+    teamMap[t].quo += parseFloat(se.quo_2026_ttl)||0;
+    teamMap[t].hot += parseFloat(se.hot_ttl)||0;
+    teamMap[t].hr  += parseFloat(se.hit_ratio)||0;
+    teamMap[t].hrCount++;
+  });
+
+  var tg = document.getElementById('p6-team-grid');
+  if (!tg) return;
+  tg.innerHTML = Object.values(teamMap).map(function(t) {
+    var overall = t.signals.red > 0 ? 'red' : (t.signals.amber > 0 ? 'amber' : 'green');
+    var sigCls  = overall==='red'?'sig-r':(overall==='amber'?'sig-a':'sig-g');
+    var sigLbl  = overall==='red'?'Red Flag':(overall==='amber'?'Watch':'On Track');
+    var avgHR   = t.hrCount > 0 ? t.hr/t.hrCount : 0;
+    return '<div class="team-card" onclick="showSECards(\''+t.team.replace(/'/g,"&apos;")+'\')">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+        '<div class="tname">'+t.team+'</div><span class="sig '+sigCls+'">'+sigLbl+'</span>'+
+      '</div>'+
+      '<div class="t4">'+
+        '<div class="tc"><div class="tcl">Award 26</div><div class="tcv" style="color:var(--accent)">'+fsar(t.awd)+'</div></div>'+
+        '<div class="tc"><div class="tcl">Hit Ratio</div><div class="tcv" style="color:var(--accent2)">'+fpct(avgHR)+'</div></div>'+
+        '<div class="tc"><div class="tcl">Hot Proj.</div><div class="tcv" style="color:var(--warn)">'+fsar(t.hot)+'</div></div>'+
+        '<div class="tc"><div class="tcl">SEs</div><div class="tcv">'+t.ses.length+'</div></div>'+
+      '</div></div>';
+  }).join('');
+}
+
+function showSECards(team) {
+  document.getElementById('p6-team-grid').style.display='none';
+  document.getElementById('p6-se-section').style.display='block';
+  document.getElementById('p6-se-lbl').textContent = team;
+  var ses = SE_DATA.filter(function(se){ return !team || se.team===team; });
+  var sg = document.getElementById('p6-se-grid');
+  if (!sg) return;
+  sg.innerHTML = ses.map(function(se) {
+    var sigCls = se.signal==='red'?'sig-r':(se.signal==='amber'?'sig-a':'sig-g');
+    var sigLbl = se.signal==='red'?'Red Flag':(se.signal==='amber'?'Watch':'On Track');
+    var awd_pct = se.awd_tgt>0 ? Math.min(100,(parseFloat(se.awd_2026_ttl)||0)/(parseFloat(se.awd_tgt)||1)*100) : 0;
+    var bl_pct  = se.bl_tgt>0  ? Math.min(100,(parseFloat(se.bl_ttl)||0)/(parseFloat(se.bl_tgt)||1)*100)  : 0;
+    var mindCls = function(sig){ return sig==='green'?'mind-g':(sig==='amber'?'mind-a':'mind-r'); };
+    // Metric signals
+    var awd_sig = !se.awd_tgt?'amber':(parseFloat(se.awd_2026_ttl)>=parseFloat(se.awd_tgt)*0.8?'green':parseFloat(se.awd_2026_ttl)>=parseFloat(se.awd_tgt)*0.3?'amber':'red');
+    var hr_sig  = parseFloat(se.hit_ratio)>=parseFloat(se.team_hit_ratio)*1.1?'green':(parseFloat(se.hit_ratio)>=parseFloat(se.team_hit_ratio)*0.7?'amber':'red');
+    var hot_sig = parseFloat(se.hot_ttl)>0?'green':'red';
+    var bl_sig  = !se.bl_tgt?'amber':(bl_pct>130?'amber':(bl_pct>30?'green':'red'));
+    var trendHtml = '';
+    if (se.quo_trend && se.quo_trend.length) {
+      var maxT = Math.max.apply(null, se.quo_trend.map(function(q){ return parseFloat(q.value)||0; })) || 1;
+      trendHtml = '<div class="mini-trend-wrap"><div class="mini-trend-lbl">Quotations Q2 25–Q2 26</div>'+
+        '<div class="mini-trend">'+se.quo_trend.map(function(q,i){
+          var h = Math.max(4, ((parseFloat(q.value)||0)/maxT)*100);
+          var trending = i>0 && (parseFloat(q.value)||0) < (parseFloat(se.quo_trend[i-1].value)||0);
+          return '<div class="mt-bar" style="height:'+h+'%;background:'+(trending?'#ea580c':'#2563eb')+'"></div>';
+        }).join('')+'</div></div>';
+    }
+    return '<div class="se-card">' +
+      '<div class="se-hdr"><div><div class="se-name">'+se.se_name+'</div><div class="se-team-lbl">'+se.team+'</div></div><span class="sig '+sigCls+'">'+sigLbl+'</span></div>'+
+      '<div class="m4">'+
+        '<div class="mc"><div class="mlbl">Award</div><div class="mval" style="color:var(--accent)">'+fsar(se.awd_2026_ttl)+'</div><div class="mind '+mindCls(awd_sig)+'"></div></div>'+
+        '<div class="mc"><div class="mlbl">Quotations</div><div class="mval" style="color:var(--accent2)">'+fsar(se.quo_2026_ttl)+'</div><div class="mind '+mindCls(hr_sig)+'"></div></div>'+
+        '<div class="mc"><div class="mlbl">Hit Ratio</div><div class="mval" style="color:var(--warn)">'+fpct(se.hit_ratio)+'</div><div class="mind '+mindCls(hr_sig)+'"></div></div>'+
+        '<div class="mc"><div class="mlbl">Hot <span class="c-dx">DX</span>/<span class="c-mv">MV</span></div><div class="mval" style="color:var(--green)">'+fsar(se.hot_dx)+'/'+fsar(se.hot_mv)+'</div><div class="mind '+mindCls(hot_sig)+'"></div></div>'+
+      '</div>'+
+      '<div class="bl-mini">'+
+        '<div class="bmtitle">ACT Award vs TGT Award</div>'+
+        '<div class="bmrow"><div class="bmlbl">ACT</div><div class="bmwrap"><div class="bmfill" style="width:'+awd_pct+'%;background:#2563eb"></div></div><div class="bmval c-dx">'+fsar(se.awd_2026_ttl)+'</div></div>'+
+        '<div class="bmrow"><div class="bmlbl">TGT</div><div class="bmwrap"><div class="bmfill" style="width:100%;background:#e2e6ed"></div></div><div class="bmval c-dim">'+fsar(se.awd_tgt)+'</div></div>'+
+        '<div class="bmtitle" style="margin-top:4px">ACT BL vs TGT BL</div>'+
+        '<div class="bmrow"><div class="bmlbl">ACT</div><div class="bmwrap"><div class="bmfill" style="width:'+bl_pct+'%;background:#d97706"></div></div><div class="bmval c-mv">'+fsar(se.bl_ttl)+'</div></div>'+
+        '<div class="bmrow"><div class="bmlbl">TGT</div><div class="bmwrap"><div class="bmfill" style="width:100%;background:#e2e6ed"></div></div><div class="bmval c-dim">'+fsar(se.bl_tgt)+'</div></div>'+
+      '</div>'+
+      trendHtml+
+      '<div class="insight-box"><b>'+(se.signal==='red'?'Red flag — ':se.signal==='amber'?'Watch — ':'On track — ')+'</b>'+se.insight+'</div>'+
+      '</div>';
+  }).join('');
+}
+
+function hideSECards() {
+  document.getElementById('p6-team-grid').style.display='grid';
+  document.getElementById('p6-se-section').style.display='none';
+}
+
+function filterSEPage(sel) {
+  showSECards(sel.value);
+  if (!sel.value) hideSECards();
+}
+
+// ── PAGE 7: PROJECTS TABLE ─────────────────────────────────────────────────────
+function renderProjectsTable() {
+  var team = document.getElementById('p7-team').value;
+  var se   = document.getElementById('p7-se').value;
+  var prob = document.getElementById('p7-prob').value;
+  var size = document.getElementById('p7-size').value;
+  var grp  = document.getElementById('p7-grp').value;
+  var proj = (document.getElementById('p7-proj').value||'').toLowerCase();
+  var cust = (document.getElementById('p7-cust').value||'').toLowerCase();
+
+  FILTERED_PROJ = PROJ_DATA.filter(function(r) {
+    if (team && r.team !== team) return false;
+    if (se   && r.se_name !== se) return false;
+    if (prob && r.probability !== prob) return false;
+    if (size && r.project_size !== size) return false;
+    if (grp==='dx' && !r.is_dx) return false;
+    if (grp==='mv' && !r.is_mv) return false;
+    if (proj && !(r.project_name||'').toLowerCase().includes(proj)) return false;
+    if (cust && !(r.customer_name||'').toLowerCase().includes(cust)) return false;
+    return true;
+  });
+
+  var show = FILTERED_PROJ.slice(0, 200);
+  document.getElementById('p7-count').textContent = 'Showing ' + show.length + ' of ' + FILTERED_PROJ.length + ' projects';
+
+  var tb = document.getElementById('p7-tbody');
+  if (!tb) return;
+  tb.innerHTML = show.map(function(r) {
+    var probCls = r.is_award ? 'bdg-award' : (r.is_hot ? 'bdg-hot' : 'bdg-pipe');
+    var probShort = (r.probability||'').replace('% - PJT-','%').replace('% - PO','-PO').replace(' QUO','');
+    return '<tr class="cl" onclick="openDrawer(\'project\',\''+((r.project_name||'').replace(/'/g,"&apos;"))+'\')">' +
+      '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.project_name||'—')+'</td>'+
+      '<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.customer_name||'—')+'</td>'+
+      '<td>'+(r.team||'—')+'</td><td>'+(r.se_name||'—')+'</td>'+
+      '<td><span class="bdg '+probCls+'">'+probShort+'</span></td>'+
+      '<td>'+(r.group||'—')+'</td>'+
+      '<td class="'+(r.is_award?'c-green':r.is_hot?'c-warn':'')+'">'+fsar(r.q_gross_value)+'</td>'+
+      '<td>'+(r.project_size||'—')+'</td>'+
+      '<td>'+(r.expected_award||'—')+'</td>'+
+      '</tr>';
+  }).join('') || '<tr><td colspan="9" style="color:var(--text3);padding:16px;text-align:center">No projects match filters</td></tr>';
+}
+
+function exportProjects() {
+  var rows = FILTERED_PROJ.map(function(r) {
+    return {'Project':r.project_name||'','Customer':r.customer_name||'','Team':r.team||'',
+            'SE':r.se_name||'','Probability':r.probability||'','Group':r.group||'',
+            'SAR Value':parseFloat(r.q_gross_value)||0,'Size':r.project_size||'',
+            'Valid From':r.valid_from||'','Exp. Award':r.expected_award||''};
+  });
+  var ws = XLSX.utils.json_to_sheet(rows);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pipeline');
+  XLSX.writeFile(wb, 'pipeline_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ── Filters ────────────────────────────────────────────────────────────────────
+function applyPageFilter(page) {
+  var activeFilters = [];
+  ['team','se','size','proj','cust'].forEach(function(f) {
+    var el = document.getElementById(page+'-'+f);
+    if (el && el.value) activeFilters.push(el.value);
+  });
+  var af = document.getElementById(page+'-af');
+  if (af) af.textContent = activeFilters.length ? 'Filters: ' + activeFilters.join(', ') : 'Filters: None';
+}
+
+function clearFilter(page) {
+  ['team','se','size','proj','cust'].forEach(function(f) {
+    var el = document.getElementById(page+'-'+f);
+    if (el) el.value = '';
+  });
+  var af = document.getElementById(page+'-af');
+  if (af) af.textContent = 'Filters: None';
+  if (page==='p7') renderProjectsTable();
+}
+
+// ── Pills / Tabs ───────────────────────────────────────────────────────────────
+function togglePill(el, group) {
+  var parent = el.closest('.pills') || document.getElementById(group+'-pills') || el.parentElement;
+  parent.querySelectorAll('.pill').forEach(function(p){ p.classList.remove('on'); });
+  el.classList.add('on');
+}
+
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+function showSub(id, el) {
+  document.querySelectorAll('.subpage').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.subtab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── Drawer ─────────────────────────────────────────────────────────────────────
+var drawerState = {type:'', team:'', se:'', customer:''};
+
+function openDrawer(type, context) {
+  drawerState = {type:type, team:context, se:'', customer:''};
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('drawer-title').textContent = context + ' — ' + type.charAt(0).toUpperCase()+type.slice(1);
+  renderDrawerL1(type, context);
+}
+
+function renderDrawerL1(type, team) {
+  var bc = document.getElementById('drawer-left');
+  var dr = document.getElementById('drawer-right');
+  if (!bc || !dr) return;
+
+  // Get SEs for this team from SE data
+  var ses = SE_DATA.filter(function(se){ return se.team===team; });
+  var sortKey = type==='bl' ? 'bl_ttl' : (type==='award' ? 'awd_2026_ttl' : 'hot_ttl');
+  ses.sort(function(a,b){ return (parseFloat(b[sortKey])||0) - (parseFloat(a[sortKey])||0); });
+  var maxV = Math.max.apply(null, ses.map(function(s){ return parseFloat(s[sortKey])||0; })) || 1;
+
+  bc.innerHTML = '<div class="dsec">Sales Engineers</div>' + ses.map(function(se) {
+    var v = parseFloat(se[sortKey])||0;
+    var pct = Math.max(4, (v/maxV)*100);
+    return '<div class="drow" onclick="renderDrawerL2(\''+type+'\',\''+team.replace(/'/g,"&apos;")+'\',\''+se.se_name.replace(/'/g,"&apos;")+'\',this)">' +
+      '<div class="dname">'+se.se_name+'</div>'+
+      '<div class="dval">'+fsar(v)+' <span class="sig '+(se.signal==='red'?'sig-r':se.signal==='amber'?'sig-a':'sig-g')+'">'+se.signal+'</span></div>'+
+      '<div class="dbar-wrap"><div class="dbar-fill" style="width:'+pct+'%"></div></div></div>';
+  }).join('') || '<div style="color:var(--text3);font-size:10px;padding:8px">No SE data for this team</div>';
+  dr.innerHTML = '<div style="color:var(--text2);font-size:10px;padding:16px 0">Select an SE to see customer breakdown</div>';
+}
+
+function renderDrawerL2(type, team, se, el) {
+  document.querySelectorAll('.drow').forEach(function(r){ r.classList.remove('act'); });
+  el.classList.add('act');
+  drawerState.se = se;
+
+  // Filter projects for this SE
+  var seProjs = PROJ_DATA.filter(function(p){ return p.se_name===se; });
+  if (type==='bl') seProjs = seProjs.filter(function(p){ return p.is_award; });
+  if (type==='award') seProjs = seProjs.filter(function(p){ return p.is_award; });
+  if (type==='hot') seProjs = seProjs.filter(function(p){ return p.in_hot_window; });
+
+  // Group by customer
+  var custMap = {};
+  seProjs.forEach(function(p) {
+    var k = p.customer_name||'Unknown';
+    if (!custMap[k]) custMap[k] = {name:k, total:0, count:0};
+    custMap[k].total += parseFloat(p.q_gross_value)||0;
+    custMap[k].count++;
+  });
+  var custs = Object.values(custMap).sort(function(a,b){ return b.total-a.total; });
+  var maxC = Math.max.apply(null, custs.map(function(c){ return c.total; })) || 1;
+
+  var dr = document.getElementById('drawer-right');
+  dr.innerHTML = '<div class="bc"><span onclick="renderDrawerL1(\''+type+'\',\''+team.replace(/'/g,"&apos;")+'\')">'+team+'</span> › '+se+'</div>'+
+    '<div class="dsec">Customers</div>' +
+    custs.map(function(c) {
+      var pct = Math.max(4, (c.total/maxC)*100);
+      return '<div class="drow" onclick="renderDrawerL3(\''+type+'\',\''+team.replace(/'/g,"&apos;")+'\',\''+se.replace(/'/g,"&apos;")+'\',\''+c.name.replace(/'/g,"&apos;")+'\',this)">' +
+        '<div class="dname">'+c.name+'</div><div class="dval">'+fsar(c.total)+' · '+c.count+' projects</div>'+
+        '<div class="dbar-wrap"><div class="dbar-fill" style="width:'+pct+'%"></div></div></div>';
+    }).join('') || '<div style="color:var(--text3);font-size:10px;padding:8px">No projects found</div>';
+}
+
+function renderDrawerL3(type, team, se, customer, el) {
+  document.querySelectorAll('#drawer-right .drow').forEach(function(r){ r.classList.remove('act'); });
+  el.classList.add('act');
+
+  var projs = PROJ_DATA.filter(function(p){ return p.se_name===se && p.customer_name===customer; });
+  if (type==='bl') projs = projs.filter(function(p){ return p.is_award; });
+
+  var dr = document.getElementById('drawer-right');
+  dr.innerHTML = '<div class="bc">'+
+    '<span onclick="renderDrawerL1(\''+type+'\',\''+team.replace(/'/g,"&apos;")+'\')">'+team+'</span> › '+
+    '<span onclick="renderDrawerL2.call(null,\''+type+'\',\''+team.replace(/'/g,"&apos;")+'\',\''+se.replace(/'/g,"&apos;")+'\',document.querySelector(\'.drow.act\'))">'+se+'</span> › '+customer+
+    '</div>'+
+    '<div class="dsec">Projects ('+projs.length+')</div>'+
+    '<table class="tbl"><thead><tr><th style="text-align:left">Project</th><th>Probability</th><th>SAR Value</th><th>BL Val</th><th>Exp. Award</th></tr></thead><tbody>'+
+    projs.map(function(p){
+      return '<tr><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(p.project_name||'—')+'</td>'+
+        '<td><span class="bdg '+(p.is_award?'bdg-award':p.is_hot?'bdg-hot':'bdg-pipe')+'">'+(p.probability||'').split('-')[0].trim()+'</span></td>'+
+        '<td class="'+(p.is_award?'c-green':'')+'">'+fsar(p.q_gross_value)+'</td>'+
+        '<td>'+fsar(p.backlog_val)+'</td><td>'+(p.expected_award||'—')+'</td></tr>';
+    }).join('')+
+    '</tbody></table>';
+}
+
+function closeDrawer() { document.getElementById('drawer-overlay').classList.remove('open'); }
+function closeDrawerBg(e) { if (e.target===document.getElementById('drawer-overlay')) closeDrawer(); }
+
+// ── Boot ───────────────────────────────────────────────────────────────────────
+fetchAll();
+</script>
+</body>
+</html>
