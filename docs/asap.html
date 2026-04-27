@@ -130,6 +130,21 @@ tr.selected td{background:var(--accent-light)!important}
 th{user-select:none}
 .focus-mode{display:block!important;position:fixed!important;top:0;left:0;width:100vw;height:100vh;z-index:999;background:var(--bg);overflow-y:auto;padding:16px 24px}
 .focus-mode .tbl-wrap{max-height:calc(100vh - 220px);overflow-y:auto}
+.ob-pane{display:none}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:14px}
+.tab{font-size:12px;padding:9px 16px;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.tab:hover{color:var(--text)}.tab.active{color:var(--text);font-weight:500;border-bottom:2px solid var(--accent)}
+.tab-ct{font-size:10px;padding:1px 6px;border-radius:20px;background:var(--surface2)}.tab-ct.red{background:#fee2e2;color:#991b1b}.tab-ct.blue{background:#dbeafe;color:#1e3a8a}
+.tab-restricted{font-size:9px;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px}
+.pin-digit{width:44px;height:48px;border:1px solid var(--border2);border-radius:var(--radius);font-size:20px;font-weight:500;text-align:center;background:var(--surface);color:var(--text)}
+.pin-digit:focus{outline:none;border-color:var(--accent)}
+tr.row-claimed{opacity:.5}tr.row-claimed td:first-child{border-left:3px solid var(--success)}
+.bar-row-ob{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bar-lbl-ob{width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);font-size:11px}
+.bar-trk-ob{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.bar-fil-ob{height:100%;border-radius:3px;background:#3b82f6}
+.bar-fil-ob.red{background:#ef4444}.bar-fil-ob.amber{background:#f59e0b}
+.bar-val-ob{width:36px;text-align:right;font-size:11px;color:var(--text2)}
 </style>
 </head>
 <body>
@@ -142,6 +157,7 @@ th{user-select:none}
   <span class="nav-link" onclick="showPage('pipeline',this)">Pipeline &amp; coverage</span>
   <a class="nav-link" href="accounts_analysis.html" style="text-decoration:none">Account analysis</a>
   <span class="nav-link" onclick="showPage('product',this)">Product analysis</span>
+  <span class="nav-link" onclick="showPage('openbox',this)">Open box</span>
   <span class="nav-updated" id="last-updated"></span>
 </nav>
 
@@ -470,7 +486,128 @@ th{user-select:none}
   </div>
 </div>
 
+<!-- OPEN BOX -->
+<div id="page-openbox" class="page">
+  <div class="page-title">Open box program</div>
+  <div class="page-sub">Released inactive accounts &mdash; first confirmed PO or payment claims ownership permanently &nbsp;&middot;&nbsp; Disputes: Asher Ali Khan &nbsp;&middot;&nbsp; Criteria disputes within 14 days</div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="obSwitchTab('list',this)">Open box list <span class="tab-ct blue" id="ob-count-badge">--</span></div>
+    <div class="tab" onclick="obSwitchTab('redlist',this)">Red list <span class="tab-ct red" id="rl-count-badge">--</span> <span class="tab-restricted">Managers only</span></div>
+    <div class="tab" onclick="obSwitchTab('evp',this)">EVP analytics <span class="tab-restricted">Restricted</span></div>
+    <div class="tab" onclick="obSwitchTab('inter',this)">Inter-team analysis <span class="tab-restricted">Restricted</span></div>
+  </div>
+
+  <!-- OB LIST -->
+  <div id="ob-pane-list" style="display:block">
+    <div class="kpi-grid" style="grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px" id="ob-kpis"></div>
+    <div class="filter-bar">
+      <select id="ob-f-team" onchange="applyOBFilters()"><option value="">All teams</option></select>
+      <select id="ob-f-transfer" onchange="applyOBFilters()"><option value="">Transfer type</option><option value="same">Same</option><option value="intra">Intra</option><option value="inter">Inter</option></select>
+      <select id="ob-f-history" onchange="applyOBFilters()"><option value="">Sales history</option><option value="yes">Has history</option><option value="no">No history</option></select>
+      <select id="ob-f-claim" onchange="applyOBFilters()"><option value="">Claim status</option><option value="unclaimed">Unclaimed</option><option value="claimed">Claimed</option></select>
+      <select id="ob-f-size" onchange="applyOBFilters()"><option value="">Size</option><option value="A+">A+</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+      <input type="text" id="ob-f-search" placeholder="Search account..." oninput="applyOBFilters()">
+      <span style="font-size:11px;color:var(--text3)" id="ob-filter-count"></span>
+      <button class="btn-export" onclick="exportOBTable()">Export</button>
+    </div>
+    <div class="tbl-wrap" style="height:65vh;overflow-y:auto">
+      <table>
+        <thead style="position:sticky;top:0;z-index:2"><tr>
+          <th onclick="sortOB('name')" style="cursor:pointer">Customer name <span class="sort-arrow" id="sa-ob-name"></span></th>
+          <th onclick="sortOB('type')" style="cursor:pointer">Type <span class="sort-arrow" id="sa-ob-type"></span></th>
+          <th onclick="sortOB('size')" style="cursor:pointer">Size <span class="sort-arrow" id="sa-ob-size"></span></th>
+          <th onclick="sortOB('prev_se1')" style="cursor:pointer">Prev SE 1 <span class="sort-arrow" id="sa-ob-prev_se1"></span></th>
+          <th onclick="sortOB('prev_se2')" style="cursor:pointer">Prev SE 2 <span class="sort-arrow" id="sa-ob-prev_se2"></span></th>
+          <th class="r" onclick="sortOB('s2023')" style="cursor:pointer">2023 sales <span class="sort-arrow" id="sa-ob-s2023"></span></th>
+          <th class="r" onclick="sortOB('s2024')" style="cursor:pointer">2024 sales <span class="sort-arrow" id="sa-ob-s2024"></span></th>
+          <th class="r" onclick="sortOB('total_sales')" style="cursor:pointer">Total history <span class="sort-arrow" id="sa-ob-total_sales"></span></th>
+          <th class="r" onclick="sortOB('lost')" style="cursor:pointer">Lost pipeline <span class="sort-arrow" id="sa-ob-lost"></span></th>
+          <th class="r" onclick="sortOB('s2025_live')" style="cursor:pointer">2025 sales <span class="sort-arrow" id="sa-ob-s2025_live"></span></th>
+          <th class="r" onclick="sortOB('hot_live')" style="cursor:pointer">Hot pipeline <span class="sort-arrow" id="sa-ob-hot_live"></span></th>
+          <th onclick="sortOB('claim_status')" style="cursor:pointer">Claim status <span class="sort-arrow" id="sa-ob-claim_status"></span></th>
+          <th>Claimed by</th>
+        </tr></thead>
+        <tbody id="ob-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RED LIST -->
+  <div id="ob-pane-redlist" style="display:none">
+    <div id="rl-gate">
+      <div style="max-width:360px;margin:30px auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:36px;text-align:center">
+        <div style="font-size:28px;margin-bottom:10px">&#128274;</div>
+        <div style="font-size:14px;font-weight:500;margin-bottom:6px">Red list &mdash; restricted access</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:16px;line-height:1.6">Team managers only. Not for SE circulation. Enter your team PIN.</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px">
+          <input class="pin-digit" type="password" maxlength="1" id="rl-p0" oninput="rlPinNext(0)" onkeydown="rlPinBack(event,0)">
+          <input class="pin-digit" type="password" maxlength="1" id="rl-p1" oninput="rlPinNext(1)" onkeydown="rlPinBack(event,1)">
+          <input class="pin-digit" type="password" maxlength="1" id="rl-p2" oninput="rlPinNext(2)" onkeydown="rlPinBack(event,2)">
+          <input class="pin-digit" type="password" maxlength="1" id="rl-p3" oninput="rlPinNext(3)" onkeydown="rlPinBack(event,3)">
+        </div>
+        <button style="width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:500" onclick="checkRLPin()">Unlock</button>
+        <div style="font-size:11px;color:var(--danger);margin-top:6px;min-height:16px" id="rl-pin-err"></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:8px">&#9888; Temporary PIN. Cloudflare auth coming soon. Contact Mohammed Abdul Haseeb for your PIN.</div>
+      </div>
+    </div>
+    <div id="rl-content" style="display:none">
+      <div style="font-size:10px;background:#fffbeb;border:1px solid #fcd34d;border-radius:var(--radius);padding:6px 10px;margin-bottom:10px;color:#92400e">&#9888; Red list accounts carry active quotations on a deadline. Miss it and they move to Open Box automatically. 30% tier = M+1 month &nbsp;|&nbsp; 15% tier = M+2 months.</div>
+      <div class="filter-bar" style="margin-bottom:10px">
+        <select id="rl-f-tier" onchange="renderRedList()"><option value="">All tiers</option><option value="30">30% tier (M+1)</option><option value="15">15% tier (M+2)</option></select>
+        <select id="rl-f-status" onchange="renderRedList()"><option value="">All status</option><option value="ok">On track</option><option value="warn">Warning (7 days)</option><option value="crit">Critical / overdue</option></select>
+        <input type="text" id="rl-f-search" placeholder="Search account..." oninput="renderRedList()">
+      </div>
+      <div id="rl-teams-body"></div>
+    </div>
+  </div>
+
+  <!-- EVP ANALYTICS -->
+  <div id="ob-pane-evp" style="display:none">
+    <div id="evp-gate">
+      <div style="max-width:360px;margin:30px auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:36px;text-align:center">
+        <div style="font-size:28px;margin-bottom:10px">&#128274;</div>
+        <div style="font-size:14px;font-weight:500;margin-bottom:6px">EVP analytics &mdash; restricted</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:16px;line-height:1.6">Access: EVP (Eddie), BA (Mohammed Abdul Haseeb), Sales Ops Manager.</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px">
+          <input class="pin-digit" type="password" maxlength="1" id="evp-p0" oninput="evpPinNext(0)" onkeydown="evpPinBack(event,0)">
+          <input class="pin-digit" type="password" maxlength="1" id="evp-p1" oninput="evpPinNext(1)" onkeydown="evpPinBack(event,1)">
+          <input class="pin-digit" type="password" maxlength="1" id="evp-p2" oninput="evpPinNext(2)" onkeydown="evpPinBack(event,2)">
+          <input class="pin-digit" type="password" maxlength="1" id="evp-p3" oninput="evpPinNext(3)" onkeydown="evpPinBack(event,3)">
+        </div>
+        <button style="width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:500" onclick="checkEVPPin()">Unlock</button>
+        <div style="font-size:11px;color:var(--danger);margin-top:6px;min-height:16px" id="evp-pin-err"></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:8px">&#9888; Temporary PIN. Cloudflare auth coming soon.</div>
+      </div>
+    </div>
+    <div id="evp-content" style="display:none"><div id="evp-inner"></div></div>
+  </div>
+
+  <!-- INTER-TEAM ANALYSIS -->
+  <div id="ob-pane-inter" style="display:none">
+    <div id="inter-gate">
+      <div style="max-width:360px;margin:30px auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:36px;text-align:center">
+        <div style="font-size:28px;margin-bottom:10px">&#128274;</div>
+        <div style="font-size:14px;font-weight:500;margin-bottom:6px">Inter-team analysis &mdash; restricted</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:16px;line-height:1.6">Same access as EVP analytics. Enter the admin PIN.</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px">
+          <input class="pin-digit" type="password" maxlength="1" id="inter-p0" oninput="interPinNext(0)" onkeydown="interPinBack(event,0)">
+          <input class="pin-digit" type="password" maxlength="1" id="inter-p1" oninput="interPinNext(1)" onkeydown="interPinBack(event,1)">
+          <input class="pin-digit" type="password" maxlength="1" id="inter-p2" oninput="interPinNext(2)" onkeydown="interPinBack(event,2)">
+          <input class="pin-digit" type="password" maxlength="1" id="inter-p3" oninput="interPinNext(3)" onkeydown="interPinBack(event,3)">
+        </div>
+        <button style="width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:500" onclick="checkInterPin()">Unlock</button>
+        <div style="font-size:11px;color:var(--danger);margin-top:6px;min-height:16px" id="inter-pin-err"></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:8px">&#9888; Temporary PIN. Cloudflare auth coming soon.</div>
+      </div>
+    </div>
+    <div id="inter-content" style="display:none"><div id="inter-inner"></div></div>
+  </div>
+
+</div>
+
 <script>
+var OB_LIST="+ob_list_js+";var OB_RL="+ob_rl_js+";var OB_EVP="+ob_evp_js+";var OB_INTER="+ob_inter_js+";
 var ACCOUNTS=[], SE_DATA=[], TEAM_DATA=[], PIPE_DATA=[], PROD_DATA={};
 var ACC_INDEX={};
 var SEL_TEAM=null, SEL_SE=null, SEL_MONTH=null;
@@ -1263,6 +1400,370 @@ function exportTransferTable(){tableToXLSX('tr-table','asap_transfers');}
 function exportPipelineTable(){tableToXLSX('pl-table','asap_pipeline');}
 function exportProductTable(){tableToXLSX('prod-table','asap_products');}
 
+
+// ═══════════════════════════════════════════════════════════════
+// OPEN BOX — ACCESS CONTROL
+// NOTE: Temporary PIN gate. Replace checkOBAccess() with
+// Cloudflare Workers fetch() call when auth is ready.
+// ═══════════════════════════════════════════════════════════════
+var OB_PINS = {
+  manager_central:'1001',manager_acscr:'1002',manager_west:'1003',
+  manager_acswr:'1004',manager_east:'1005',manager_acser:'1006',
+  manager_direct:'1007',admin:'9999'
+};
+var OB_TEAM_PIN_MAP = {
+  'Central Projects':'manager_central','ACS - CR':'manager_acscr',
+  'West Projects':'manager_west','ACS - WR':'manager_acswr',
+  'East Projects':'manager_east','ACS - ER':'manager_acser',
+  'Direct Channel':'manager_direct'
+};
+var OB_UNLOCKED_TEAMS = new Set();
+var OB_ADMIN = false;
+
+function checkOBAccess(role,pin){ return OB_PINS[role] && OB_PINS[role]===pin; }
+
+function obGetPin(pfx){return[0,1,2,3].map(function(i){return(document.getElementById(pfx+i)||{}).value||'';}).join('');}
+function obClearPin(pfx){[0,1,2,3].forEach(function(i){var el=document.getElementById(pfx+i);if(el)el.value='';});var f=document.getElementById(pfx+'0');if(f)f.focus();}
+
+function rlPinNext(i){var v=(document.getElementById('rl-p'+i)||{}).value;if(v&&i<3){var n=document.getElementById('rl-p'+(i+1));if(n)n.focus();}if(i===3&&v)checkRLPin();}
+function rlPinBack(e,i){if(e.key==='Backspace'&&!(document.getElementById('rl-p'+i)||{}).value&&i>0){var p=document.getElementById('rl-p'+(i-1));if(p)p.focus();}}
+function checkRLPin(){
+  var pin=obGetPin('rl-p');
+  if(checkOBAccess('admin',pin)){OB_ADMIN=true;Object.keys(OB_TEAM_PIN_MAP).forEach(function(t){OB_UNLOCKED_TEAMS.add(t);});showRLContent();return;}
+  var matched=null;
+  Object.keys(OB_TEAM_PIN_MAP).forEach(function(t){if(checkOBAccess(OB_TEAM_PIN_MAP[t],pin))matched=t;});
+  if(matched){OB_UNLOCKED_TEAMS.add(matched);showRLContent();}
+  else{var e=document.getElementById('rl-pin-err');if(e)e.textContent='Incorrect PIN. Try again.';obClearPin('rl-p');}
+}
+function showRLContent(){
+  var g=document.getElementById('rl-gate');if(g)g.style.display='none';
+  var c=document.getElementById('rl-content');if(c)c.style.display='block';
+  renderRedList();
+}
+function evpPinNext(i){var v=(document.getElementById('evp-p'+i)||{}).value;if(v&&i<3){var n=document.getElementById('evp-p'+(i+1));if(n)n.focus();}if(i===3&&v)checkEVPPin();}
+function evpPinBack(e,i){if(e.key==='Backspace'&&!(document.getElementById('evp-p'+i)||{}).value&&i>0){var p=document.getElementById('evp-p'+(i-1));if(p)p.focus();}}
+function checkEVPPin(){
+  var pin=obGetPin('evp-p');
+  if(checkOBAccess('admin',pin)){OB_ADMIN=true;var g=document.getElementById('evp-gate');if(g)g.style.display='none';var c=document.getElementById('evp-content');if(c)c.style.display='block';renderEVP();}
+  else{var e=document.getElementById('evp-pin-err');if(e)e.textContent='Incorrect PIN.';obClearPin('evp-p');}
+}
+function interPinNext(i){var v=(document.getElementById('inter-p'+i)||{}).value;if(v&&i<3){var n=document.getElementById('inter-p'+(i+1));if(n)n.focus();}if(i===3&&v)checkInterPin();}
+function interPinBack(e,i){if(e.key==='Backspace'&&!(document.getElementById('inter-p'+i)||{}).value&&i>0){var p=document.getElementById('inter-p'+(i-1));if(p)p.focus();}}
+function checkInterPin(){
+  var pin=obGetPin('inter-p');
+  if(checkOBAccess('admin',pin)){OB_ADMIN=true;var g=document.getElementById('inter-gate');if(g)g.style.display='none';var c=document.getElementById('inter-content');if(c)c.style.display='block';renderInter();}
+  else{var e=document.getElementById('inter-pin-err');if(e)e.textContent='Incorrect PIN.';obClearPin('inter-p');}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OPEN BOX — TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════
+function obSwitchTab(name,el){
+  ['list','redlist','evp','inter'].forEach(function(t){
+    var pane=document.getElementById('ob-pane-'+t);
+    if(pane)pane.style.display=(t===name?'block':'none');
+  });
+  var tabs=document.querySelectorAll('#page-openbox .tab');
+  tabs.forEach(function(t){t.classList.remove('active');});
+  if(el)el.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OPEN BOX — LIST TAB
+// ═══════════════════════════════════════════════════════════════
+var OB_FILTERED=[];
+var OB_SORT={col:'s2024',dir:-1};
+
+function initOBPage(){
+  if(!OB_LIST||!OB_LIST.length)return;
+  // Enrich with live data from ACCOUNTS
+  OB_LIST.forEach(function(a){
+    var live=ACC_INDEX[a.cust_no]!=null?ACCOUNTS[ACC_INDEX[a.cust_no]]:null;
+    a.s2025_live=live&&live.sales?live.sales['2025']||0:0;
+    a.hot_live=live?live.hot_pipeline||0:0;
+    a.curr_team=live?live.curr_team||'':'';
+  });
+  // Populate team filter from live data
+  var teams=[...new Set(OB_LIST.map(function(a){return a.curr_team;}).filter(Boolean))].sort();
+  var sel=document.getElementById('ob-f-team');
+  if(sel){teams.forEach(function(t){var o=document.createElement('option');o.value=t;o.text=t;sel.appendChild(o);});}
+  document.getElementById('ob-count-badge').textContent=OB_LIST.length;
+  document.getElementById('rl-count-badge').textContent=OB_RL.length;
+  OB_FILTERED=OB_LIST.slice();
+  obSortData();
+  renderOBKPIs();
+  renderOBTable();
+  document.getElementById('ob-filter-count').textContent=OB_FILTERED.length+' accounts';
+}
+
+function applyOBFilters(){
+  var fTeam=document.getElementById('ob-f-team').value;
+  var fTrans=document.getElementById('ob-f-transfer').value;
+  var fHist=document.getElementById('ob-f-history').value;
+  var fClaim=document.getElementById('ob-f-claim').value;
+  var fSize=document.getElementById('ob-f-size').value;
+  var fSearch=document.getElementById('ob-f-search').value.toLowerCase();
+  OB_FILTERED=OB_LIST.filter(function(a){
+    if(fTeam&&a.curr_team!==fTeam)return false;
+    if(fTrans&&(a.transfer||'').toLowerCase()!==fTrans)return false;
+    if(fHist==='yes'&&!(a.s2023>0||a.s2024>0))return false;
+    if(fHist==='no'&&(a.s2023>0||a.s2024>0))return false;
+    if(fClaim==='claimed'&&!a.claim_status)return false;
+    if(fClaim==='unclaimed'&&a.claim_status)return false;
+    if(fSize&&a.size!==fSize)return false;
+    if(fSearch&&!(a.name||'').toLowerCase().includes(fSearch)&&!(a.prev_se1||'').toLowerCase().includes(fSearch))return false;
+    return true;
+  });
+  obSortData();renderOBTable();
+  document.getElementById('ob-filter-count').textContent=OB_FILTERED.length+' accounts';
+}
+
+function obSortData(){
+  var col=OB_SORT.col,dir=OB_SORT.dir;
+  var numCols=['s2023','s2024','total_sales','lost','s2025_live','hot_live'];
+  OB_FILTERED.sort(function(a,b){
+    var va=a[col],vb=b[col];
+    if(numCols.indexOf(col)>=0){va=parseFloat(va)||0;vb=parseFloat(vb)||0;return dir*(vb-va);}
+    va=(va||'').toString().toLowerCase();vb=(vb||'').toString().toLowerCase();
+    return dir*va.localeCompare(vb);
+  });
+}
+
+function sortOB(col){
+  if(OB_SORT.col===col)OB_SORT.dir*=-1;else{OB_SORT.col=col;OB_SORT.dir=-1;}
+  document.querySelectorAll('[id^="sa-ob-"]').forEach(function(el){el.textContent='';});
+  var el=document.getElementById('sa-ob-'+col);
+  if(el)el.textContent=OB_SORT.dir===-1?'v':'^';
+  obSortData();renderOBTable();
+}
+
+function obSizeBadge(t){
+  if(!t)return'';
+  var cls={'A+':'b-aplus','A':'b-a','B':'b-b','C':'b-c','D':'b-d'}[t]||'b-c';
+  return'<span class="badge '+cls+'">'+t+'</span>';
+}
+function obTransferBadge(t){
+  if(!t)return'';
+  var cls={'same':'b-same','intra':'b-intra','inter':'b-inter','new':'b-new'}[t]||'';
+  return'<span class="badge '+cls+'">'+t+'</span>';
+}
+function obSar(v){if(!v||v===0)return'<span class="dim">--</span>';var abs=Math.abs(v),s=v<0?'-':'';if(abs>=1e9)return s+(abs/1e9).toFixed(1)+'B';if(abs>=1e6)return s+(abs/1e6).toFixed(1)+'M';if(abs>=1e3)return s+(abs/1e3).toFixed(0)+'K';return s+abs.toFixed(0);}
+function obSarRaw(v){if(!v||v===0)return'--';var abs=Math.abs(v),s=v<0?'-':'';if(abs>=1e9)return s+(abs/1e9).toFixed(1)+'B';if(abs>=1e6)return s+(abs/1e6).toFixed(1)+'M';if(abs>=1e3)return s+(abs/1e3).toFixed(0)+'K';return s+abs.toFixed(0);}
+
+function renderOBKPIs(){
+  var total=OB_LIST.length;
+  var claimed=OB_LIST.filter(function(a){return!!a.claim_status;}).length;
+  var withHist=OB_LIST.filter(function(a){return a.s2024>0||a.s2023>0;}).length;
+  var s2024t=OB_LIST.reduce(function(s,a){return s+(a.s2024||0);},0);
+  var lostt=OB_LIST.reduce(function(s,a){return s+(a.lost||0);},0);
+  document.getElementById('ob-kpis').innerHTML=[
+    {l:'Total released',v:total,s:'accounts on program',c:'kpi-sub'},
+    {l:'Claimed',v:claimed,s:total?Math.round(claimed/total*100)+'% claimed':'-',c:'kpi-pos'},
+    {l:'Unclaimed',v:total-claimed,s:'available to any SE',c:'kpi-sub'},
+    {l:'With sales history',v:withHist,s:'had 2023/2024 revenue',c:'kpi-sub'},
+    {l:'2024 sales at risk',v:obSarRaw(s2024t),s:'last active year total',c:'kpi-sub'},
+    {l:'Lost pipeline',v:obSarRaw(lostt),s:'0-10% quotations',c:'kpi-neg'},
+  ].map(function(k){return'<div class="kpi"><div class="kpi-label">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="'+k.c+'">'+k.s+'</div></div>';}).join('');
+}
+
+function renderOBTable(){
+  var html='';
+  OB_FILTERED.forEach(function(a){
+    var cl=a.claim_status?'row-claimed':'';
+    html+='<tr class="'+cl+'">'
+      +'<td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(a.name||'').replace(/"/g,"&quot;")+'">'+obEsc(a.name||'--')+'</td>'
+      +'<td style="font-size:10px;color:var(--text2)">'+(a.type||'<span class="dim">--</span>')+'</td>'
+      +'<td>'+obSizeBadge(a.size)+'</td>'
+      +'<td style="font-size:10px;color:var(--text2);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(a.prev_se1||'--')+'</td>'
+      +'<td style="font-size:10px;color:var(--text2);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(a.prev_se2&&a.prev_se2!==a.prev_se1?a.prev_se2:'<span class="dim">--</span>')+'</td>'
+      +'<td class="r">'+(a.s2023>0?obSar(a.s2023):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r" style="font-weight:'+(a.s2024>0?'500':'400')+'">'+(a.s2024>0?obSar(a.s2024):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r">'+(a.total_sales>0?obSar(a.total_sales):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r '+(a.lost>0?'neg':'')+'">'+(a.lost>0?obSar(a.lost):'<span class="dim">0</span>')+'</td>'
+      +'<td class="r '+(a.s2025_live>0?'pos':'')+'">'+(a.s2025_live?obSar(a.s2025_live):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r '+(a.hot_live>0?'pos':'')+'">'+(a.hot_live?obSar(a.hot_live):'<span class="dim">0</span>')+'</td>'
+      +'<td>'+(a.claim_status?'<span class="badge b-active">Claimed</span>':'<span class="badge b-inactive">Unclaimed</span>')+'</td>'
+      +'<td style="font-size:10px;'+(a.claim_status?'color:var(--success);font-weight:500':'color:var(--text3)')+'">'+(a.claim_status||'--')+'</td>'
+      +'</tr>';
+  });
+  document.getElementById('ob-tbody').innerHTML=html||'<tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text3)">No accounts match filters</td></tr>';
+}
+
+function obEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function exportOBTable(){
+  var rows=[['Customer No','Customer Name','Type','Size','Prev SE 1','Prev SE 2','2023 Sales','2024 Sales','Total History','Lost Pipeline','2025 Sales (live)','Hot Pipeline (live)','Claim Status','Claimed By']];
+  OB_FILTERED.forEach(function(a){rows.push([a.cust_no,a.name,a.type||'',a.size||'',a.prev_se1||'',a.prev_se2||'',a.s2023||0,a.s2024||0,a.total_sales||0,a.lost||0,a.s2025_live||0,a.hot_live||0,a.claim_status?'Claimed':'Unclaimed',a.claim_status||'']);});
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Open Box');XLSX.writeFile(wb,'open_box_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OPEN BOX — RED LIST TAB
+// ═══════════════════════════════════════════════════════════════
+var OB_CLASS_DATE=new Date();
+
+function renderRedList(){
+  var fTier=(document.getElementById('rl-f-tier')||{}).value||'';
+  var fStatus=(document.getElementById('rl-f-status')||{}).value||'';
+  var fSearch=((document.getElementById('rl-f-search')||{}).value||'').toLowerCase();
+  var byTeam={};
+  OB_RL.forEach(function(a){
+    if(!OB_ADMIN&&!OB_UNLOCKED_TEAMS.has(a.curr_team))return;
+    if(fTier&&a.tier!==fTier)return;
+    var deadline=new Date(OB_CLASS_DATE);deadline.setDate(deadline.getDate()+a.deadline_days);
+    var daysLeft=Math.ceil((deadline-new Date())/86400000);
+    a._days=daysLeft;
+    var sk=daysLeft>7?'ok':daysLeft>0?'warn':'crit';
+    if(fStatus&&fStatus!==sk)return;
+    if(fSearch&&!(a.name||'').toLowerCase().includes(fSearch)&&!(a.curr_se||'').toLowerCase().includes(fSearch))return;
+    if(!byTeam[a.curr_team])byTeam[a.curr_team]=[];
+    byTeam[a.curr_team].push(a);
+  });
+  var html='';
+  Object.keys(byTeam).sort().forEach(function(team){
+    var rows=byTeam[team];
+    var crit=rows.filter(function(r){return r._days<=0;}).length;
+    var warn=rows.filter(function(r){return r._days>0&&r._days<=7;}).length;
+    html+='<div style="margin-bottom:14px">'
+      +'<div style="font-size:12px;font-weight:500;padding:8px 12px;background:var(--surface2);border-radius:var(--radius);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">'
+      +'<span>'+team+'</span>'
+      +'<span style="font-size:10px;color:var(--text2);display:flex;gap:12px"><span>'+rows.length+' accounts</span>'
+      +(crit?'<span style="color:var(--danger);font-weight:500">'+crit+' critical</span>':'')
+      +(warn?'<span style="color:var(--warn);font-weight:500">'+warn+' warning</span>':'')
+      +'</span></div>'
+      +'<div class="tbl-wrap"><table><thead><tr>'
+      +'<th>Customer name</th><th>Type</th><th>Current SE</th><th>Transfer</th>'
+      +'<th>Tier</th><th class="r">Non-Hot 30%</th><th class="r">Tender 15%</th>'
+      +'<th class="r">Lost pipeline</th><th class="r">Days remaining</th><th>Status</th>'
+      +'</tr></thead><tbody>';
+    rows.sort(function(a,b){return a._days-b._days;}).forEach(function(a){
+      var d=a._days;
+      var dcls=d<=0?'color:var(--danger);font-weight:500':d<=7?'color:var(--warn);font-weight:500':'color:var(--success);font-weight:500';
+      var dt=d<=0?'OVERDUE':d+' days';
+      var sb=d<=0?'<span class="badge b-inactive" style="background:#fee2e2;color:#991b1b">Critical</span>':d<=7?'<span class="badge b-warn">Warning</span>':'<span class="badge b-active">On track</span>';
+      var tb=a.tier==='30'?'<span class="badge b-intra">30% tier M+1</span>':'<span class="badge b-inter" style="background:#ede9fe;color:#4c1d95">15% tier M+2</span>';
+      html+='<tr>'
+        +'<td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+obEsc(a.name||'--')+'</td>'
+        +'<td style="font-size:10px;color:var(--text2)">'+(a.type||'--')+'</td>'
+        +'<td style="font-size:10px;color:var(--text2)">'+(a.curr_se||'--')+'</td>'
+        +'<td>'+obTransferBadge(a.transfer)+'</td>'
+        +'<td>'+tb+'</td>'
+        +'<td class="r">'+(a.non_hot_30>0?obSar(a.non_hot_30):'<span class="dim">--</span>')+'</td>'
+        +'<td class="r">'+(a.tender_15>0?obSar(a.tender_15):'<span class="dim">--</span>')+'</td>'
+        +'<td class="r '+(a.lost>0?'neg':'')+'">'+(a.lost>0?obSar(a.lost):'<span class="dim">0</span>')+'</td>'
+        +'<td class="r"><span style="'+dcls+'">'+dt+'</span></td>'
+        +'<td>'+sb+'</td>'
+        +'</tr>';
+    });
+    html+='</tbody></table></div></div>';
+  });
+  if(!html)html='<div style="text-align:center;padding:30px;color:var(--text3)">No accounts match current filters</div>';
+  document.getElementById('rl-teams-body').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OPEN BOX — EVP ANALYTICS TAB
+// ═══════════════════════════════════════════════════════════════
+function renderEVP(){
+  var d=OB_EVP;
+  var maxTeam=Math.max.apply(null,(d.by_team||[]).map(function(t){return t.accs;}));if(!maxTeam)maxTeam=1;
+  var maxSE=Math.max.apply(null,(d.by_se||[]).map(function(s){return s.accs;}));if(!maxSE)maxSE=1;
+  var maxType=Math.max.apply(null,(d.by_type||[]).map(function(t){return t.accs;}));if(!maxType)maxType=1;
+  var tot=OB_LIST.length, withH=OB_LIST.filter(function(a){return a.s2024>0||a.s2023>0;}).length;
+  var s23t=OB_LIST.reduce(function(s,a){return s+(a.s2023||0);},0);
+  var s24t=OB_LIST.reduce(function(s,a){return s+(a.s2024||0);},0);
+  var html='<div class="kpi-grid g5" style="margin-bottom:14px">'
+    +'<div class="kpi"><div class="kpi-label">Total released</div><div class="kpi-val">'+tot+'</div></div>'
+    +'<div class="kpi"><div class="kpi-label">With sales history</div><div class="kpi-val">'+withH+'</div><div class="kpi-sub">had 2023/2024 revenue</div></div>'
+    +'<div class="kpi"><div class="kpi-label">No history</div><div class="kpi-val">'+(tot-withH)+'</div><div class="kpi-sub">zero sales ever</div></div>'
+    +'<div class="kpi"><div class="kpi-label">2023 sales at risk</div><div class="kpi-val">'+obSarRaw(s23t)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-label">2024 sales at risk</div><div class="kpi-val kpi-neg">'+obSarRaw(s24t)+'</div></div>'
+    +'</div>'
+    +'<div class="half" style="margin-bottom:12px">'
+    +'<div class="card"><div class="card-title">Accounts by current team</div>';
+  (d.by_team||[]).forEach(function(t){
+    html+='<div class="bar-row-ob"><span class="bar-lbl-ob" title="'+t.team+'">'+t.team+'</span>'
+      +'<div class="bar-trk-ob"><div class="bar-fil-ob" style="width:'+Math.round(t.accs/maxTeam*100)+'%"></div></div>'
+      +'<span class="bar-val-ob">'+t.accs+'</span></div>'
+      +'<div style="font-size:10px;color:var(--text2);margin:-2px 0 6px 148px">2024: '+obSarRaw(t.s2024)+' &middot; lost: '+obSarRaw(t.lost_pipeline)+'</div>';
+  });
+  html+='</div><div class="card"><div class="card-title">Top SEs by inactive account count</div>';
+  (d.by_se||[]).slice(0,10).forEach(function(s){
+    var nm=s.se.split(' ');nm=nm[0]+' '+nm[nm.length-1];
+    html+='<div class="bar-row-ob"><span class="bar-lbl-ob" title="'+s.se+'">'+nm+'</span>'
+      +'<div class="bar-trk-ob"><div class="bar-fil-ob red" style="width:'+Math.round(s.accs/maxSE*100)+'%"></div></div>'
+      +'<span class="bar-val-ob">'+s.accs+'</span></div>'
+      +'<div style="font-size:10px;color:var(--text2);margin:-2px 0 6px 148px">'+s.team+' &middot; hist: '+s.pct_hist+'</div>';
+  });
+  html+='</div></div>'
+    +'<div class="half" style="margin-bottom:12px">'
+    +'<div class="card"><div class="card-title">Account type breakdown</div>';
+  (d.by_type||[]).forEach(function(t){
+    html+='<div class="bar-row-ob"><span class="bar-lbl-ob">'+t.type+'</span>'
+      +'<div class="bar-trk-ob"><div class="bar-fil-ob amber" style="width:'+Math.round(t.accs/maxType*100)+'%"></div></div>'
+      +'<span class="bar-val-ob">'+t.accs+'</span></div>'
+      +'<div style="font-size:10px;color:var(--text2);margin:-2px 0 6px 148px">'+t.pct+' &middot; avg 2024: '+obSarRaw(t.avg_2024)+'</div>';
+  });
+  html+='</div>'
+    +'<div class="card"><div class="card-title">Transfer type breakdown</div>'
+    +'<div class="tbl-wrap" style="border:none;border-radius:0;margin-bottom:0"><table><thead><tr><th>Type</th><th>Meaning</th><th class="r">Accs</th><th class="r">%</th><th class="r">2024 sales</th><th class="r">Lost pipeline</th></tr></thead><tbody>';
+  (d.transfer_types||[]).forEach(function(t){
+    html+='<tr><td>'+obTransferBadge(t.type)+'</td><td style="font-size:10px;color:var(--text2)">'+t.meaning+'</td><td class="r">'+t.accs+'</td><td class="r">'+t.pct+'</td><td class="r">'+obSarRaw(t.s2024)+'</td><td class="r neg">'+obSarRaw(t.lost)+'</td></tr>';
+  });
+  html+='</tbody></table></div></div></div>'
+    +'<div class="card"><div class="card-title">All SEs &mdash; inactive account ranking</div>'
+    +'<div class="tbl-wrap" style="border:none;border-radius:0;margin-bottom:0"><table><thead><tr><th>Rank</th><th>SE name</th><th>Team</th><th class="r">Accts</th><th class="r">2023 sales</th><th class="r">2024 sales</th><th class="r">Lost pipeline</th><th class="r">Has history</th><th class="r">% with hist</th></tr></thead><tbody>';
+  (d.by_se||[]).forEach(function(s){
+    html+='<tr><td style="color:var(--text2)">'+s.rank+'</td><td style="font-weight:500">'+s.se+'</td><td style="font-size:10px;color:var(--text2)">'+s.team+'</td><td class="r">'+s.accs+'</td><td class="r">'+(s.s2023>0?obSarRaw(s.s2023):'<span class="dim">--</span>')+'</td><td class="r" style="font-weight:'+(s.s2024>0?'500':'400')+'">'+(s.s2024>0?obSarRaw(s.s2024):'<span class="dim">--</span>')+'</td><td class="r neg">'+(s.lost>0?obSarRaw(s.lost):'<span class="dim">0</span>')+'</td><td class="r">'+s.has_history+'</td><td class="r">'+s.pct_hist+'</td></tr>';
+  });
+  html+='</tbody></table></div></div>'
+    +'<div class="card"><div class="card-title">Top 20 priority accounts &mdash; reactivation targets (ranked by 2024 sales)</div>'
+    +'<div class="tbl-wrap" style="border:none;border-radius:0;margin-bottom:0"><table><thead><tr><th>Rank</th><th>Customer name</th><th>Type</th><th>SE</th><th>Team</th><th class="r">2023</th><th class="r">2024 sales</th><th>Transfer</th><th class="r">Lost pipeline</th></tr></thead><tbody>';
+  (d.top20||[]).forEach(function(a){
+    html+='<tr><td style="color:var(--text2)">'+a.rank+'</td><td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+obEsc(a.name)+'</td><td style="font-size:10px;color:var(--text2)">'+a.type+'</td><td style="font-size:10px;color:var(--text2)">'+a.curr_se+'</td><td style="font-size:10px;color:var(--text2)">'+a.curr_team+'</td><td class="r">'+(a.s2023>0?obSarRaw(a.s2023):'<span class="dim">--</span>')+'</td><td class="r" style="font-weight:500">'+obSarRaw(a.s2024)+'</td><td>'+obTransferBadge(a.transfer)+'</td><td class="r '+(a.lost>0?'neg':'')+'">'+(a.lost>0?obSarRaw(a.lost):'<span class="dim">0</span>')+'</td></tr>';
+  });
+  html+='</tbody></table></div></div>';
+  document.getElementById('evp-inner').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OPEN BOX — INTER-TEAM ANALYSIS TAB
+// ═══════════════════════════════════════════════════════════════
+function renderInter(){
+  var d=OB_INTER;
+  var inter=OB_LIST.filter(function(a){return (a.transfer||'').toLowerCase()==='inter';});
+  var iWith=inter.filter(function(a){return a.s2024>0||a.s2023>0;}).length;
+  var iS24=inter.reduce(function(s,a){return s+(a.s2024||0);},0);
+  var iLost=inter.reduce(function(s,a){return s+(a.lost||0);},0);
+  var html='<div class="kpi-grid g5" style="margin-bottom:14px">'
+    +'<div class="kpi"><div class="kpi-label">Inter accounts</div><div class="kpi-val">'+inter.length+'</div><div class="kpi-sub">moved between teams</div></div>'
+    +'<div class="kpi"><div class="kpi-label">With 2024 sales</div><div class="kpi-val kpi-pos">'+iWith+'</div></div>'
+    +'<div class="kpi"><div class="kpi-label">No history</div><div class="kpi-val">'+(inter.length-iWith)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-label">2024 sales at risk</div><div class="kpi-val">'+obSarRaw(iS24)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-label">Lost pipeline</div><div class="kpi-val kpi-neg">'+obSarRaw(iLost)+'</div></div>'
+    +'</div>'
+    +'<div class="card"><div class="card-title">From - to flow (all inter-team movements)</div>'
+    +'<div class="tbl-wrap" style="border:none;border-radius:0;margin-bottom:0"><table><thead><tr><th>From (old team)</th><th>To (current team)</th><th class="r">Accounts</th><th class="r">% of inter</th><th class="r">2023 sales</th><th class="r">2024 sales</th><th class="r">Lost pipeline</th><th class="r">Has history</th><th class="r">Avg 2024</th></tr></thead><tbody>';
+  (d.flows||[]).forEach(function(f){
+    html+='<tr><td style="font-weight:500">'+f.from_team+'</td><td style="color:var(--text2)">'+f.to_team+'</td><td class="r">'+f.accs+'</td><td class="r">'+f.pct+'</td><td class="r">'+(f.s2023>0?obSarRaw(f.s2023):'<span class="dim">--</span>')+'</td><td class="r" style="font-weight:'+(f.s2024>0?'500':'400')+'">'+(f.s2024>0?obSarRaw(f.s2024):'<span class="dim">--</span>')+'</td><td class="r '+(f.lost>0?'neg':'')+'">'+(f.lost>0?obSarRaw(f.lost):'<span class="dim">0</span>')+'</td><td class="r">'+f.has_history+'</td><td class="r">'+(f.avg_2024>0?obSarRaw(f.avg_2024):'<span class="dim">--</span>')+'</td></tr>';
+  });
+  html+='</tbody></table></div></div>'
+    +'<div class="half" style="margin-bottom:0">'
+    +'<div class="card"><div class="card-title">Source teams &mdash; where accounts came from</div><table><thead><tr><th>From team</th><th class="r">Sent</th><th class="r">2024</th><th class="r">Lost</th></tr></thead><tbody>';
+  (d.sources||[]).forEach(function(s){
+    html+='<tr><td style="font-weight:500">'+s.team+'</td><td class="r">'+s.accs+'</td><td class="r">'+(s.s2024>0?obSarRaw(s.s2024):'<span class="dim">--</span>')+'</td><td class="r '+(s.lost>0?'neg':'')+'">'+(s.lost>0?obSarRaw(s.lost):'<span class="dim">0</span>')+'</td></tr>'
+      +'<tr><td colspan="4" style="font-size:10px;color:var(--text2);padding:2px 10px 8px">'+s.notes+'</td></tr>';
+  });
+  html+='</tbody></table></div>'
+    +'<div class="card"><div class="card-title">Destination teams &mdash; where accounts landed</div><table><thead><tr><th>To team</th><th class="r">Received</th><th class="r">2024</th><th class="r">Lost</th></tr></thead><tbody>';
+  (d.destinations||[]).forEach(function(s){
+    html+='<tr><td style="font-weight:500">'+s.team+'</td><td class="r">'+s.accs+'</td><td class="r">'+(s.s2024>0?obSarRaw(s.s2024):'<span class="dim">--</span>')+'</td><td class="r '+(s.lost>0?'neg':'')+'">'+(s.lost>0?obSarRaw(s.lost):'<span class="dim">0</span>')+'</td></tr>'
+      +'<tr><td colspan="4" style="font-size:10px;color:var(--text2);padding:2px 10px 8px">'+s.notes+'</td></tr>';
+  });
+  html+='</tbody></table></div></div>';
+  document.getElementById('inter-inner').innerHTML=html;
+}
+
 function loadAll(){
   var base='data/';
   Promise.all([
@@ -1278,6 +1779,7 @@ function loadAll(){
     document.getElementById('acc-count').textContent=ACCOUNTS.length+' accounts shown';
     renderAccTable();
     renderAccCharts();renderHome();renderSEPage();applyTransferFilters();applyPipelineFilters();applyProductFilters();
+    initOBPage();
   }).catch(function(err){
     console.error('Data load error:',err);
     document.querySelector('.nav-updated').textContent='ERROR: '+err.message;
