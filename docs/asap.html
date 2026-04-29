@@ -3441,12 +3441,10 @@ function loadAll(session){
     }
     ACCOUNTS.forEach(function(a,i){ACC_INDEX[a.customer]=i;});
     initFilters();
-    ACC_FILTERED=ACCOUNTS.slice();
-    document.getElementById('acc-count').textContent=ACCOUNTS.length+' accounts shown';
     // Load live claims from Cloudflare KV
     ShakerAuth.loadClaims(function(claims){
       OB_CLAIMS = claims;
-      renderAccTable();
+      applyAccFilters(); // applies default 'Hide Open Box' filter and renders table
       renderAccCharts();renderHome();renderSEPage();applyTransferFilters();applyPipelineFilters();applyProductFilters();
       initOBPage();
       initTxnPage();
