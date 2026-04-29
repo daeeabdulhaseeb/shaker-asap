@@ -213,7 +213,6 @@ tr.clickable:hover td{background:var(--surface2)}
   <span class="nav-link" onclick="showPage('se',this)">SE &amp; team</span>
   <span class="nav-link" onclick="showPage('transfer',this)">Transfer impact</span>
   <span class="nav-link" onclick="showPage('pipeline',this)">Pipeline &amp; coverage</span>
-  <a class="nav-link" href="accounts_analysis.html" style="text-decoration:none">Account analysis</a>
   <span class="nav-link" onclick="showPage('product',this)">Product analysis</span>
   <span class="nav-link" onclick="showPage('accanalysis',this);if(typeof initAccAnalysis==='function'&&!window._aaInit){window._aaInit=true;initAccAnalysis();}">Account analysis</span>
   <span class="nav-link" onclick="showPage('openbox',this)">Open box</span>
@@ -1928,6 +1927,15 @@ var OB_SORT={col:'s2024',dir:-1};
 
 function initOBPage(){
   if(!OB_LIST||!OB_LIST.length)return;
+  // Render restricted tabs if already unlocked by auth
+  if(typeof ShakerAuth!=='undefined'){
+    var role=ShakerAuth.getRole();
+    if(role==='admin'||role==='evp'){
+      renderRedList();renderEVP();renderInter();
+    } else if(role&&role.indexOf('manager_')===0){
+      renderRedList();
+    }
+  }
   // Enrich with live data from ACCOUNTS
   OB_LIST.forEach(function(a){
     var live=ACC_INDEX[a.cust_no]!=null?ACCOUNTS[ACC_INDEX[a.cust_no]]:null;
