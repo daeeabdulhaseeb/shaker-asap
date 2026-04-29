@@ -215,6 +215,7 @@ tr.clickable:hover td{background:var(--surface2)}
   <span class="nav-link" onclick="showPage('pipeline',this)">Pipeline &amp; coverage</span>
   <span class="nav-link" onclick="showPage('product',this)">Product analysis</span>
   <span class="nav-link" onclick="showPage('accanalysis',this);if(typeof initAccAnalysis==='function'&&!window._aaInit){window._aaInit=true;initAccAnalysis();}">Account analysis</span>
+  <span class="nav-link" onclick="showPage('transactions',this)">Sales transactions</span>
   <span class="nav-link" onclick="showPage('openbox',this)">Open box</span>
   <span class="nav-updated" id="last-updated"></span>
   <span id="nav-user" style="font-size:11px;color:var(--text2);margin-left:8px;white-space:nowrap;padding:0 4px;background:var(--accent-light);border-radius:4px"></span>
@@ -934,6 +935,98 @@ tr.clickable:hover td{background:var(--surface2)}
     </div></div>
   </div>
 
+</div>
+
+<!-- SALES TRANSACTIONS -->
+<div id="page-transactions" class="page">
+  <div class="page-title">Sales transactions</div>
+  <div class="page-sub">Sales grouped by invoicing SE &amp; team (transaction booking) &mdash; not account ownership. Reflects who actually invoiced, regardless of account assignment.</div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid g5" id="txn-kpis" style="margin-bottom:14px"></div>
+
+  <!-- CHARTS ROW -->
+  <div class="half" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-title">Sales by team (transaction) &mdash; 2025</div>
+      <div id="txn-team-bars" style="margin-top:4px"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sales by product group &mdash; 2025</div>
+      <div id="txn-group-bars" style="margin-top:4px"></div>
+    </div>
+  </div>
+
+  <!-- MONTHLY TREND -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">Monthly sales trend &mdash; transaction booking</div>
+    <div id="txn-monthly-bars" style="display:flex;align-items:flex-end;gap:3px;height:80px;border-bottom:1px solid var(--border);margin-top:8px"></div>
+    <div id="txn-monthly-labels" style="display:flex;gap:3px;margin-top:4px"></div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filter-bar">
+    <select id="txn-f-team" onchange="applyTxnFilters()"><option value="">All teams (transaction)</option></select>
+    <select id="txn-f-se" onchange="applyTxnFilters()"><option value="">All SEs</option></select>
+    <select id="txn-f-group" onchange="applyTxnFilters()">
+      <option value="">All groups</option>
+      <option value="CAC Ducted">CAC Ducted</option>
+      <option value="CAC Non-Ducted">CAC Non-Ducted</option>
+      <option value="RAC">RAC</option>
+      <option value="Applied">Applied</option>
+    </select>
+    <input type="text" id="txn-f-search" placeholder="Search account..." oninput="applyTxnFilters()">
+    <span style="font-size:11px;color:var(--text3)" id="txn-filter-count"></span>
+    <button class="btn-export" onclick="exportTxnTable()">Export</button>
+  </div>
+
+  <!-- SE SUMMARY TABLE -->
+  <div class="section" style="margin-bottom:14px">
+    <div class="section-title" style="margin-bottom:8px">SE transaction summary</div>
+    <div class="tbl-wrap" style="max-height:240px;overflow-y:auto">
+      <table>
+        <thead style="position:sticky;top:0;z-index:2"><tr>
+          <th onclick="sortTxnSE('se_name')" style="cursor:pointer">SE name <span class="sort-arrow" id="sa-txn-se-se_name"></span></th>
+          <th onclick="sortTxnSE('team')" style="cursor:pointer">Team <span class="sort-arrow" id="sa-txn-se-team"></span></th>
+          <th class="r" onclick="sortTxnSE('s2023')" style="cursor:pointer">2023 <span class="sort-arrow" id="sa-txn-se-s2023"></span></th>
+          <th class="r" onclick="sortTxnSE('s2024')" style="cursor:pointer">2024 <span class="sort-arrow" id="sa-txn-se-s2024"></span></th>
+          <th class="r" onclick="sortTxnSE('s2025')" style="cursor:pointer">2025 <span class="sort-arrow" id="sa-txn-se-s2025"></span></th>
+          <th class="r" onclick="sortTxnSE('s2026')" style="cursor:pointer">2026 YTD <span class="sort-arrow" id="sa-txn-se-s2026"></span></th>
+          <th class="r" onclick="sortTxnSE('yoy')" style="cursor:pointer">GR% 25v24 <span class="sort-arrow" id="sa-txn-se-yoy"></span></th>
+          <th class="r" onclick="sortTxnSE('cust_count')" style="cursor:pointer">Accounts <span class="sort-arrow" id="sa-txn-se-cust_count"></span></th>
+        </tr></thead>
+        <tbody id="txn-se-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ACCOUNT TABLE (same structure as Account Explorer) -->
+  <div class="section">
+    <div class="section-title" style="margin-bottom:8px">Account detail &mdash; by invoicing SE</div>
+    <div class="section-sub" style="margin-bottom:8px">Shows pipeline from the account&apos;s owner. For admin view this matches Account Explorer; for managers it shows accounts they invoiced (including those not owned by their team).</div>
+    <div class="tbl-wrap" style="height:65vh;overflow-y:auto">
+      <table>
+        <thead style="position:sticky;top:0;z-index:2"><tr>
+          <th onclick="sortTxnAcc('name')" style="cursor:pointer">Customer name <span class="sort-arrow" id="sa-txn-acc-name"></span></th>
+          <th onclick="sortTxnAcc('type')" style="cursor:pointer">Type <span class="sort-arrow" id="sa-txn-acc-type"></span></th>
+          <th onclick="sortTxnAcc('size')" style="cursor:pointer">Size <span class="sort-arrow" id="sa-txn-acc-size"></span></th>
+          <th onclick="sortTxnAcc('txn_se')" style="cursor:pointer">Invoicing SE <span class="sort-arrow" id="sa-txn-acc-txn_se"></span></th>
+          <th onclick="sortTxnAcc('txn_team')" style="cursor:pointer">Invoicing team <span class="sort-arrow" id="sa-txn-acc-txn_team"></span></th>
+          <th onclick="sortTxnAcc('curr_se')" style="cursor:pointer">Owner SE <span class="sort-arrow" id="sa-txn-acc-curr_se"></span></th>
+          <th onclick="sortTxnAcc('curr_team')" style="cursor:pointer">Owner team <span class="sort-arrow" id="sa-txn-acc-curr_team"></span></th>
+          <th class="r" onclick="sortTxnAcc('s2023')" style="cursor:pointer">2023 <span class="sort-arrow" id="sa-txn-acc-s2023"></span></th>
+          <th class="r" onclick="sortTxnAcc('s2024')" style="cursor:pointer">2024 <span class="sort-arrow" id="sa-txn-acc-s2024"></span></th>
+          <th class="r" onclick="sortTxnAcc('s2025')" style="cursor:pointer">2025 <span class="sort-arrow" id="sa-txn-acc-s2025"></span></th>
+          <th class="r" onclick="sortTxnAcc('s2026')" style="cursor:pointer">2026 YTD <span class="sort-arrow" id="sa-txn-acc-s2026"></span></th>
+          <th class="r" onclick="sortTxnAcc('yoy')" style="cursor:pointer">GR% 25v24 <span class="sort-arrow" id="sa-txn-acc-yoy"></span></th>
+          <th class="r" onclick="sortTxnAcc('hot')" style="cursor:pointer">Hot pipeline <span class="sort-arrow" id="sa-txn-acc-hot"></span></th>
+          <th class="r" onclick="sortTxnAcc('award')" style="cursor:pointer">Award <span class="sort-arrow" id="sa-txn-acc-award"></span></th>
+          <th class="r" onclick="sortTxnAcc('backlog')" style="cursor:pointer">Backlog <span class="sort-arrow" id="sa-txn-acc-backlog"></span></th>
+        </tr></thead>
+        <tbody id="txn-acc-tbody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- OPEN BOX -->
@@ -2228,6 +2321,281 @@ function renderInter(){
 }
 
 
+
+// ═══ SALES TRANSACTIONS JS ═══════════════════════════════════════════════
+var TXN_DATA={}, TXN_ACC_FILTERED=[], TXN_SE_FILTERED=[];
+var TXN_ACC_SORT={col:'s2025',dir:-1}, TXN_SE_SORT={col:'s2025',dir:-1};
+
+function initTxnPage(){
+  if(!TXN_DATA||!TXN_DATA.acc_list)return;
+  // Populate filters
+  var teams=[...new Set(TXN_DATA.se_list.map(function(s){return s.team;}).filter(Boolean))].sort();
+  var ses=[...new Set(TXN_DATA.se_list.map(function(s){return s.se_name;}).filter(Boolean))].sort();
+  var tSel=document.getElementById('txn-f-team');
+  var sSel=document.getElementById('txn-f-se');
+  teams.forEach(function(t){var o=document.createElement('option');o.value=t;o.text=t;tSel.appendChild(o);});
+  ses.forEach(function(s){var o=document.createElement('option');o.value=s;o.text=s;sSel.appendChild(o);});
+  // Team filter: restrict to user's team if manager
+  var myTeam=typeof ShakerAuth!=='undefined'?ShakerAuth.getTeam():null;
+  if(myTeam&&tSel){tSel.value=myTeam;}
+  applyTxnFilters();
+}
+
+function applyTxnFilters(){
+  var fTeam=document.getElementById('txn-f-team').value;
+  var fSE=document.getElementById('txn-f-se').value;
+  var fGroup=document.getElementById('txn-f-group').value;
+  var fSearch=document.getElementById('txn-f-search').value.toLowerCase();
+
+  // Filter SE list
+  TXN_SE_FILTERED=(TXN_DATA.se_list||[]).filter(function(s){
+    if(fTeam&&s.team!==fTeam)return false;
+    if(fSE&&s.se_name!==fSE)return false;
+    return true;
+  });
+
+  // Filter account list
+  TXN_ACC_FILTERED=(TXN_DATA.acc_list||[]).filter(function(a){
+    if(fTeam&&a.team!==fTeam)return false;
+    if(fSE&&a.se!==fSE)return false;
+    if(fSearch&&!(a.name||'').toLowerCase().includes(fSearch)&&!(a.se||'').toLowerCase().includes(fSearch))return false;
+    if(fGroup&&!(a.by_group&&a.by_group[fGroup]))return false;
+    return true;
+  });
+
+  // Enrich acc rows with owner data from ACC_INDEX
+  TXN_ACC_FILTERED=TXN_ACC_FILTERED.map(function(a){
+    var idx=ACC_INDEX[a.cust_no];
+    var live=idx!=null?ACCOUNTS[idx]:{};
+    return Object.assign({},a,{
+      curr_se:   live.curr_se||'',
+      curr_team: live.curr_team||'',
+      type:      live.description||'',
+      size:      live.size_tier||'',
+      hot:       live.hot_pipeline||0,
+      award:     live.award||0,
+      backlog:   live.backlog||0,
+      status:    live.cust_status||'',
+    });
+  });
+
+  txnSortAccData();
+  txnSortSEData();
+  renderTxnKPIs();
+  renderTxnTeamBars();
+  renderTxnGroupBars();
+  renderTxnMonthly();
+  renderTxnSETable();
+  renderTxnAccTable();
+  document.getElementById('txn-filter-count').textContent=TXN_ACC_FILTERED.length+' SE-account pairs';
+}
+
+function txnSortAccData(){
+  var col=TXN_ACC_SORT.col,dir=TXN_ACC_SORT.dir;
+  var numCols=['s2022','s2023','s2024','s2025','s2026','yoy','hot','award','backlog'];
+  TXN_ACC_FILTERED.sort(function(a,b){
+    var va,vb;
+    if(numCols.indexOf(col)>=0){
+      var yr={'s2022':'2022','s2023':'2023','s2024':'2024','s2025':'2025','s2026':'2026'}[col];
+      if(yr){va=parseFloat((a.sales&&a.sales[yr])||0);vb=parseFloat((b.sales&&b.sales[yr])||0);}
+      else if(col==='yoy'){
+        var s24a=(a.sales&&a.sales['2024'])||0,s25a=(a.sales&&a.sales['2025'])||0;
+        var s24b=(b.sales&&b.sales['2024'])||0,s25b=(b.sales&&b.sales['2025'])||0;
+        va=s24a>0?(s25a-s24a)/s24a*100:null;
+        vb=s24b>0?(s25b-s24b)/s24b*100:null;
+        va=va||0;vb=vb||0;
+      } else {va=parseFloat(a[col]||0);vb=parseFloat(b[col]||0);}
+      return dir*(vb-va);
+    }
+    va=(a[col]||'').toString().toLowerCase();
+    vb=(b[col]||'').toString().toLowerCase();
+    return dir*va.localeCompare(vb);
+  });
+}
+
+function txnSortSEData(){
+  var col=TXN_SE_SORT.col,dir=TXN_SE_SORT.dir;
+  TXN_SE_FILTERED.sort(function(a,b){
+    var va,vb;
+    var yr={'s2022':'2022','s2023':'2023','s2024':'2024','s2025':'2025','s2026':'2026'}[col];
+    if(yr){va=parseFloat((a.sales&&a.sales[yr])||0);vb=parseFloat((b.sales&&b.sales[yr])||0);}
+    else if(col==='yoy'){va=a.yoy_25v24||0;vb=b.yoy_25v24||0;}
+    else if(col==='cust_count'){va=a.cust_count||0;vb=b.cust_count||0;}
+    else{va=(a[col]||'').toString().toLowerCase();vb=(b[col]||'').toString().toLowerCase();return dir*va.localeCompare(vb);}
+    return dir*(vb-va);
+  });
+}
+
+function sortTxnAcc(col){
+  if(TXN_ACC_SORT.col===col)TXN_ACC_SORT.dir*=-1;else{TXN_ACC_SORT.col=col;TXN_ACC_SORT.dir=-1;}
+  document.querySelectorAll('[id^="sa-txn-acc-"]').forEach(function(el){el.textContent='';});
+  var el=document.getElementById('sa-txn-acc-'+col);if(el)el.textContent=TXN_ACC_SORT.dir===-1?'v':'^';
+  txnSortAccData();renderTxnAccTable();
+}
+function sortTxnSE(col){
+  if(TXN_SE_SORT.col===col)TXN_SE_SORT.dir*=-1;else{TXN_SE_SORT.col=col;TXN_SE_SORT.dir=-1;}
+  document.querySelectorAll('[id^="sa-txn-se-"]').forEach(function(el){el.textContent='';});
+  var el=document.getElementById('sa-txn-se-'+col);if(el)el.textContent=TXN_SE_SORT.dir===-1?'v':'^';
+  txnSortSEData();renderTxnSETable();
+}
+
+function renderTxnKPIs(){
+  var accs=TXN_ACC_FILTERED;
+  var s24=accs.reduce(function(s,a){return s+(parseFloat((a.sales&&a.sales['2024'])||0));},0);
+  var s25=accs.reduce(function(s,a){return s+(parseFloat((a.sales&&a.sales['2025'])||0));},0);
+  var s26=accs.reduce(function(s,a){return s+(parseFloat((a.sales&&a.sales['2026'])||0));},0);
+  var yoy=s24>0?((s25-s24)/s24*100):null;
+  // MoM: Feb vs Jan 2026
+  var feb26=0,jan26=0;
+  (TXN_DATA.se_list||[]).forEach(function(s){
+    feb26+=(s.monthly&&s.monthly['2026']&&s.monthly['2026']['2'])||0;
+    jan26+=(s.monthly&&s.monthly['2026']&&s.monthly['2026']['1'])||0;
+  });
+  var mom=jan26>0?((feb26-jan26)/jan26*100):null;
+  var q1_26=0,q4_25=0;
+  (TXN_DATA.se_list||[]).forEach(function(s){
+    [1,2,3].forEach(function(m){q1_26+=(s.monthly&&s.monthly['2026']&&s.monthly['2026'][String(m)])||0;});
+    [10,11,12].forEach(function(m){q4_25+=(s.monthly&&s.monthly['2025']&&s.monthly['2025'][String(m)])||0;});
+  });
+  var qoq=q4_25>0?((q1_26-q4_25)/q4_25*100):null;
+  var topSE=TXN_SE_FILTERED.length?TXN_SE_FILTERED[0]:{};
+  document.getElementById('txn-kpis').innerHTML=[
+    {l:'Sales 2025 (txn)',v:sar(s25),s:yoy!=null?((yoy>=0?'+':'')+yoy.toFixed(1)+'% vs 2024'):'',c:yoy!=null?(yoy>=0?'kpi-pos':'kpi-neg'):'kpi-sub'},
+    {l:'Sales 2024 (txn)',v:sar(s24),s:'transaction basis',c:'kpi-sub'},
+    {l:'Sales 2026 YTD',v:sar(s26),s:'Jan-Feb actuals only',c:'kpi-sub'},
+    {l:'MoM (Feb vs Jan 26)',v:mom!=null?(mom>=0?'+':'')+mom.toFixed(1)+'%':'--',s:'',c:mom!=null?(mom>=0?'kpi-pos':'kpi-neg'):'kpi-sub'},
+    {l:'QoQ (Q1 26 vs Q4 25)',v:qoq!=null?(qoq>=0?'+':'')+qoq.toFixed(1)+'%':'--',s:'',c:qoq!=null?(qoq>=0?'kpi-pos':'kpi-neg'):'kpi-sub'},
+  ].map(function(k){return'<div class="kpi"><div class="kpi-label">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="'+k.c+'">'+k.s+'</div></div>';}).join('');
+}
+
+function txnBar(label,val,maxVal,cls){
+  var pct=maxVal>0?Math.round(val/maxVal*100):0;
+  return'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+    +'<span style="width:130px;font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+label+'">'+label+'</span>'
+    +'<div style="flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden">'
+    +'<div style="height:100%;border-radius:3px;width:'+pct+'%;background:'+(cls||'#3b82f6')+'"></div></div>'
+    +'<span style="width:40px;text-align:right;font-size:11px;color:var(--text2)">'+sar(val)+'</span></div>';
+}
+
+function renderTxnTeamBars(){
+  var teams={};
+  TXN_ACC_FILTERED.forEach(function(a){
+    var t=a.team||'Unknown';
+    teams[t]=(teams[t]||0)+parseFloat((a.sales&&a.sales['2025'])||0);
+  });
+  var maxV=Math.max.apply(null,Object.values(teams))||1;
+  var html=Object.entries(teams).sort(function(a,b){return b[1]-a[1];})
+    .map(function(e){return txnBar(e[0],e[1],maxV,'#3b82f6');}).join('');
+  document.getElementById('txn-team-bars').innerHTML=html||'<div class="dim" style="font-size:11px">No data</div>';
+}
+
+function renderTxnGroupBars(){
+  var groups={};
+  TXN_ACC_FILTERED.forEach(function(a){
+    if(a.by_group)Object.entries(a.by_group).forEach(function(e){groups[e[0]]=(groups[e[0]]||0)+parseFloat(e[1]||0);});
+  });
+  var maxV=Math.max.apply(null,Object.values(groups))||1;
+  var colors={'CAC Ducted':'#3b82f6','CAC Non-Ducted':'#8b5cf6','RAC':'#f59e0b','Applied':'#10b981'};
+  var html=Object.entries(groups).sort(function(a,b){return b[1]-a[1];})
+    .map(function(e){return txnBar(e[0],e[1],maxV,colors[e[0]]||'#6b7280');}).join('');
+  document.getElementById('txn-group-bars').innerHTML=html||'<div class="dim" style="font-size:11px">No data</div>';
+}
+
+function renderTxnMonthly(){
+  var fTeam=document.getElementById('txn-f-team').value;
+  var monthly={2024:{},2025:{},2026:{}};
+  (TXN_DATA.se_list||[]).filter(function(s){return !fTeam||s.team===fTeam;}).forEach(function(s){
+    [2024,2025,2026].forEach(function(yr){
+      for(var m=1;m<=12;m++){
+        var v=(s.monthly&&s.monthly[String(yr)]&&s.monthly[String(yr)][String(m)])||0;
+        monthly[yr][m]=(monthly[yr][m]||0)+v;
+      }
+    });
+  });
+  var maxV=0;
+  [2024,2025,2026].forEach(function(yr){for(var m=1;m<=12;m++){maxV=Math.max(maxV,monthly[yr][m]||0);}});
+  var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var bars='',labels='';
+  for(var m=1;m<=12;m++){
+    var v25=(monthly[2025][m]||0),v24=(monthly[2024][m]||0),v26=(monthly[2026][m]||0);
+    var h25=maxV>0?Math.round(v25/maxV*76):0;
+    var h24=maxV>0?Math.round(v24/maxV*76):0;
+    var h26=maxV>0?Math.round(v26/maxV*76):0;
+    bars+='<div style="display:flex;align-items:flex-end;gap:1px;flex:1">'
+      +'<div style="flex:1;height:'+h24+'px;background:#e2e8f0;border-radius:2px 2px 0 0;min-height:'+(v24>0?'2':'0')+'px"></div>'
+      +'<div style="flex:1;height:'+h25+'px;background:#3b82f6;border-radius:2px 2px 0 0;min-height:'+(v25>0?'2':'0')+'px"></div>'
+      +'<div style="flex:1;height:'+h26+'px;background:#f59e0b;border-radius:2px 2px 0 0;min-height:'+(v26>0?'2':'0')+'px"></div>'
+      +'</div>';
+    labels+='<div style="flex:1;text-align:center;font-size:9px;color:var(--text3)">'+MONTHS[m-1]+'</div>';
+  }
+  document.getElementById('txn-monthly-bars').innerHTML=bars;
+  document.getElementById('txn-monthly-labels').innerHTML=labels;
+}
+
+function renderTxnSETable(){
+  var html='';
+  TXN_SE_FILTERED.forEach(function(s){
+    var s23=s.sales&&s.sales['2023']||0, s24=s.sales&&s.sales['2024']||0;
+    var s25=s.sales&&s.sales['2025']||0, s26=s.sales&&s.sales['2026']||0;
+    var yoy=s24>0?((s25-s24)/s24*100):null;
+    html+='<tr>'
+      +'<td style="font-weight:500">'+s.se_name+'</td>'
+      +'<td style="font-size:10px;color:var(--text2)">'+s.team+'</td>'
+      +'<td class="r">'+(s23?sar(s23):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r">'+(s24?sar(s24):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r" style="font-weight:500">'+(s25?sar(s25):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r">'+(s26?sar(s26):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r '+(yoy!=null?(yoy>=0?'pos':'neg'):'dim')+'">'+(yoy!=null?(yoy>=0?'+':'')+yoy.toFixed(1)+'%':'--')+'</td>'
+      +'<td class="r">'+s.cust_count+'</td>'
+      +'</tr>';
+  });
+  document.getElementById('txn-se-tbody').innerHTML=html||'<tr><td colspan="8" style="text-align:center;padding:16px;color:var(--text3)">No data</td></tr>';
+}
+
+function renderTxnAccTable(){
+  var html='';
+  TXN_ACC_FILTERED.forEach(function(a){
+    var s23=parseFloat((a.sales&&a.sales['2023'])||0);
+    var s24=parseFloat((a.sales&&a.sales['2024'])||0);
+    var s25=parseFloat((a.sales&&a.sales['2025'])||0);
+    var s26=parseFloat((a.sales&&a.sales['2026'])||0);
+    var yoy=s24>0?((s25-s24)/s24*100):null;
+    var diffTeam=a.txn_team&&a.curr_team&&a.txn_team!==a.curr_team;
+    html+='<tr>'
+      +'<td style="font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+obEsc(a.name||'')+'">'+obEsc(a.name||'--')+'</td>'
+      +'<td style="font-size:10px;color:var(--text2)">'+(a.type||'--')+'</td>'
+      +'<td>'+(a.size?'<span class="badge b-'+(a.size==='A+'?'aplus':a.size.toLowerCase())+'">'+a.size+'</span>':'')+'</td>'
+      +'<td style="font-size:10px;font-weight:500;color:var(--accent)">'+(a.se||'--')+'</td>'
+      +'<td style="font-size:10px;color:var(--text2)">'+(a.team||'--')+'</td>'
+      +'<td style="font-size:10px;color:'+(diffTeam?'var(--warn)':'var(--text2)')+'">'+(a.curr_se||'--')+'</td>'
+      +'<td style="font-size:10px;color:'+(diffTeam?'var(--warn)':'var(--text2)')+'">'+(a.curr_team||'--')+'</td>'
+      +'<td class="r">'+(s23?sar(s23):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r">'+(s24?sar(s24):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r" style="font-weight:500">'+(s25?sar(s25):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r">'+(s26?sar(s26):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r '+(yoy!=null?(yoy>=0?'pos':'neg'):'dim')+'">'+(yoy!=null?(yoy>=0?'+':'')+yoy.toFixed(1)+'%':'--')+'</td>'
+      +'<td class="r '+(a.hot>0?'pos':'')+'">'+(a.hot?sar(a.hot):'<span class="dim">0</span>')+'</td>'
+      +'<td class="r '+(a.award>0?'pos':'')+'">'+(a.award?sar(a.award):'<span class="dim">0</span>')+'</td>'
+      +'<td class="r '+(a.backlog>0?'pos':'')+'">'+(a.backlog?sar(a.backlog):'<span class="dim">0</span>')+'</td>'
+      +'</tr>';
+  });
+  document.getElementById('txn-acc-tbody').innerHTML=html||'<tr><td colspan="15" style="text-align:center;padding:20px;color:var(--text3)">No accounts match filters</td></tr>';
+}
+
+function exportTxnTable(){
+  var rows=[['Customer No','Customer Name','Type','Size','Invoicing SE','Invoicing Team','Owner SE','Owner Team','2023','2024','2025','2026 YTD','GR% 25v24','Hot Pipeline','Award','Backlog']];
+  TXN_ACC_FILTERED.forEach(function(a){
+    var s23=parseFloat((a.sales&&a.sales['2023'])||0);
+    var s24=parseFloat((a.sales&&a.sales['2024'])||0);
+    var s25=parseFloat((a.sales&&a.sales['2025'])||0);
+    var s26=parseFloat((a.sales&&a.sales['2026'])||0);
+    var yoy=s24>0?((s25-s24)/s24*100).toFixed(1)+'%':'--';
+    rows.push([a.cust_no,a.name,a.type||'',a.size||'',a.se,a.team,a.curr_se||'',a.curr_team||'',s23,s24,s25,s26,yoy,a.hot||0,a.award||0,a.backlog||0]);
+  });
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Transactions');
+  XLSX.writeFile(wb,'sales_transactions_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+// ═══ END SALES TRANSACTIONS JS ═══════════════════════════════════════════
 // ═══ ACCOUNT ANALYSIS JS ════════════════════════════════════════
 var AA_ACCOUNTS=[], AA_FILTERED=[];
 var GAINSORT={col:'gr',dir:-1}, LOSESORT={col:'gr',dir:1};
@@ -3058,8 +3426,9 @@ function loadAll(session){
     fetch(base+'asap_se.json').then(function(r){return r.json();}),
     fetch(base+'asap_teams.json').then(function(r){return r.json();}),
     fetch(base+'asap_products.json').then(function(r){return r.json();}),
+    fetch(base+'asap_transactions.json').then(function(r){return r.json();}).catch(function(){return{};}),
   ]).then(function(results){
-    ACCOUNTS=results[0];SE_DATA=results[1];TEAM_DATA=results[2];PROD_DATA=results[3];
+    ACCOUNTS=results[0];SE_DATA=results[1];TEAM_DATA=results[2];PROD_DATA=results[3];TXN_DATA=results[4]||{};
     // Filter data by team if manager role
     var myTeam = session ? ShakerAuth.getTeam() : null;
     if (myTeam) {
@@ -3077,6 +3446,7 @@ function loadAll(session){
       renderAccTable();
       renderAccCharts();renderHome();renderSEPage();applyTransferFilters();applyPipelineFilters();applyProductFilters();
       initOBPage();
+      initTxnPage();
     });
   }).catch(function(err){
     console.error('Data load error:',err);
