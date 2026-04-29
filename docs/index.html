@@ -1,11 +1,193 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0; url=asap.html">
-<title>ASAP Sales Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shaker Group — Executive Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f9fa;--surface:#fff;--surface2:#f1f3f5;
+  --border:#e5e7eb;--text:#111827;--text2:#6b7280;--text3:#9ca3af;
+  --accent:#1d4ed8;--radius:10px;--font:'DM Sans',sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:20px 40px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{width:32px;height:32px;background:#111827;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.logo-mark svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round}
+.logo-text{font-size:14px;font-weight:500;color:var(--text)}
+.logo-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.header-meta{font-size:11px;color:var(--text3)}
+main{flex:1;padding:48px 40px;max-width:960px;margin:0 auto;width:100%}
+.hero{margin-bottom:40px}
+.hero-label{font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.hero-title{font-size:28px;font-weight:500;color:var(--text);line-height:1.2;margin-bottom:8px}
+.hero-sub{font-size:13px;color:var(--text2);max-width:500px;line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .15s,box-shadow .15s}
+.card:hover{border-color:#d1d5db;box-shadow:0 4px 20px rgba(0,0,0,.06)}
+.card-accent{height:3px}
+.card-body{padding:20px 22px;flex:1;display:flex;flex-direction:column}
+.card-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:16px}
+.card-title{font-size:14px;font-weight:500;margin-bottom:4px}
+.card-desc{font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:16px;flex:1}
+.card-pages{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.page-link{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--surface2);border-radius:7px;text-decoration:none;color:var(--text);font-size:11px;transition:background .12s}
+.page-link:hover{background:#e9ecef}
+.page-link-name{font-weight:500}
+.page-link-desc{color:var(--text3);font-size:10px;margin-top:1px}
+.page-link-arrow{color:var(--text3);font-size:12px}
+.card-cta{display:block;text-align:center;padding:9px;background:var(--text);color:#fff;border-radius:8px;text-decoration:none;font-size:12px;font-weight:500;transition:background .12s}
+.card-cta:hover{background:#1f2937}
+.card-cta.secondary{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.card-cta.secondary:hover{background:var(--accent);color:#fff}
+.divider{height:1px;background:var(--border);margin:32px 0}
+.footer-row{display:flex;align-items:center;justify-content:space-between}
+.footer-note{font-size:11px;color:var(--text3)}
+.badge{display:inline-block;font-size:9px;font-weight:500;padding:2px 6px;border-radius:20px;white-space:nowrap;margin-left:6px;vertical-align:middle}
+.badge-live{background:#dcfce7;color:#14532d}
+.badge-beta{background:#fef3c7;color:#92400e}
+.badge-auth{background:#dbeafe;color:#1e3a8a}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.stat-val{font-size:22px;font-weight:500;margin-bottom:2px}
+.stat-lbl{font-size:10px;color:var(--text2)}
+</style>
 </head>
 <body>
-<script>window.location.href='asap.html';</script>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 18 18"><polyline points="2,14 6,8 10,11 16,4"/></svg>
+    </div>
+    <div>
+      <div class="logo-text">Shaker Group</div>
+      <div class="logo-sub">Al Hassan Ghazi Ibrahim Shaker Company</div>
+    </div>
+  </div>
+  <div class="header-meta" id="hdate"></div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="hero-label">Executive Intelligence Platform</div>
+    <div class="hero-title">B2B HVAC Analytics Suite</div>
+    <div class="hero-sub">Real-time sales intelligence, market coverage, and account strategy dashboards for Shaker Group's HVAC distribution operations across Saudi Arabia.</div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-val">3</div>
+      <div class="stat-lbl">Active dashboards</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">7</div>
+      <div class="stat-lbl">Sales teams covered</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">SAR</div>
+      <div class="stat-lbl">Saudi Riyal reporting currency</div>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ASAP -->
+    <div class="card">
+      <div class="card-accent" style="background:linear-gradient(90deg,#1d4ed8,#3b82f6)"></div>
+      <div class="card-body">
+        <div class="card-icon" style="background:#eff6ff">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#1d4ed8" stroke-width="1.5" stroke-linecap="round"><circle cx="9" cy="7" r="3"/><path d="M3 16c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+        </div>
+        <div class="card-title">ASAP Sales Dashboard <span class="badge badge-live">Live</span><span class="badge badge-auth">Auth</span></div>
+        <div class="card-desc">Account strategy and planning — SE performance, pipeline coverage, transfer impact, open box program, and account intelligence.</div>
+        <div class="card-pages">
+          <a class="page-link" href="https://daeeabdulhaseeb.github.io/shaker-asap/asap.html" target="_blank">
+            <div><div class="page-link-name">Home &amp; overview</div><div class="page-link-desc">KPIs, trends, team snapshot</div></div>
+            <span class="page-link-arrow">&#8599;</span>
+          </a>
+          <a class="page-link" href="https://daeeabdulhaseeb.github.io/shaker-asap/asap.html" target="_blank">
+            <div><div class="page-link-name">Account explorer</div><div class="page-link-desc">Full account table with drilldowns</div></div>
+            <span class="page-link-arrow">&#8599;</span>
+          </a>
+          <a class="page-link" href="https://daeeabdulhaseeb.github.io/shaker-asap/asap.html" target="_blank">
+            <div><div class="page-link-name">Open box program</div><div class="page-link-desc">Released accounts &amp; red list</div></div>
+            <span class="page-link-arrow">&#8599;</span>
+          </a>
+        </div>
+        <a class="card-cta" href="https://daeeabdulhaseeb.github.io/shaker-asap/asap.html" target="_blank">Open ASAP dashboard &#8599;</a>
+      </div>
+    </div>
+
+    <!-- PIPELINE -->
+    <div class="card">
+      <div class="card-accent" style="background:linear-gradient(90deg,#7c3aed,#a78bfa)"></div>
+      <div class="card-body">
+        <div class="card-icon" style="background:#f5f3ff">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round"><path d="M2 9h14M9 2l7 7-7 7"/></svg>
+        </div>
+        <div class="card-title">Pipeline Dashboard <span class="badge badge-live">Live</span></div>
+        <div class="card-desc">Full S4 HANA pipeline visibility — hot pipeline, award tracking, backlog, probability tiers, and SE-level coverage across all seven teams.</div>
+        <div class="card-pages">
+          <a class="page-link" href="https://daeeabdulhaseeb.github.io/shaker-asap/pipeline.html" target="_blank">
+            <div><div class="page-link-name">Pipeline overview</div><div class="page-link-desc">Hot, award, backlog KPIs</div></div>
+            <span class="page-link-arrow">&#8599;</span>
+          </a>
+        </div>
+        <a class="card-cta" href="https://daeeabdulhaseeb.github.io/shaker-asap/pipeline.html" target="_blank">Open pipeline dashboard &#8599;</a>
+      </div>
+    </div>
+
+    <!-- VENTURES -->
+    <div class="card">
+      <div class="card-accent" style="background:linear-gradient(90deg,#0f766e,#2dd4bf)"></div>
+      <div class="card-body">
+        <div class="card-icon" style="background:#f0fdfa">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#0f766e" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2" width="6" height="6" rx="1"/><rect x="10" y="2" width="6" height="6" rx="1"/><rect x="2" y="10" width="6" height="6" rx="1"/><rect x="10" y="10" width="6" height="6" rx="1"/></svg>
+        </div>
+        <div class="card-title">Ventures Intelligence <span class="badge badge-live">Live</span></div>
+        <div class="card-desc">SCAVO market data — project market overview, contractor gap analysis, pipeline cross-reference, and award tracking across Saudi Arabia.</div>
+        <div class="card-pages">
+          <a class="page-link" href="https://daeeabdulhaseeb.github.io/shaker-marketdata/market.html" target="_blank">
+            <div><div class="page-link-name">Market overview</div><div class="page-link-desc">HVAC market by city &amp; sector</div></div>
+            <span class="page-link-arrow">&#8599;</span>
+          </a>
+          <a class="page-link" href="https://daeeabdulhaseeb.github.io/shaker-marketdata/coverage.html" target="_blank">
+            <div><div class="page-link-name">Contractors gap analysis</div><div class="page-link-desc">Customer coverage &amp; white space</div></div>
+            <span class="page-link-arrow">&#8599;</span>
+          </a>
+          <a class="page-link" href="https://daeeabdulhaseeb.github.io/shaker-marketdata/pipeline_xref.html" target="_blank">
+            <div><div class="page-link-name">Pipeline search</div><div class="page-link-desc">Cross-reference ventures to pipeline</div></div>
+            <span class="page-link-arrow">&#8599;</span>
+          </a>
+          <a class="page-link" href="https://daeeabdulhaseeb.github.io/shaker-marketdata/awards.html" target="_blank">
+            <div><div class="page-link-name">Award tracker</div><div class="page-link-desc">Project award monitoring</div></div>
+            <span class="page-link-arrow">&#8599;</span>
+          </a>
+        </div>
+        <a class="card-cta secondary" href="https://daeeabdulhaseeb.github.io/shaker-marketdata/market.html" target="_blank">Open ventures intel &#8599;</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="footer-row">
+    <div class="footer-note">Shaker Ventures Intelligence Platform &nbsp;&middot;&nbsp; Built by Mohammed Abdul Haseeb &nbsp;&middot;&nbsp; HVAC Division</div>
+    <div class="footer-note" id="fyear"></div>
+  </div>
+
+</main>
+
+<script>
+var d = new Date();
+var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+document.getElementById('hdate').textContent = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+document.getElementById('fyear').textContent = d.getFullYear() + ' Shaker Group';
+</script>
 </body>
 </html>
