@@ -1390,6 +1390,7 @@ function applyAccFilters(){
   var fSz=document.getElementById('acc-f-size').value;
   var fTy=document.getElementById('acc-f-type').value;
   var fSrch=document.getElementById('acc-f-search').value.toLowerCase();
+  var fOB=(document.getElementById('acc-f-openbox')||{value:'exclude'}).value;
   ACC_FILTERED=ACCOUNTS.filter(function(a){
     if(fTr&&a.transfer_type!==fTr)return false;
     if(fTeam&&a.curr_team!==fTeam)return false;
@@ -1399,6 +1400,8 @@ function applyAccFilters(){
     if(fSz&&a.size_tier!==fSz)return false;
     if(fTy&&a.description!==fTy)return false;
     if(fSrch&&!a.name.toLowerCase().includes(fSrch))return false;
+    if(fOB==='exclude'&&a.open_box)return false;
+    if(fOB==='only'&&!a.open_box)return false;
     return true;
   });
   document.getElementById('acc-count').textContent=ACC_FILTERED.length+' accounts shown';
@@ -1462,7 +1465,7 @@ function renderAccTable(resetPage){
     rows+='<tr class="clickable" onclick="toggleDD('+idx+')">'
       +'<td style="font-weight:500;font-size:11px">'+a.name+'</td>'
       +'<td>'+sizeBadge(a.size_tier,a.size_trend)+'</td>'
-      +'<td>'+statusBadge(a.cust_status)+'</td>'
+      +'<td>'+statusBadge(a.cust_status)+(a.open_box?'<span class="badge" style="background:#fee2e2;color:#991b1b;margin-left:4px;font-size:9px">Open Box</span>':'')+'</td>'
       +'<td><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--surface2);color:var(--text2)">'+a.description+'</span></td>'
       +'<td>'+transferBadge(a.transfer_type)+'</td>'
       +'<td class="r '+(a.sales&&a.sales['2023']?'':'dim')+'">'+sar(a.sales&&a.sales['2023'])+'</td>'
