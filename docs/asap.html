@@ -1427,7 +1427,7 @@ function renderHome(){
     var maxV=Math.max.apply(null,data.map(function(t){return t.sales[yr]||0;}))||1;
     document.getElementById('home-team-bars').innerHTML=data.map(function(t){
       var v=t.sales[yr]||0,w=Math.round(v/maxV*100);
-      return'<div class="bar-wrap" style="cursor:pointer" onclick="homeCrossFilter('team',''+t.team+'')">'
+      return'<div class="bar-wrap" style="cursor:pointer" data-cf-dim="team" data-cf-val="'+t.team+'" onclick="homeCrossFilter(this.dataset.cfDim,this.dataset.cfVal)">'
         +'<div class="bar-label"><span>'+t.team+'</span></div>'
         +'<div class="bar-track"><div class="bar-fill fill-blue" style="width:'+w+'%;position:relative;display:flex;align-items:center;padding:0 6px">'
         +(w>15?'<span style="font-size:10px;color:#fff;font-weight:500;white-space:nowrap">'+sar(v)+'</span>':'')
@@ -1445,7 +1445,7 @@ function renderHome(){
   var maxS=Math.max.apply(null,Object.values(sizeAgg))||1;
     document.getElementById('home-size-bars').innerHTML=Object.entries(sizeAgg).map(function(e){
     var w=Math.round(e[1]/maxS*100);
-    return'<div class="bar-wrap" style="cursor:pointer" onclick="homeCrossFilter('size',''+e[0]+'' )">'
+    return'<div class="bar-wrap" style="cursor:pointer" data-cf-dim="size" data-cf-val="'+e[0]+'" onclick="homeCrossFilter(this.dataset.cfDim,this.dataset.cfVal)">'
       +'<div class="bar-label"><span>'+e[0]+'</span></div>'
       +'<div class="bar-track"><div class="bar-fill" style="width:'+w+'%;background:'+sizeColors[e[0]]+';position:relative;display:flex;align-items:center;padding:0 6px">'
       +(w>12?'<span style="font-size:10px;color:#fff;font-weight:500">'+e[1]+'</span>':'')
@@ -1462,7 +1462,7 @@ function renderHome(){
     document.getElementById('home-group-bars').innerHTML=gSorted.map(function(e){
       var w=Math.round(e[1]/maxG*100);
       var col=gColors[e[0]]||'#3b82f6';
-      return'<div class="bar-wrap" style="cursor:pointer" onclick="homeCrossFilter('group',''+e[0]+'' )">'
+      return'<div class="bar-wrap" style="cursor:pointer" data-cf-dim="group" data-cf-val="'+e[0]+'" onclick="homeCrossFilter(this.dataset.cfDim,this.dataset.cfVal)">'
         +'<div class="bar-label"><span>'+e[0]+'</span></div>'
         +'<div class="bar-track"><div class="bar-fill" style="width:'+w+'%;background:'+col+';position:relative;display:flex;align-items:center;padding:0 6px">'
         +(w>15?'<span style="font-size:10px;color:#fff;font-weight:500;white-space:nowrap">'+sar(e[1])+'</span>':'')
@@ -1546,6 +1546,18 @@ function clearHomeMtrend(){
 
 var HOME_CF={}; // cross-filter state {team,size,group,se}
 
+// Single event delegation for home page cross-filter bars
+document.addEventListener('click', function(e){
+  var bar = e.target.closest('[data-cf-dim]');
+  if(!bar) return;
+  // Only fire if we're on the home page
+  var homePage = document.getElementById('page-home');
+  if(!homePage || !homePage.classList.contains('active')) return;
+  var dim = bar.getAttribute('data-cf-dim');
+  var val = bar.getAttribute('data-cf-val');
+  if(dim && val) homeCrossFilter(dim, val);
+});
+
 function homeCrossFilter(dim, val){
   if(HOME_CF[dim]===val) delete HOME_CF[dim];
   else HOME_CF[dim]=val;
@@ -1580,7 +1592,7 @@ function renderHomeCFBars(filtAccounts, filtTeams){
   if(tBars)tBars.innerHTML=filtTeams.map(function(t){
     var v=t.sales[yr]||0,w=Math.round(v/maxV*100);
     var sel=HOME_CF.team===t.team;
-    return'<div class="bar-wrap" style="cursor:pointer;'+(sel?'opacity:1;':'opacity:.7;')+'" onclick="homeCrossFilter('team',''+t.team+'' )">'
+    return'<div class="bar-wrap" style="cursor:pointer;'+(sel?'opacity:1;':'opacity:.7;')+'" data-cf-dim="team" data-cf-val="'+t.team+'" onclick="homeCrossFilter(this.dataset.cfDim,this.dataset.cfVal)">'
       +'<div class="bar-label"><span>'+t.team+'</span></div>'
       +'<div class="bar-track"><div class="bar-fill fill-blue" style="width:'+w+'%;'+(sel?'background:#1d4ed8':'')+'position:relative;display:flex;align-items:center;padding:0 6px">'
       +(w>15?'<span style="font-size:10px;color:#fff;font-weight:500;white-space:nowrap">'+sar(v)+'</span>':'')+'</div>'
@@ -1596,7 +1608,7 @@ function renderHomeCFBars(filtAccounts, filtTeams){
   if(sBars)sBars.innerHTML=Object.entries(sizeAgg).map(function(e){
     var w=Math.round(e[1]/maxS*100);
     var sel=HOME_CF.size===e[0];
-    return'<div class="bar-wrap" style="cursor:pointer" onclick="homeCrossFilter('size',''+e[0]+'' )">'
+    return'<div class="bar-wrap" style="cursor:pointer" data-cf-dim="size" data-cf-val="'+e[0]+'" onclick="homeCrossFilter(this.dataset.cfDim,this.dataset.cfVal)">'
       +'<div class="bar-label"><span>'+e[0]+'</span></div>'
       +'<div class="bar-track"><div class="bar-fill" style="width:'+w+'%;background:'+(sel?'#1d4ed8':sizeColors[e[0]])+';position:relative;display:flex;align-items:center;padding:0 6px">'
       +(w>12?'<span style="font-size:10px;color:#fff;font-weight:500">'+e[1]+'</span>':'')+'</div>'
