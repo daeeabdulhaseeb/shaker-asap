@@ -1421,23 +1421,6 @@ function renderHome(){
   var maxT=Math.max.apply(null,Object.values(tCounts))||1;
   document.getElementById('home-transfer-bars').innerHTML=Object.entries(tCounts).map(function(e){return'<div class="bar-wrap"><div class="bar-label"><span>'+tLabels[e[0]]+'</span><span>'+e[1]+'</span></div><div class="bar-track"><div class="bar-fill" style="width:'+(e[1]/maxT*100)+'%;background:'+tColors[e[0]]+'"></div></div></div>';}).join('');
   var maxTeam=Math.max.apply(null,TEAM_DATA.map(function(t){return t.sales['2025']||0;}))||1;
-  function renderHomeTeamBars(){
-    var yr=(document.getElementById('home-team-yr')||{value:'2025'}).value||'2025';
-    var data=TEAM_DATA.filter(function(t){return (t.sales[yr]||0)>0;}).slice(0,7);
-    var maxV=Math.max.apply(null,data.map(function(t){return t.sales[yr]||0;}))||1;
-    document.getElementById('home-team-bars').innerHTML=data.map(function(t){
-      var v=t.sales[yr]||0,w=Math.round(v/maxV*100);
-      return'<div class="bar-wrap" style="cursor:pointer" data-cf-dim="team" data-cf-val="'+t.team+'" onclick="homeCrossFilter(this.dataset.cfDim,this.dataset.cfVal)">'
-        +'<div class="bar-label"><span>'+t.team+'</span></div>'
-        +'<div class="bar-track"><div class="bar-fill fill-blue" style="width:'+w+'%;position:relative;display:flex;align-items:center;padding:0 6px">'
-        +(w>15?'<span style="font-size:10px;color:#fff;font-weight:500;white-space:nowrap">'+sar(v)+'</span>':'')
-        +'</div>'
-        +(w<=15?'<span style="font-size:10px;color:var(--text2);padding-left:4px">'+sar(v)+'</span>':'')
-        +'</div></div>';
-    }).join('');
-    var titleEl=document.getElementById('home-team-title');
-    if(titleEl)titleEl.textContent='Sales by team ('+yr+')';
-  }
   renderHomeTeamBars();
   var sizeAgg={'A+':0,'A':0,'B':0,'C':0,'D':0,'No history':0};
   ACCOUNTS.forEach(function(a){if(!a.size_tier)sizeAgg['No history']++;else if(sizeAgg.hasOwnProperty(a.size_tier))sizeAgg[a.size_tier]++;});
@@ -1453,26 +1436,6 @@ function renderHome(){
       +(w<=12?'<span style="font-size:10px;color:var(--text2);padding-left:4px">'+e[1]+'</span>':'')
       +'</div></div>';
   }).join('');
-  function renderHomeGroupBars(){
-    var yr=(document.getElementById('home-group-yr')||{value:'2025'}).value||'2025';
-    var gData=PROD_DATA.by_year&&PROD_DATA.by_year[yr]||{};
-    var gSorted=Object.entries(gData).sort(function(a,b){return b[1]-a[1];}).slice(0,6);
-    var maxG=gSorted.length?(gSorted[0][1]||0):1;
-    var gColors={'CAC Ducted':'#3b82f6','CAC Non-Ducted':'#8b5cf6','RAC':'#10b981','Applied':'#f59e0b','installation':'#6b7280','Free Stand':'#ec4899'};
-    document.getElementById('home-group-bars').innerHTML=gSorted.map(function(e){
-      var w=Math.round(e[1]/maxG*100);
-      var col=gColors[e[0]]||'#3b82f6';
-      return'<div class="bar-wrap" style="cursor:pointer" data-cf-dim="group" data-cf-val="'+e[0]+'" onclick="homeCrossFilter(this.dataset.cfDim,this.dataset.cfVal)">'
-        +'<div class="bar-label"><span>'+e[0]+'</span></div>'
-        +'<div class="bar-track"><div class="bar-fill" style="width:'+w+'%;background:'+col+';position:relative;display:flex;align-items:center;padding:0 6px">'
-        +(w>15?'<span style="font-size:10px;color:#fff;font-weight:500;white-space:nowrap">'+sar(e[1])+'</span>':'')
-        +'</div>'
-        +(w<=15?'<span style="font-size:10px;color:var(--text2);padding-left:4px">'+sar(e[1])+'</span>':'')
-        +'</div></div>';
-    }).join('');
-    var titleEl=document.getElementById('home-group-title');
-    if(titleEl)titleEl.textContent='Top product groups ('+yr+')';
-  }
   renderHomeGroupBars();
   var insights=[];
   var interAccs=ACCOUNTS.filter(function(a){return a.transfer_type==='inter';});
@@ -1655,7 +1618,8 @@ function renderHomeMonthly(){
   [2024,2025,2026].forEach(function(yr){
     monthly[yr]={};
     for(var m=1;m<=12;m++) monthly[yr][m]=0;
-    TEAM_DATA.forEach(function(t){
+    var myTeamM=typeof ShakerAuth!=='undefined'?ShakerAuth.getTeam():null;
+    (myTeamM?TEAM_DATA.filter(function(t){return t.team===myTeamM;}):TEAM_DATA).forEach(function(t){
       var ms=(t.monthly_sales&&t.monthly_sales[String(yr)])||{};
       for(var m=1;m<=12;m++) monthly[yr][m]+=parseFloat(ms[String(m)]||ms[m]||0);
     });
@@ -1786,7 +1750,8 @@ function renderHomeTopSE(){
     document.getElementById('home-topse-list').innerHTML='<div class="dim" style="font-size:11px">No data</div>';
     return;
   }
-  var ses=TXN_DATA.se_list.slice()
+  var myTeam=typeof ShakerAuth!=='undefined'?ShakerAuth.getTeam():null;
+  var ses=TXN_DATA.se_list.filter(function(s){return !myTeam||s.team===myTeam;})
     .sort(function(a,b){return (parseFloat((b.sales&&b.sales[yr])||0))-(parseFloat((a.sales&&a.sales[yr])||0));})
     .slice(0,5);
   var maxV=ses.length?parseFloat((ses[0].sales&&ses[0].sales[yr])||0):1;
@@ -3918,6 +3883,67 @@ function initAccAnalysis(){
   aaApplyFilters();
 }
 // ═══ END ACCOUNT ANALYSIS JS ════════════════════════════════════
+
+// ── HOME PAGE BAR CHARTS — Global scope, auth-aware ───────────────────────
+function renderHomeTeamBars(){
+  var yr=(document.getElementById('home-team-yr')||{value:'2026'}).value||'2026';
+  var myTeam=typeof ShakerAuth!=='undefined'?ShakerAuth.getTeam():null;
+  var data=TEAM_DATA.filter(function(t){
+    if(myTeam&&t.team!==myTeam)return false;
+    return (t.sales[yr]||0)>0;
+  }).slice(0,7);
+  var maxV=Math.max.apply(null,data.map(function(t){return t.sales[yr]||0;}))||1;
+  var el=document.getElementById('home-team-bars');
+  if(!el)return;
+  el.innerHTML=data.map(function(t){
+    var v=t.sales[yr]||0,w=Math.round(v/maxV*100);
+    var sel=HOME_CF&&HOME_CF.team===t.team;
+    return'<div class="bar-wrap" style="cursor:pointer;opacity:'+(sel?'1':'.85')+'" data-cf-dim="team" data-cf-val="'+t.team+'" onclick="homeCrossFilter(this.dataset.cfDim,this.dataset.cfVal)">'
+      +'<div class="bar-label"><span>'+t.team+'</span></div>'
+      +'<div class="bar-track"><div class="bar-fill '+(sel?'':'fill-blue')+'" style="width:'+w+'%;'+(sel?'background:#1d4ed8;':'')+'position:relative;display:flex;align-items:center;padding:0 6px">'
+      +(w>18?'<span style="font-size:10px;color:#fff;font-weight:500;white-space:nowrap">'+sar(v)+'</span>':'')
+      +'</div>'
+      +(w<=18?'<span style="font-size:10px;color:var(--text2);padding-left:4px">'+sar(v)+'</span>':'')
+      +'</div></div>';
+  }).join('');
+  var titleEl=document.getElementById('home-team-title');
+  if(titleEl)titleEl.textContent='Sales by team ('+yr+(myTeam?' - '+myTeam:'')+')';
+}
+
+function renderHomeGroupBars(){
+  var yr=(document.getElementById('home-group-yr')||{value:'2026'}).value||'2026';
+  var gData=PROD_DATA.by_year&&PROD_DATA.by_year[yr]||{};
+  // If manager: filter accounts to their team and recompute group sales from ACCOUNTS
+  var myTeam=typeof ShakerAuth!=='undefined'?ShakerAuth.getTeam():null;
+  if(myTeam){
+    var teamAccs=ACCOUNTS.filter(function(a){return a.curr_team===myTeam;});
+    gData={};
+    teamAccs.forEach(function(a){
+      var grp=a['group_'+yr]||a.group_2025||a.group_2024||'';
+      if(grp){gData[grp]=(gData[grp]||0)+(a.sales&&a.sales[yr]||0);}
+    });
+  }
+  var gSorted=Object.entries(gData).sort(function(a,b){return b[1]-a[1];}).slice(0,6);
+  var maxG=gSorted.length?(gSorted[0][1]||0):1;
+  var gColors={'CAC Ducted':'#3b82f6','CAC Non-Ducted':'#8b5cf6','RAC':'#10b981','Applied':'#f59e0b','LG':'#3b82f6','installation':'#6b7280','Free Stand':'#ec4899','Services':'#06b6d4'};
+  var el=document.getElementById('home-group-bars');
+  if(!el)return;
+  el.innerHTML=gSorted.map(function(e){
+    var w=Math.round(e[1]/maxG*100);
+    var col=gColors[e[0]]||'#3b82f6';
+    var sel=HOME_CF&&HOME_CF.group===e[0];
+    return'<div class="bar-wrap" style="cursor:pointer" data-cf-dim="group" data-cf-val="'+e[0]+'" onclick="homeCrossFilter(this.dataset.cfDim,this.dataset.cfVal)">'
+      +'<div class="bar-label"><span>'+e[0]+'</span></div>'
+      +'<div class="bar-track"><div class="bar-fill" style="width:'+w+'%;background:'+(sel?'#1d4ed8':col)+';position:relative;display:flex;align-items:center;padding:0 6px">'
+      +(w>18?'<span style="font-size:10px;color:#fff;font-weight:500;white-space:nowrap">'+sar(e[1])+'</span>':'')
+      +'</div>'
+      +(w<=18?'<span style="font-size:10px;color:var(--text2);padding-left:4px">'+sar(e[1])+'</span>':'')
+      +'</div></div>';
+  }).join('');
+  var titleEl=document.getElementById('home-group-title');
+  if(titleEl)titleEl.textContent='Top product groups ('+yr+(myTeam?' - '+myTeam:'')+')';
+}
+
 function loadAll(session){
   var base='data/';
   Promise.all([
