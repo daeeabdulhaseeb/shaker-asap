@@ -4021,7 +4021,7 @@ function renderTxnViewMonthly(){
     qtrs.forEach(function(q){
       var v24=qAgg[2024][q]||0,v25=qAgg[2025][q]||0,v26=qAgg[2026][q]||0;
       var h24=Math.round(v24/maxV*100),h25=Math.round(v25/maxV*100),h26=Math.round(v26/maxV*100);
-      bars+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;cursor:pointer;padding:0 4px" onclick="setTxnViewMtrendView('month');document.getElementById('txnview-mtrend-qtr').value=''+q+'';renderTxnViewMonthly();">'
+      bars+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;cursor:pointer;padding:0 4px" data-txnq="'+q+'" onclick="setTxnViewMtrendView(&quot;month&quot;);document.getElementById(&quot;txnview-mtrend-qtr&quot;).value=this.dataset.txnq;renderTxnViewMonthly();">'
         +'<div style="flex:1;height:'+h24+'px;background:#d1d5db;border-radius:3px 3px 0 0;min-height:'+(v24>0?2:0)+'px"></div>'
         +'<div style="flex:1;height:'+h25+'px;background:#3b82f6;border-radius:3px 3px 0 0;min-height:'+(v25>0?2:0)+'px"></div>'
         +'<div style="flex:1;height:'+h26+'px;background:#f59e0b;border-radius:3px 3px 0 0;min-height:'+(v26>0?2:0)+'px"></div>'
