@@ -4104,7 +4104,7 @@ function renderTxnViewDelta(){
       +(pct>10?'<span style="font-size:9px;color:#fff;font-weight:500;white-space:nowrap">'+sar(d.delta)+'</span>':'')+'</div>'
       +'<div style="position:absolute;left:50%;width:1px;height:18px;background:var(--border2)"></div>'
       +'</div>'
-      +(pct<=10?'<span style="font-size:10px;color:'+(pos?'var(--success)':'var(--danger)')+'";font-weight:500">'+sar(d.delta)+'</span>':'<span style="width:50px"></span>')
+      +(pct<=10?'<span class="'+(pos?'pos':'neg')+'" style="font-size:10px;font-weight:500">'+sar(d.delta)+'</span>':'<span style="width:50px"></span>')
       +'<span style="width:70px;font-size:10px;color:var(--text3);text-align:right">Own: '+sar(d.own)+'</span>'
       +'</div>';
   }).join('');
