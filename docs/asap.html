@@ -3925,12 +3925,22 @@ function renderTxnViewMoM(){
 
 function renderTxnViewTeamBars(){
   var yr=(document.getElementById('txnview-team-yr')||{value:'2026'}).value||'2026';
-  var teams=getTxnViewTeams().filter(function(t){return (t.sales&&t.sales[yr]||0)>0;});
-  teams.sort(function(a,b){return (b.sales&&b.sales[yr]||0)-(a.sales&&a.sales[yr]||0);});
-  var maxV=teams.length?(teams[0].sales&&teams[0].sales[yr]||0):1; if(!maxV)maxV=1;
+  var latestMon=txnViewLatestMon();
+  // For 2026 use transaction monthly sum (YTD); for prior years use ownership annual sales
+  function teamVal(t,y){
+    if(y==='2026'){
+      var ms=(t.monthly&&t.monthly[y])||{};
+      var s=0; for(var m=1;m<=latestMon;m++) s+=parseFloat(ms[String(m)]||ms[m]||0);
+      return s;
+    }
+    return (t.sales&&t.sales[y])||0;
+  }
+  var teams=getTxnViewTeams().filter(function(t){return teamVal(t,yr)>0;});
+  teams.sort(function(a,b){return teamVal(b,yr)-teamVal(a,yr);});
+  var maxV=teams.length?teamVal(teams[0],yr):1; if(!maxV)maxV=1;
   var el=document.getElementById('txnview-team-bars'); if(!el) return;
   el.innerHTML=teams.map(function(t){
-    var v=t.sales&&t.sales[yr]||0; var w=Math.round(v/maxV*100);
+    var v=teamVal(t,yr); var w=Math.round(v/maxV*100);
     return'<div class="bar-wrap">'
       +'<div class="bar-label"><span>'+t.team+'</span></div>'
       +'<div class="bar-track"><div class="bar-fill fill-blue" style="width:'+w+'%;position:relative;display:flex;align-items:center;padding:0 6px">'
