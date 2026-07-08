@@ -2432,7 +2432,7 @@ function initOBPage(){
     a.curr_team=live?live.curr_team||'':'';
   });
   // Populate team filter from live data
-  var teams=[...new Set(OB_LIST.map(function(a){return a.curr_team;}).filter(Boolean))].sort();
+  var teams=['ACS - CR','ACS - ER','ACS - WR','Central Projects','Direct Channel','East Projects','West Projects'];
   var sel=document.getElementById('ob-f-team');
   if(sel){teams.forEach(function(t){var o=document.createElement('option');o.value=t;o.text=t;sel.appendChild(o);});}
   document.getElementById('ob-count-badge').textContent=OB_LIST.length;
@@ -3833,8 +3833,6 @@ function initTxnView(){
 function getTxnViewTeams(){
   var myTeam=typeof ShakerAuth!=='undefined'?ShakerAuth.getTeam():null;
   if(!TEAM_DATA||!TEAM_DATA.length) return [];
-  // TEAM_DATA (asap_teams.json): sales = ownership basis, monthly_sales = transaction basis
-  // Normalise monthly_sales -> monthly so downstream render functions work unchanged
   var teams=TEAM_DATA.map(function(t){
     return {team:t.team,sales:t.sales,monthly:t.monthly_sales||{},hot_pipeline:t.hot_pipeline,by_group:t.by_group,cust_count:t.cust_count,se_count:t.se_count,yoy_25v24:t.yoy_25v24};
   });
@@ -3879,7 +3877,7 @@ function renderTxnViewKPIs(){
   var sub=document.getElementById('txnview-latest-lbl');
   if(sub) sub.textContent='Data through '+latestName+' 2026';
   var html=[
-    {l:'2026 YTD (Jan-'+latestName+') ▪ TXN',v:sar(t26_ytd),s:yoy_26v25!=null?(yoy_26v25>=0?'+':'')+yoy_26v25.toFixed(1)+'% vs same period 2025':'',c:yoy_26v25!=null?(yoy_26v25>=0?'kpi-pos':'kpi-neg'):'kpi-sub',hi:true},
+    {l:'2026 YTD (Jan-'+latestName+')',v:sar(t26_ytd),s:yoy_26v25!=null?(yoy_26v25>=0?'+':'')+yoy_26v25.toFixed(1)+'% vs same period 2025':'',c:yoy_26v25!=null?(yoy_26v25>=0?'kpi-pos':'kpi-neg'):'kpi-sub',hi:true},
     {l:'2025 full year ▪ OWN',v:sar(t25),s:yoy_25v24!=null?(yoy_25v24>=0?'+':'')+yoy_25v24.toFixed(1)+'% vs 2024':'',c:yoy_25v24>=0?'kpi-pos':'kpi-neg'},
     {l:'2024 full year ▪ OWN',v:sar(t24),s:'ownership basis',c:'kpi-sub'},
     {l:'Active SEs 2025',v:getTxnViewSEs().filter(function(s){return (s.sales&&s.sales['2025']||0)>0;}).length,s:'with transaction revenue',c:'kpi-sub'},
