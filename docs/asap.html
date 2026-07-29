@@ -1207,13 +1207,13 @@ tr.clickable:hover td{background:var(--surface2)}
   <div id="ob-pane-list" style="display:block">
     <div class="kpi-grid" style="grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px" id="ob-kpis"></div>
     <div class="filter-bar">
-      <select id="ob-f-team" onchange="obAddChip('team',this.options[this.selectedIndex].text,this.value);this.value=''"><option value="">All teams</option></select>
-      <select id="ob-f-transfer" onchange="obAddChip('transfer',this.options[this.selectedIndex].text,this.value);this.value=''"><option value="">Transfer type</option><option value="same">Same</option><option value="intra">Intra</option><option value="inter">Inter</option></select>
-      <select id="ob-f-history" onchange="obAddChip('history',this.options[this.selectedIndex].text,this.value);this.value=''"><option value="">Sales history</option><option value="yes">Has history</option><option value="no">No history</option></select>
-      <select id="ob-f-claim" onchange="obAddChip('claim',this.options[this.selectedIndex].text,this.value);this.value=''"><option value="">Claim status</option><option value="unclaimed">Unclaimed</option><option value="claimed">Claimed</option></select>
-      <select id="ob-f-city" onchange="obAddChip('city',this.options[this.selectedIndex].text,this.value);this.value=''"><option value="">All cities</option></select>
-      <select id="ob-f-contact" onchange="obAddChip('contact',this.options[this.selectedIndex].text,this.value);this.value=''"><option value="">Contact details</option><option value="yes">Available</option><option value="no">Not available</option></select>
-      <select id="ob-f-size" onchange="obAddChip('size',this.options[this.selectedIndex].text,this.value);this.value=''"><option value="">Size</option><option value="A+">A+</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+      <select id="ob-f-team" data-obkey="team" onchange="obChipFromSelect(this)"><option value="">All teams</option></select>
+      <select id="ob-f-transfer" data-obkey="transfer" onchange="obChipFromSelect(this)"><option value="">Transfer type</option><option value="same">Same</option><option value="intra">Intra</option><option value="inter">Inter</option></select>
+      <select id="ob-f-history" data-obkey="history" onchange="obChipFromSelect(this)"><option value="">Sales history</option><option value="yes">Has history</option><option value="no">No history</option></select>
+      <select id="ob-f-claim" data-obkey="claim" onchange="obChipFromSelect(this)"><option value="">Claim status</option><option value="unclaimed">Unclaimed</option><option value="claimed">Claimed</option></select>
+      <select id="ob-f-city" data-obkey="city" onchange="obChipFromSelect(this)"><option value="">All cities</option></select>
+      <select id="ob-f-contact" data-obkey="contact" onchange="obChipFromSelect(this)"><option value="">Contact details</option><option value="yes">Available</option><option value="no">Not available</option></select>
+      <select id="ob-f-size" data-obkey="size" onchange="obChipFromSelect(this)"><option value="">Size</option><option value="A+">A+</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
       <input type="text" id="ob-f-search" placeholder="Search account..." oninput="applyOBFilters()">
       <button class="btn-clear" onclick="clearOBFilters()">Clear filters</button>
       <span style="font-size:11px;color:var(--text3)" id="ob-filter-count"></span>
@@ -2463,6 +2463,17 @@ function initOBPage(){
   document.getElementById('ob-filter-count').textContent=OB_FILTERED.length+' accounts';
 }
 
+function obChipFromSelect(sel){
+  var key=sel.getAttribute('data-obkey');
+  var val=sel.value;
+  var label=sel.options[sel.selectedIndex].text;
+  sel.value='';
+  if(!val)return;
+  OB_ACTIVE_FILTERS[key]={label:label,val:val};
+  renderOBChips();
+  applyOBFilters();
+}
+
 function obAddChip(key,label,val){
   if(!val)return;
   OB_ACTIVE_FILTERS[key]={label:label,val:val};
@@ -2483,8 +2494,11 @@ function renderOBChips(){
   if(!keys.length){el.innerHTML='';return;}
   el.innerHTML=keys.map(function(k){
     var f=OB_ACTIVE_FILTERS[k];
-    return'<span class="chip">'+obEsc(f.label)+'<span class="chip-x" onclick="obRemoveChip(''+k+'')">x</span></span>';
+    return'<span class="chip">'+obEsc(f.label)+'<span class="chip-x" data-obremove="'+obEsc(k)+'">x</span></span>';
   }).join('');
+  el.querySelectorAll('.chip-x').forEach(function(x){
+    x.addEventListener('click',function(){obRemoveChip(this.getAttribute('data-obremove'));});
+  });
 }
 
 function clearOBFilters(){
