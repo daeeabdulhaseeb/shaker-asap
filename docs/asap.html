@@ -2433,8 +2433,11 @@ function initOBPage(){
   if(typeof ShakerAuth!=='undefined'){
     var role=ShakerAuth.getRole();
     if(role==='admin'||role==='evp'){
+      OB_ADMIN=true;Object.keys(OB_TEAM_PIN_MAP).forEach(function(t){OB_UNLOCKED_TEAMS.add(t);});
       renderRedList();renderEVP();renderInter();
     } else if(role&&role.indexOf('manager_')===0){
+      var mteam=null;Object.keys(OB_TEAM_PIN_MAP).forEach(function(t){if(OB_TEAM_PIN_MAP[t]===role)mteam=t;});
+      if(mteam)OB_UNLOCKED_TEAMS.add(mteam);
       renderRedList();
     }
   }
