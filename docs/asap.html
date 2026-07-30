@@ -2663,27 +2663,32 @@ function renderRedList(){
       +(warn?'<span style="color:var(--warn);font-weight:500">'+warn+' warning</span>':'')
       +'</span></div>'
       +'<div class="tbl-wrap"><table><thead><tr>'
-      +'<th>Customer name</th><th>Type</th><th>Current SE</th><th>Transfer</th>'
-      +'<th>Tier</th><th class="r">Non-Hot 30%</th><th class="r">Tender 15%</th>'
-      +'<th class="r">Lost pipeline</th><th class="r">Days remaining</th><th>Status</th>'
+      +'<th>Customer name</th><th>Type</th><th>Current SE</th>'
+      +'<th>Tier</th><th class="r">Award 25</th><th class="r">Award 26</th>'
+      +'<th class="r">Quo 25</th><th class="r">Quo 26</th>'
+      +'<th class="r">Tender 15%</th><th class="r">Days remaining</th>'
       +'</tr></thead><tbody>';
     rows.sort(function(a,b){return a._days-b._days;}).forEach(function(a){
       var d=a._days;
       var dcls=d<=0?'color:var(--danger);font-weight:500':d<=7?'color:var(--warn);font-weight:500':'color:var(--success);font-weight:500';
       var dt=d<=0?'OVERDUE':d+' days';
-      var sb=d<=0?'<span class="badge b-inactive" style="background:#fee2e2;color:#991b1b">Critical</span>':d<=7?'<span class="badge b-warn">Warning</span>':'<span class="badge b-active">On track</span>';
       var tb=a.tier==='30'?'<span class="badge b-intra">30% tier M+1</span>':'<span class="badge b-inter" style="background:#ede9fe;color:#4c1d95">15% tier M+2</span>';
+      var live=ACC_INDEX[a.cust_no]!=null?ACCOUNTS[ACC_INDEX[a.cust_no]]:null;
+      var aw25=live&&live.award_by_year?live.award_by_year['2025']||0:0;
+      var aw26=live&&live.award_by_year?live.award_by_year['2026']||0:0;
+      var qu25=live&&live.pipeline_by_year?live.pipeline_by_year['2025']||0:0;
+      var qu26=live&&live.pipeline_by_year?live.pipeline_by_year['2026']||0:0;
       html+='<tr>'
         +'<td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+obEsc(a.name||'--')+'</td>'
         +'<td style="font-size:10px;color:var(--text2)">'+(a.type||'--')+'</td>'
         +'<td style="font-size:10px;color:var(--text2)">'+(a.curr_se||'--')+'</td>'
-        +'<td>'+obTransferBadge(a.transfer)+'</td>'
         +'<td>'+tb+'</td>'
-        +'<td class="r">'+(a.non_hot_30>0?obSar(a.non_hot_30):'<span class="dim">--</span>')+'</td>'
+        +'<td class="r">'+(aw25>0?obSar(aw25):'<span class="dim">--</span>')+'</td>'
+        +'<td class="r">'+(aw26>0?obSar(aw26):'<span class="dim">--</span>')+'</td>'
+        +'<td class="r">'+(qu25>0?obSar(qu25):'<span class="dim">--</span>')+'</td>'
+        +'<td class="r">'+(qu26>0?obSar(qu26):'<span class="dim">--</span>')+'</td>'
         +'<td class="r">'+(a.tender_15>0?obSar(a.tender_15):'<span class="dim">--</span>')+'</td>'
-        +'<td class="r '+(a.lost>0?'neg':'')+'">'+(a.lost>0?obSar(a.lost):'<span class="dim">0</span>')+'</td>'
         +'<td class="r"><span style="'+dcls+'">'+dt+'</span></td>'
-        +'<td>'+sb+'</td>'
         +'</tr>';
     });
     html+='</tbody></table></div></div>';
