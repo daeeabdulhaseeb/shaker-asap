@@ -4406,7 +4406,7 @@ function renderOv2SalesKPIs(){
 
   // Same period 2025 (Jan-Jul) — use monthly data from SE_DATA
   var ytd25=0;
-  SE_DATA.forEach(function(se){
+  (TXN_DATA&&TXN_DATA.se_list||[]).forEach(function(se){
     [1,2,3,4,5,6,7].forEach(function(m){
       ytd25+=(se.monthly&&se.monthly['2025']&&se.monthly['2025'][String(m)]||0);
     });
@@ -4417,12 +4417,12 @@ function renderOv2SalesKPIs(){
   // New accounts 2025 and 2026
   var newAccs25=ACCOUNTS.filter(function(a){
     if(!a.created_on)return false;
-    var y=parseInt((a.created_on.split('-')[0]||a.created_on.split('/')[2]||'0'));
+    var y=parseInt(a.created_on.indexOf('/')>-1?a.created_on.split('/')[2]:a.created_on.split('-')[0]);
     return y===2025;
   });
   var newAccs26=ACCOUNTS.filter(function(a){
     if(!a.created_on)return false;
-    var y=parseInt((a.created_on.split('-')[0]||a.created_on.split('/')[2]||'0'));
+    var y=parseInt(a.created_on.indexOf('/')>-1?a.created_on.split('/')[2]:a.created_on.split('-')[0]);
     return y===2026;
   });
   var newSales25=newAccs25.reduce(function(s,a){return s+(a.sales&&a.sales['2025']||0);},0);
@@ -4629,9 +4629,9 @@ function renderOv2Insights(){
   var insights=[];
   var ytd26=ACCOUNTS.reduce(function(s,a){return s+(a.sales&&a.sales['2026']||0);},0);
   var ytd25_comp=0;
-  SE_DATA.forEach(function(se){[1,2,3,4,5,6,7].forEach(function(m){ytd25_comp+=(se.monthly&&se.monthly['2025']&&se.monthly['2025'][String(m)]||0);});});
+  (TXN_DATA&&TXN_DATA.se_list||[]).forEach(function(se){[1,2,3,4,5,6,7].forEach(function(m){ytd25_comp+=(se.monthly&&se.monthly['2025']&&se.monthly['2025'][String(m)]||0);});});
   if(ytd25_comp>0){var d=Math.round((ytd26-ytd25_comp)/ytd25_comp*100);insights.push({c:d>=0?'#10b981':'#ef4444',m:'YTD '+ov2Sar(ytd26)+' vs '+ov2Sar(ytd25_comp)+' same period 2025 ('+(d>=0?'+':'')+d+'%)'});}
-  var newAccs26=ACCOUNTS.filter(function(a){if(!a.created_on)return false;var y=parseInt(a.created_on.split('-')[0]||a.created_on.split('/')[2]||'0');return y===2026;});
+  var newAccs26=ACCOUNTS.filter(function(a){if(!a.created_on)return false;var y=parseInt(a.created_on.indexOf('/')>-1?a.created_on.split('/')[2]:a.created_on.split('-')[0]);return y===2026;});
   var newSales26=newAccs26.reduce(function(s,a){return s+(a.sales&&a.sales['2026']||0);},0);
   if(newAccs26.length)insights.push({c:'#3b82f6',m:newAccs26.length+' new accounts YTD contributing '+ov2Sar(newSales26)+' in 2026 sales'});
   var hot=ACCOUNTS.reduce(function(s,a){return s+(a.hot_pipeline||0);},0);
@@ -4717,7 +4717,7 @@ function renderOv2Monthly(){
 
   // Aggregate monthly from SE_DATA filtered by team/group
   var d24={},d25={},d26={};
-  SE_DATA.forEach(function(s){
+  (TXN_DATA&&TXN_DATA.se_list||[]).forEach(function(s){
     if(OV2_TEAM_FILTER.length&&OV2_TEAM_FILTER.indexOf(s.team)===-1)return;
     [2024,2025,2026].forEach(function(yr){
       var mo=s.monthly&&s.monthly[String(yr)];if(!mo)return;
