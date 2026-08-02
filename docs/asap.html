@@ -218,6 +218,7 @@ tr.clickable:hover td{background:var(--surface2)}
   <span class="nav-link" onclick="showPage('accanalysis',this);if(typeof initAccAnalysis==='function'&&!window._aaInit){window._aaInit=true;initAccAnalysis();}">Account analysis</span>
   <span class="nav-link" onclick="showPage('transactions',this)">Sales transactions</span>
   <span class="nav-link" onclick="showPage('openbox',this)">Open box</span>
+  <span class="nav-link" onclick="showPage('overview2',this);if(!window._ov2Init){window._ov2Init=true;initOverview2();}">Overview 2.0</span>
   <span class="nav-updated" id="last-updated"></span>
   <span id="nav-user" style="font-size:11px;color:var(--text2);margin-left:8px;white-space:nowrap;padding:0 4px;background:var(--accent-light);border-radius:4px"></span>
   <button onclick="ShakerAuth.logout()" style="font-size:11px;padding:4px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text2);cursor:pointer;margin-left:6px;white-space:nowrap">Sign out</button>
@@ -706,6 +707,113 @@ tr.clickable:hover td{background:var(--surface2)}
     <div class="card-title" style="margin-bottom:4px">Ownership vs Transaction delta (2025)</div>
     <div class="card-sub" style="margin-bottom:10px">Positive = team invoiced more than they own. Negative = team invoiced less than they own (revenue leaked to other teams).</div>
     <div id="txnview-delta-bars"></div>
+  </div>
+</div>
+
+<!-- OVERVIEW 2.0 -->
+<div id="page-overview2" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">
+    <div>
+      <div class="page-title">Overview 2.0</div>
+      <div class="page-sub" id="ov2-sub">Loading...</div>
+    </div>
+  </div>
+
+  <!-- SALES KPI ROW -->
+  <div style="font-size:9px;font-weight:500;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;margin-bottom:5px;padding-left:2px">Sales</div>
+  <div id="ov2-sales-kpis" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-bottom:10px"></div>
+
+  <!-- PIPELINE KPI ROW -->
+  <div style="font-size:9px;font-weight:500;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;margin-bottom:5px;padding-left:2px">Pipeline</div>
+  <div id="ov2-pipe-kpis" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:14px"></div>
+
+  <!-- THREE COL: team bars | product groups + top SE | account status + insights -->
+  <div style="display:grid;grid-template-columns:1.3fr 1fr 0.9fr;gap:10px;margin-bottom:10px">
+
+    <!-- Own vs other team bars -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div>
+          <div class="card-title">Sales by team — own vs other</div>
+          <div class="card-sub" style="margin-bottom:0">Dark = own accts · Light = other teams accts · total at end</div>
+        </div>
+        <select id="ov2-team-yr" onchange="renderOv2TeamBars()" style="font-size:10px;height:22px;padding:0 4px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface)">
+          <option value="2026">2026 YTD</option><option value="2025">2025</option><option value="2024">2024</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:8px;font-size:10px">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3b82f6;margin-right:3px;vertical-align:middle"></span>Own accounts</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#93c5fd;margin-right:3px;vertical-align:middle"></span>Other teams</span>
+      </div>
+      <div id="ov2-team-bars"></div>
+    </div>
+
+    <!-- Product groups + Top SE -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="card-title">Top product groups</div>
+        <select id="ov2-group-yr" onchange="renderOv2GroupBars()" style="font-size:10px;height:22px;padding:0 4px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface)">
+          <option value="2026">2026 YTD</option><option value="2025">2025</option><option value="2024">2024</option>
+        </select>
+      </div>
+      <div id="ov2-group-bars"></div>
+      <div class="divider" style="margin:10px 0"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="card-title">Top 5 salesmen</div>
+        <select id="ov2-topse-yr" onchange="renderOv2TopSE()" style="font-size:10px;height:22px;padding:0 4px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface)">
+          <option value="2026">2026 YTD</option><option value="2025">2025</option><option value="2024">2024</option>
+        </select>
+      </div>
+      <div id="ov2-topse-list"></div>
+    </div>
+
+    <!-- Account status + insights -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:6px">Account status</div>
+      <div id="ov2-status-seg" style="display:flex;height:11px;border-radius:3px;overflow:hidden;margin-bottom:6px"></div>
+      <div id="ov2-status-bars"></div>
+      <div class="divider" style="margin:10px 0"></div>
+      <div class="card-title" style="margin-bottom:6px">Key insights · 2026</div>
+      <div id="ov2-insights"></div>
+    </div>
+  </div>
+
+  <!-- MONTHLY TREND -->
+  <div class="card" style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div class="card-title">Monthly sales trend</div>
+        <div class="card-sub" style="margin-bottom:0">grey=2024 &nbsp;·&nbsp; blue=2025 &nbsp;·&nbsp; amber=2026 YTD</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+        <div style="display:flex;gap:5px;align-items:center">
+          <select id="ov2-mtrend-qtr" onchange="renderOv2Monthly()" style="font-size:10px;height:22px;padding:0 4px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface)">
+            <option value="">All quarters</option>
+            <option value="1">Q1</option><option value="2">Q2</option><option value="3">Q3</option><option value="4">Q4</option>
+          </select>
+          <select id="ov2-mtrend-month" onchange="renderOv2Monthly()" style="font-size:10px;height:22px;padding:0 4px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface)">
+            <option value="">All months</option>
+            <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+            <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+            <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+            <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+          </select>
+          <button onclick="clearOv2Mtrend()" style="font-size:10px;height:22px;padding:0 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);cursor:pointer">Clear</button>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
+          <div id="ov2-team-checks" style="display:flex;gap:5px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:4px 8px"></div>
+          <div id="ov2-group-checks" style="display:flex;gap:5px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:4px 8px"></div>
+        </div>
+        <div id="ov2-filter-chips" style="min-height:18px;text-align:right"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:2px;align-items:flex-end;height:90px" id="ov2-monthly-bars"></div>
+    <div style="display:flex;gap:2px;margin-top:3px" id="ov2-monthly-labels"></div>
+    <div style="display:flex;gap:16px;margin-top:8px;font-size:10px">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#d1d5db;margin-right:3px;vertical-align:middle"></span>2024</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3b82f6;margin-right:3px;vertical-align:middle"></span>2025</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f59e0b;margin-right:3px;vertical-align:middle"></span>2026 YTD</span>
+    </div>
   </div>
 </div>
 
@@ -4261,6 +4369,400 @@ ShakerAuth.init({
     loadAll(session);
   }
 });
-</script>
+
+// ── OVERVIEW 2.0 ─────────────────────────────────────────────────────────────
+var OV2_TEAM_FILTER=[];
+var OV2_GROUP_FILTER=[];
+
+function initOverview2(){
+  if(!ACCOUNTS||!ACCOUNTS.length)return;
+  renderOv2SalesKPIs();
+  renderOv2PipeKPIs();
+  renderOv2TeamBars();
+  renderOv2GroupBars();
+  renderOv2TopSE();
+  renderOv2StatusBars();
+  renderOv2Insights();
+  renderOv2Monthly();
+  ov2BuildCheckboxes();
+  var sub=document.getElementById('ov2-sub');
+  if(sub)sub.textContent=ACCOUNTS.length+' accounts · Sales 2022-2026 · Pipeline & Award';
+}
+
+function ov2Sar(v){
+  if(!v&&v!==0)return'--';
+  var n=Math.abs(v);
+  if(n>=1000000)return(v<0?'-':'')+(n/1000000).toFixed(1)+'M';
+  if(n>=1000)return(v<0?'-':'')+(Math.round(n/1000))+'K';
+  return Math.round(v).toLocaleString();
+}
+
+function renderOv2SalesKPIs(){
+  var ytd26=ACCOUNTS.reduce(function(s,a){return s+(a.sales&&a.sales['2026']||0);},0);
+  var s25=ACCOUNTS.reduce(function(s,a){return s+(a.sales&&a.sales['2025']||0);},0);
+  var s24=ACCOUNTS.reduce(function(s,a){return s+(a.sales&&a.sales['2024']||0);},0);
+
+  // Same period 2025 (Jan-Jul) — use monthly data from SE_DATA
+  var ytd25=0;
+  SE_DATA.forEach(function(se){
+    [1,2,3,4,5,6,7].forEach(function(m){
+      ytd25+=(se.monthly&&se.monthly['2025']&&se.monthly['2025'][String(m)]||0);
+    });
+  });
+  var ytdPct=ytd25>0?Math.round((ytd26-ytd25)/ytd25*100):null;
+  var s25vs24=s24>0?Math.round((s25-s24)/s24*100):null;
+
+  // New accounts 2025 and 2026
+  var newAccs25=ACCOUNTS.filter(function(a){
+    if(!a.created_on)return false;
+    var y=parseInt((a.created_on.split('-')[0]||a.created_on.split('/')[2]||'0'));
+    return y===2025;
+  });
+  var newAccs26=ACCOUNTS.filter(function(a){
+    if(!a.created_on)return false;
+    var y=parseInt((a.created_on.split('-')[0]||a.created_on.split('/')[2]||'0'));
+    return y===2026;
+  });
+  var newSales25=newAccs25.reduce(function(s,a){return s+(a.sales&&a.sales['2025']||0);},0);
+  var newSales26=newAccs26.reduce(function(s,a){return s+(a.sales&&a.sales['2026']||0);},0);
+
+  // Active SEs
+  var ses26=new Set();var ses25=new Set();
+  SE_DATA.forEach(function(s){
+    if(s.sales&&s.sales['2026'])ses26.add(s.se_name);
+    if(s.sales&&s.sales['2025'])ses25.add(s.se_name);
+  });
+
+  var el=document.getElementById('ov2-sales-kpis');if(!el)return;
+  el.innerHTML=
+    ov2KpiCard('2026 YTD (Jan-Jul)',ov2Sar(ytd26),ytdPct!==null?(ytdPct>=0?'+':'')+ytdPct+'% vs same period 2025':null,ytdPct<0?'neg':'pos',null,null,'#3b82f6')+
+    ov2KpiCard('2025 full year',ov2Sar(s25),s25vs24!==null?(s25vs24>=0?'+':'')+s25vs24+'% vs 2024':null,s25vs24>=0?'pos':'neg',null,null,'#3b82f6')+
+    ov2KpiCard('2024 full year',ov2Sar(s24),null,null,null,null,'#6b7280')+
+    ov2KpiCardDouble('New business 2025',ov2Sar(newSales25),'from new accounts',newAccs25.length+' new accts',ov2Sar(newSales25),'their sales','#10b981')+
+    ov2KpiCardDouble('New business 2026',ov2Sar(newSales26),'from new accounts YTD',newAccs26.length+' new accts',ov2Sar(newSales26),'their sales','#f59e0b')+
+    ov2KpiCard('Active SEs 2025',ses25.size,'with invoiced revenue',null,null,null,'#6b7280')+
+    ov2KpiCard('Active SEs 2026',ses26.size,'YTD invoiced revenue',null,null,null,'#6b7280');
+}
+
+function ov2KpiCard(label,val,sub,subCls,sub2,sub2Cls,accent){
+  var borderStyle=accent?'border-top:2px solid '+accent+';':'';
+  return'<div class="card" style="padding:10px 12px;'+borderStyle+'">'
+    +'<div style="font-size:10px;color:var(--text2);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+label+'</div>'
+    +'<div style="font-size:18px;font-weight:500;line-height:1.1">'+val+'</div>'
+    +(sub?'<div style="font-size:10px;margin-top:3px" class="'+(subCls||'')+'">'+sub+'</div>':'')+
+    '</div>';
+}
+
+function ov2KpiCardDouble(label,val,sub,pair1Label,pair1Val,pair2Label,accent){
+  var borderStyle=accent?'border-top:2px solid '+accent+';':'';
+  return'<div class="card" style="padding:10px 12px;'+borderStyle+'">'
+    +'<div style="font-size:10px;color:var(--text2);margin-bottom:3px">'+label+'</div>'
+    +'<div style="font-size:15px;font-weight:500;line-height:1.1">'+val+'</div>'
+    +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+sub+'</div>'
+    +'<div style="display:flex;gap:4px;margin-top:5px;padding-top:5px;border-top:0.5px solid var(--border2)">'
+    +'<div style="flex:1;text-align:center"><div style="font-size:11px;font-weight:500">'+pair1Label+'</div><div style="font-size:9px;color:var(--text3)">new accts</div></div>'
+    +'<div style="width:0.5px;background:var(--border2)"></div>'
+    +'<div style="flex:1;text-align:center"><div style="font-size:11px;font-weight:500">'+pair1Val+'</div><div style="font-size:9px;color:var(--text3)">their sales</div></div>'
+    +'</div></div>';
+}
+
+function renderOv2PipeKPIs(){
+  var award25=ACCOUNTS.reduce(function(s,a){return s+(a.award_by_year&&a.award_by_year['2025']||0);},0);
+  var award26=ACCOUNTS.reduce(function(s,a){return s+(a.award_by_year&&a.award_by_year['2026']||0);},0);
+  var backlog=ACCOUNTS.reduce(function(s,a){return s+(a.backlog||0);},0);
+  var hot=ACCOUNTS.reduce(function(s,a){return s+(a.hot_pipeline||0);},0);
+
+  // Future pipeline: 30/50/70% + 15% non-Applied, award year 2026
+  var future=ACCOUNTS.reduce(function(s,a){
+    return s+(a.projects||[]).reduce(function(ps,p){
+      var prob=(p.probability||'').trim();
+      var grp=(p.group||p.product_group||'');
+      var ayr=p.expected_award?parseInt((p.expected_award||'').split('-')[0]):null;
+      if(ayr!==2026)return ps;
+      var is30_70=prob.indexOf('30%')===0||prob.indexOf('50%')===0||prob.indexOf('70%')===0;
+      var is15nonApplied=prob.indexOf('15%')===0&&grp!=='Applied';
+      if(is30_70||is15nonApplied)ps+=(p.q_gross_value||0);
+      return ps;
+    },0);
+  },0);
+
+  var el=document.getElementById('ov2-pipe-kpis');if(!el)return;
+  var cards=[
+    {label:'Award 2025',val:ov2Sar(award25),sub:'90-100% · award yr 2025',color:'#3b82f6'},
+    {label:'Award 2026',val:ov2Sar(award26),sub:'90-100% · award yr 2026',color:'#8b5cf6'},
+    {label:'Backlog',val:ov2Sar(backlog),sub:'90-100% · 2022-2026',color:'#10b981'},
+    {label:'Hot pipeline',val:ov2Sar(hot),sub:'50%+70% rolling window',color:'#f59e0b'},
+    {label:'Future pipeline',val:ov2Sar(future),sub:'30-70% + 15% non-Applied · award 2026',color:'#ec4899'},
+  ];
+  el.innerHTML=cards.map(function(c){
+    return'<div class="card" style="padding:10px 12px;border-top:2px solid '+c.color+'">'
+      +'<div style="font-size:10px;color:var(--text2);margin-bottom:3px">'+c.label+'</div>'
+      +'<div style="font-size:18px;font-weight:500;line-height:1.1">'+c.val+'</div>'
+      +'<div style="font-size:10px;color:var(--text3);margin-top:3px">'+c.sub+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function renderOv2TeamBars(){
+  var yr=(document.getElementById('ov2-team-yr')||{value:'2026'}).value||'2026';
+
+  // Build own-vs-other per team using TXN acc_list + ACC_INDEX
+  var teamOwn={},teamOther={};
+  if(TXN_DATA&&TXN_DATA.acc_list){
+    TXN_DATA.acc_list.forEach(function(txnAcc){
+      var team=txnAcc.team;if(!team)return;
+      var val=txnAcc.sales&&txnAcc.sales[yr]||0;if(!val)return;
+      var accIdx=ACC_INDEX[txnAcc.cust_no];
+      var owner=accIdx!=null?ACCOUNTS[accIdx]:null;
+      var ownerSE=owner?owner.curr_se:null;
+      var isOwn=(ownerSE&&ownerSE===txnAcc.se);
+      if(isOwn){teamOwn[team]=(teamOwn[team]||0)+val;}
+      else{teamOther[team]=(teamOther[team]||0)+val;}
+    });
+  } else {
+    // Fallback: use TEAM_DATA with no split
+    TEAM_DATA.forEach(function(t){
+      teamOwn[t.team]=t.sales&&t.sales[yr]||0;
+    });
+  }
+
+  var teams=Object.keys(Object.assign({},teamOwn,teamOther));
+  teams.sort(function(a,b){
+    var ta=(teamOwn[a]||0)+(teamOther[a]||0);
+    var tb=(teamOwn[b]||0)+(teamOther[b]||0);
+    return tb-ta;
+  });
+  var maxV=teams.reduce(function(m,t){return Math.max(m,(teamOwn[t]||0)+(teamOther[t]||0));},1);
+  var el=document.getElementById('ov2-team-bars');if(!el)return;
+  el.innerHTML=teams.map(function(team){
+    var own=teamOwn[team]||0;
+    var other=teamOther[team]||0;
+    var total=own+other;
+    var wOwn=maxV>0?Math.round(own/maxV*100):0;
+    var wOther=maxV>0?Math.round(other/maxV*100):0;
+    return'<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+      +'<div style="font-size:10px;color:var(--text2);width:94px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+team+'</div>'
+      +'<div style="flex:1;height:15px;background:var(--surface);border-radius:3px;overflow:hidden;display:flex">'
+      +(wOwn>0?'<div style="width:'+wOwn+'%;background:#3b82f6;display:flex;align-items:center;padding:0 4px"><span style="font-size:8px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden">'+(wOwn>15?ov2Sar(own):'')+'</span></div>':'')
+      +(wOther>0?'<div style="width:'+wOther+'%;background:#93c5fd;display:flex;align-items:center;padding:0 4px"><span style="font-size:8px;font-weight:500;color:#1e3a5f;white-space:nowrap;overflow:hidden">'+(wOther>12?ov2Sar(other):'')+'</span></div>':'')
+      +'</div>'
+      +'<div style="font-size:10px;font-weight:500;color:var(--text);min-width:38px;flex-shrink:0">'+ov2Sar(total)+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function renderOv2GroupBars(){
+  var yr=(document.getElementById('ov2-group-yr')||{value:'2026'}).value||'2026';
+  var groups={};
+  SE_DATA.forEach(function(s){
+    if(s.by_group)Object.entries(s.by_group).forEach(function(e){
+      var v=parseFloat(e[1]||0);
+      groups[e[0]]=(groups[e[0]]||0)+v;
+    });
+  });
+  var sorted=Object.entries(groups).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+  var maxV=sorted.length?sorted[0][1]:1;if(!maxV)maxV=1;
+  var colors={'CAC Ducted':'#3b82f6','CAC Non-Ducted':'#8b5cf6','RAC':'#10b981','Applied':'#f59e0b','installation':'#6b7280','Free Stand':'#ec4899','LG':'#14b8a6'};
+  var el=document.getElementById('ov2-group-bars');if(!el)return;
+  el.innerHTML=sorted.map(function(e){
+    var w=Math.round(e[1]/maxV*100);var col=colors[e[0]]||'#3b82f6';
+    return'<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+      +'<div style="font-size:10px;color:var(--text2);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e[0]+'</div>'
+      +'<div style="flex:1;height:15px;background:var(--surface);border-radius:3px;overflow:hidden;position:relative;display:flex;align-items:center">'
+      +'<div style="width:'+w+'%;background:'+col+';height:100%;display:flex;align-items:center;padding:0 5px">'
+      +(w>18?'<span style="font-size:9px;font-weight:500;color:#fff;white-space:nowrap">'+ov2Sar(e[1])+'</span>':'')
+      +'</div>'+(w<=18?'<span style="font-size:10px;color:var(--text2);padding-left:4px">'+ov2Sar(e[1])+'</span>':'')
+      +'</div></div>';
+  }).join('');
+}
+
+function renderOv2TopSE(){
+  var yr=(document.getElementById('ov2-topse-yr')||{value:'2026'}).value||'2026';
+  var ses=SE_DATA.slice().sort(function(a,b){return (b.sales&&b.sales[yr]||0)-(a.sales&&a.sales[yr]||0);}).slice(0,5);
+  var maxV=ses.length?(ses[0].sales&&ses[0].sales[yr]||0):1;if(!maxV)maxV=1;
+  var el=document.getElementById('ov2-topse-list');if(!el)return;
+  el.innerHTML=ses.map(function(s,i){
+    var v=s.sales&&s.sales[yr]||0;
+    var w=Math.round(v/maxV*100);
+    var bg=i===0?'#f59e0b':'#3b82f6';
+    return'<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">'
+      +'<div style="width:15px;height:15px;border-radius:50%;background:'+bg+';color:#fff;font-size:8px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</div>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+s.se_name+'</div>'
+      +'<div style="font-size:9px;color:var(--text3)">'+s.team+'</div></div>'
+      +'<div style="width:80px;height:5px;background:var(--surface);border-radius:3px;overflow:hidden"><div style="width:'+w+'%;height:100%;background:'+bg+';border-radius:3px"></div></div>'
+      +'<div style="font-size:10px;font-weight:500;min-width:34px;text-align:right">'+ov2Sar(v)+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function renderOv2StatusBars(){
+  var counts={Active:0,Inactive:0,New:0,Reactivated:0,'Active/Potential':0};
+  ACCOUNTS.forEach(function(a){if(a.cust_status&&counts.hasOwnProperty(a.cust_status))counts[a.cust_status]++;});
+  var total=ACCOUNTS.length;
+  var colors={Active:'#10b981',Inactive:'#9ca3af',New:'#3b82f6',Reactivated:'#f59e0b','Active/Potential':'#8b5cf6'};
+  var segEl=document.getElementById('ov2-status-seg');
+  var barsEl=document.getElementById('ov2-status-bars');
+  if(segEl){
+    segEl.innerHTML=Object.keys(counts).map(function(k){
+      return'<div style="background:'+colors[k]+';width:'+(counts[k]/total*100).toFixed(1)+'%"></div>';
+    }).join('');
+  }
+  if(barsEl){
+    var maxC=Math.max.apply(null,Object.values(counts));if(!maxC)maxC=1;
+    barsEl.innerHTML=Object.keys(counts).map(function(k){
+      var w=Math.round(counts[k]/maxC*100);
+      return'<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+        +'<div style="font-size:10px;color:'+colors[k]+';font-weight:500;width:100px;flex-shrink:0">'+k+'</div>'
+        +'<div style="flex:1;height:15px;background:var(--surface);border-radius:3px;overflow:hidden;display:flex;align-items:center">'
+        +'<div style="width:'+w+'%;height:100%;background:'+colors[k]+';display:flex;align-items:center;padding:0 5px">'
+        +(w>20?'<span style="font-size:9px;font-weight:500;color:#fff">'+counts[k]+'</span>':'')
+        +'</div>'+(w<=20?'<span style="font-size:10px;color:var(--text2);padding-left:4px">'+counts[k]+'</span>':'')
+        +'</div></div>';
+    }).join('');
+  }
+}
+
+function renderOv2Insights(){
+  var el=document.getElementById('ov2-insights');if(!el)return;
+  var insights=[];
+  var ytd26=ACCOUNTS.reduce(function(s,a){return s+(a.sales&&a.sales['2026']||0);},0);
+  var ytd25_comp=0;
+  SE_DATA.forEach(function(se){[1,2,3,4,5,6,7].forEach(function(m){ytd25_comp+=(se.monthly&&se.monthly['2025']&&se.monthly['2025'][String(m)]||0);});});
+  if(ytd25_comp>0){var d=Math.round((ytd26-ytd25_comp)/ytd25_comp*100);insights.push({c:d>=0?'#10b981':'#ef4444',m:'YTD '+ov2Sar(ytd26)+' vs '+ov2Sar(ytd25_comp)+' same period 2025 ('+(d>=0?'+':'')+d+'%)'});}
+  var newAccs26=ACCOUNTS.filter(function(a){if(!a.created_on)return false;var y=parseInt(a.created_on.split('-')[0]||a.created_on.split('/')[2]||'0');return y===2026;});
+  var newSales26=newAccs26.reduce(function(s,a){return s+(a.sales&&a.sales['2026']||0);},0);
+  if(newAccs26.length)insights.push({c:'#3b82f6',m:newAccs26.length+' new accounts YTD contributing '+ov2Sar(newSales26)+' in 2026 sales'});
+  var hot=ACCOUNTS.reduce(function(s,a){return s+(a.hot_pipeline||0);},0);
+  if(ytd26>0)insights.push({c:'#f59e0b',m:'Hot pipeline '+ov2Sar(hot)+' — '+(hot/ytd26*100).toFixed(0)+'% coverage of 2026 YTD'});
+  var award26=ACCOUNTS.reduce(function(s,a){return s+(a.award_by_year&&a.award_by_year['2026']||0);},0);
+  if(award26>0)insights.push({c:'#8b5cf6',m:'Award pipeline 2026: '+ov2Sar(award26)+' — strong forward coverage'});
+  var ses26=new Set();SE_DATA.forEach(function(s){if(s.sales&&s.sales['2026'])ses26.add(s.se_name);});
+  var ses25=new Set();SE_DATA.forEach(function(s){if(s.sales&&s.sales['2025'])ses25.add(s.se_name);});
+  if(ses26.size>ses25.size)insights.push({c:'#10b981',m:ses26.size+' SEs active in 2026 vs '+ses25.size+' in 2025 — team expanding'});
+  el.innerHTML=insights.slice(0,5).map(function(ins){
+    return'<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:7px">'
+      +'<div style="width:3px;border-radius:2px;flex-shrink:0;margin-top:2px;align-self:stretch;background:'+ins.c+'"></div>'
+      +'<div style="font-size:10px;color:var(--text2);line-height:1.5">'+ins.m+'</div></div>';
+  }).join('');
+}
+
+function ov2BuildCheckboxes(){
+  var teams=[...new Set(SE_DATA.map(function(s){return s.team;}).filter(Boolean))].sort();
+  var groups=[...new Set(SE_DATA.flatMap(function(s){return Object.keys(s.by_group||{});}).filter(Boolean))].sort();
+  var tc=document.getElementById('ov2-team-checks');
+  var gc=document.getElementById('ov2-group-checks');
+  if(tc){
+    tc.innerHTML='<span style="font-size:9px;font-weight:500;color:var(--text3);align-self:center;margin-right:2px">TEAM</span>'
+      +'<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text2);cursor:pointer;white-space:nowrap"><input type="checkbox" id="ov2-team-all" checked onchange="ov2TeamAllToggle(this)" style="width:11px;height:11px;accent-color:var(--accent)"> All</label>'
+      +teams.map(function(t){
+        return'<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text2);cursor:pointer;white-space:nowrap"><input type="checkbox" class="ov2-team-cb" value="'+t+'" onchange="ov2FilterChanged()" style="width:11px;height:11px;accent-color:var(--accent)"> '+t+'</label>';
+      }).join('');
+  }
+  if(gc){
+    gc.innerHTML='<span style="font-size:9px;font-weight:500;color:var(--text3);align-self:center;margin-right:2px">GROUP</span>'
+      +'<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text2);cursor:pointer;white-space:nowrap"><input type="checkbox" id="ov2-group-all" checked onchange="ov2GroupAllToggle(this)" style="width:11px;height:11px;accent-color:var(--accent)"> All</label>'
+      +groups.map(function(g){
+        return'<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text2);cursor:pointer;white-space:nowrap"><input type="checkbox" class="ov2-group-cb" value="'+g+'" onchange="ov2FilterChanged()" style="width:11px;height:11px;accent-color:var(--accent)"> '+g+'</label>';
+      }).join('');
+  }
+}
+
+function ov2TeamAllToggle(cb){
+  document.querySelectorAll('.ov2-team-cb').forEach(function(c){c.checked=false;});
+  ov2FilterChanged();
+}
+function ov2GroupAllToggle(cb){
+  document.querySelectorAll('.ov2-group-cb').forEach(function(c){c.checked=false;});
+  ov2FilterChanged();
+}
+
+function ov2FilterChanged(){
+  OV2_TEAM_FILTER=[];
+  document.querySelectorAll('.ov2-team-cb:checked').forEach(function(c){OV2_TEAM_FILTER.push(c.value);});
+  var allTeam=document.getElementById('ov2-team-all');
+  if(allTeam)allTeam.checked=OV2_TEAM_FILTER.length===0;
+  OV2_GROUP_FILTER=[];
+  document.querySelectorAll('.ov2-group-cb:checked').forEach(function(c){OV2_GROUP_FILTER.push(c.value);});
+  var allGrp=document.getElementById('ov2-group-all');
+  if(allGrp)allGrp.checked=OV2_GROUP_FILTER.length===0;
+  ov2RenderChips();
+  renderOv2Monthly();
+}
+
+function ov2RenderChips(){
+  var el=document.getElementById('ov2-filter-chips');if(!el)return;
+  var chips=OV2_TEAM_FILTER.concat(OV2_GROUP_FILTER);
+  if(!chips.length){el.innerHTML='';return;}
+  el.innerHTML=chips.map(function(c){
+    return'<span style="display:inline-flex;align-items:center;gap:4px;background:var(--accent-light);color:var(--accent);border-radius:4px;padding:2px 7px;font-size:9px;margin:2px 2px 0 0">'+c+'<span style="cursor:pointer;opacity:0.7" data-ov2chip="'+c+'">x</span></span>';
+  }).join('');
+  el.querySelectorAll('[data-ov2chip]').forEach(function(x){
+    x.addEventListener('click',function(){
+      var val=this.getAttribute('data-ov2chip');
+      document.querySelectorAll('.ov2-team-cb,.ov2-group-cb').forEach(function(cb){
+        if(cb.value===val)cb.checked=false;
+      });
+      ov2FilterChanged();
+    });
+  });
+}
+
+function renderOv2Monthly(){
+  var qtr=(document.getElementById('ov2-mtrend-qtr')||{value:''}).value;
+  var mon=(document.getElementById('ov2-mtrend-month')||{value:''}).value;
+  var months_range=qtr?({1:[1,2,3],2:[4,5,6],3:[7,8,9],4:[10,11,12]}[qtr]||null):null;
+  if(mon)months_range=[parseInt(mon)];
+
+  // Aggregate monthly from SE_DATA filtered by team/group
+  var d24={},d25={},d26={};
+  SE_DATA.forEach(function(s){
+    if(OV2_TEAM_FILTER.length&&OV2_TEAM_FILTER.indexOf(s.team)===-1)return;
+    [2024,2025,2026].forEach(function(yr){
+      var mo=s.monthly&&s.monthly[String(yr)];if(!mo)return;
+      Object.entries(mo).forEach(function(e){
+        var m=parseInt(e[0]);
+        if(months_range&&months_range.indexOf(m)===-1)return;
+        var val=parseFloat(e[1]||0);
+        if(OV2_GROUP_FILTER.length){
+          // Need to pro-rate by group — approximate via by_group ratio
+          var groupTotal=Object.values(s.by_group||{}).reduce(function(a,b){return a+parseFloat(b||0);},0);
+          var groupSel=OV2_GROUP_FILTER.reduce(function(a,g){return a+parseFloat(s.by_group&&s.by_group[g]||0);},0);
+          if(groupTotal>0)val=val*(groupSel/groupTotal);
+          else val=0;
+        }
+        if(yr===2024)d24[m]=(d24[m]||0)+val;
+        else if(yr===2025)d25[m]=(d25[m]||0)+val;
+        else d26[m]=(d26[m]||0)+val;
+      });
+    });
+  });
+
+  var allMonths=[1,2,3,4,5,6,7,8,9,10,11,12];
+  var display=months_range||allMonths;
+  var maxV=display.reduce(function(m,mo){return Math.max(m,d24[mo]||0,d25[mo]||0,d26[mo]||0);},1);
+  var mNames=['','J','F','M','A','M','J','J','A','S','O','N','D'];
+  var bHtml='',lHtml='';
+  display.forEach(function(m){
+    var h24=Math.round((d24[m]||0)/maxV*86);
+    var h25=Math.round((d25[m]||0)/maxV*86);
+    var h26=Math.round((d26[m]||0)/maxV*86);
+    bHtml+='<div style="display:flex;gap:1px;align-items:flex-end">';
+    bHtml+='<div style="width:7px;height:'+(h24||2)+'px;background:'+(h24?'#d1d5db':'var(--border2)')+';border-radius:2px 2px 0 0"></div>';
+    bHtml+='<div style="width:7px;height:'+(h25||2)+'px;background:'+(h25?'#3b82f6':'var(--border2)')+';border-radius:2px 2px 0 0"></div>';
+    bHtml+='<div style="width:7px;height:'+(h26||2)+'px;background:'+(h26?'#f59e0b':'var(--border2)')+';border-radius:2px 2px 0 0"></div>';
+    bHtml+='</div>';
+    lHtml+='<div style="width:23px;text-align:center;font-size:8px;color:var(--text3)">'+mNames[m]+'</div>';
+  });
+  var bEl=document.getElementById('ov2-monthly-bars');
+  var lEl=document.getElementById('ov2-monthly-labels');
+  if(bEl)bEl.innerHTML=bHtml;
+  if(lEl)lEl.innerHTML=lHtml;
+}
+
+function clearOv2Mtrend(){
+  var q=document.getElementById('ov2-mtrend-qtr');if(q)q.value='';
+  var m=document.getElementById('ov2-mtrend-month');if(m)m.value='';
+  renderOv2Monthly();
+}
 </body>
 </html>
