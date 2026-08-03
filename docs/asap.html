@@ -769,7 +769,7 @@ tr.clickable:hover td{background:var(--surface2)}
 
     <!-- Account status + insights -->
     <div class="card">
-      <div class="card-title" style="margin-bottom:6px">Account status</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div class="card-title">Account status</div><div style="font-size:11px;font-weight:500;color:var(--text)" id="ov2-total-accts"></div></div>
       <div id="ov2-status-seg" style="display:flex;height:11px;border-radius:3px;overflow:hidden;margin-bottom:6px"></div>
       <div id="ov2-status-bars"></div>
       <div class="divider" style="margin:10px 0"></div>
@@ -1339,7 +1339,8 @@ tr.clickable:hover td{background:var(--surface2)}
           <th onclick="sortOB('prev_se2')" style="cursor:pointer">Prev SE 2 <span class="sort-arrow" id="sa-ob-prev_se2"></span></th>
           <th class="r" onclick="sortOB('s2023')" style="cursor:pointer">2023 sales <span class="sort-arrow" id="sa-ob-s2023"></span></th>
           <th class="r" onclick="sortOB('s2024')" style="cursor:pointer">2024 sales <span class="sort-arrow" id="sa-ob-s2024"></span></th>
-          <th class="r" onclick="sortOB('lost')" style="cursor:pointer">Lost pipeline <span class="sort-arrow" id="sa-ob-lost"></span></th>
+          <th class="r" onclick="sortOB('s2026_live')" style="cursor:pointer">2026 sales <span class="sort-arrow" id="sa-ob-s2026_live"></span></th>
+          <th class="r" onclick="sortOB('award26_live')" style="cursor:pointer">Award 2026 <span class="sort-arrow" id="sa-ob-award26_live"></span></th>
           <th class="r" onclick="sortOB('s2025_live')" style="cursor:pointer">2025 sales <span class="sort-arrow" id="sa-ob-s2025_live"></span></th>
           <th onclick="sortOB('claim_status')" style="cursor:pointer">Claim status <span class="sort-arrow" id="sa-ob-claim_status"></span></th>
           <th>Claimed by</th>
@@ -1347,6 +1348,7 @@ tr.clickable:hover td{background:var(--surface2)}
           <th onclick="sortOB('vat')" style="cursor:pointer">VAT <span class="sort-arrow" id="sa-ob-vat"></span></th>
           <th onclick="sortOB('cr')" style="cursor:pointer">CR <span class="sort-arrow" id="sa-ob-cr"></span></th>
           <th onclick="sortOB('size')" style="cursor:pointer">Size <span class="sort-arrow" id="sa-ob-size"></span></th>
+          <th class="r" onclick="sortOB('quo26_live')" style="cursor:pointer">Quo 2026 <span class="sort-arrow" id="sa-ob-quo26_live"></span></th>
         </tr></thead>
         <tbody id="ob-tbody"></tbody>
       </table>
@@ -2648,7 +2650,7 @@ function applyOBFilters(){
 
 function obSortData(){
   var col=OB_SORT.col,dir=OB_SORT.dir;
-  var numCols=['s2023','s2024','total_sales','lost','s2025_live','hot_live'];
+  var numCols=['s2023','s2024','total_sales','lost','s2025_live','hot_live','s2026_live','award26_live','quo26_live'];
   OB_FILTERED.sort(function(a,b){
     var va=a[col],vb=b[col];
     if(numCols.indexOf(col)>=0){va=parseFloat(va)||0;vb=parseFloat(vb)||0;return dir*(vb-va);}
@@ -2697,11 +2699,15 @@ function renderOBKPIs(){
 function renderOBTable(){
   var html='';
   OB_FILTERED.forEach(function(a){
-    // Merge live KV claims over Excel claim_status
     var liveClaim = OB_CLAIMS[a.cust_no];
     var claimStatus = liveClaim ? liveClaim.claimed_by : a.claim_status;
     var cl=claimStatus?'row-claimed':'';
     var contactAvail=a.contact_available;
+    var live=ACC_INDEX[a.cust_no]!=null?ACCOUNTS[ACC_INDEX[a.cust_no]]:null;
+    var s2026=live&&live.sales?live.sales['2026']||0:0;
+    var aw26=live&&live.award_by_year?live.award_by_year['2026']||0:0;
+    var qu26=live&&live.pipeline_by_year?live.pipeline_by_year['2026']||0:0;
+    a.s2026_live=s2026;a.award26_live=aw26;a.quo26_live=qu26;
     html+='<tr class="'+cl+'">'
       +'<td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(a.name||'').replace(/"/g,"&quot;")+'">'+obEsc(a.name||'--')+'</td>'
       +'<td style="font-size:10px;color:var(--text2)">'+(a.city||'<span class="dim">--</span>')+'</td>'
@@ -2711,7 +2717,8 @@ function renderOBTable(){
       +'<td style="font-size:10px;color:var(--text2);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(a.prev_se2&&a.prev_se2!==a.prev_se1?a.prev_se2:'<span class="dim">--</span>')+'</td>'
       +'<td class="r">'+(a.s2023>0?obSar(a.s2023):'<span class="dim">--</span>')+'</td>'
       +'<td class="r" style="font-weight:'+(a.s2024>0?'500':'400')+'">'+(a.s2024>0?obSar(a.s2024):'<span class="dim">--</span>')+'</td>'
-      +'<td class="r '+(a.lost>0?'neg':'')+'">'+(a.lost>0?obSar(a.lost):'<span class="dim">0</span>')+'</td>'
+      +'<td class="r '+(s2026>0?'pos':'')+'">'+(s2026>0?obSar(s2026):'<span class="dim">--</span>')+'</td>'
+      +'<td class="r">'+(aw26>0?obSar(aw26):'<span class="dim">--</span>')+'</td>'
       +'<td class="r '+(a.s2025_live>0?'pos':'')+'">'+(a.s2025_live?obSar(a.s2025_live):'<span class="dim">--</span>')+'</td>'
       +'<td>'+(a.claim_status?'<span class="badge b-active">Claimed</span>':'<span class="badge b-inactive">Unclaimed</span>')+'</td>'
       +'<td style="font-size:10px;'+(claimStatus?'color:var(--success);font-weight:500':'color:var(--text3)')+'">'+(claimStatus||'--')+'</td>'
@@ -2719,19 +2726,24 @@ function renderOBTable(){
       +'<td style="font-size:10px;color:var(--text2)">'+(a.vat||'<span class="dim">--</span>')+'</td>'
       +'<td style="font-size:10px;color:var(--text2)">'+(a.cr||'<span class="dim">--</span>')+'</td>'
       +'<td>'+obSizeBadge(a.size)+'</td>'
+      +'<td class="r">'+(qu26>0?obSar(qu26):'<span class="dim">--</span>')+'</td>'
       +'</tr>';
   });
-  document.getElementById('ob-tbody').innerHTML=html||'<tr><td colspan="16" style="text-align:center;padding:20px;color:var(--text3)">No accounts match filters</td></tr>';
+  document.getElementById('ob-tbody').innerHTML=html||'<tr><td colspan="18" style="text-align:center;padding:20px;color:var(--text3)">No accounts match filters</td></tr>';
 }
 
 function obEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function exportOBTable(){
-  var rows=[['Customer No','Customer Name','City','Contact','Type','Prev SE 1','Prev SE 2','2023 Sales','2024 Sales','Lost Pipeline','2025 Sales (live)','Claim Status','Claimed By','Street','VAT','CR','Size']];
+  var rows=[['Customer No','Customer Name','City','Contact','Type','Prev SE 1','Prev SE 2','2023 Sales','2024 Sales','2026 Sales','Award 2026','2025 Sales (live)','Claim Status','Claimed By','Street','VAT','CR','Size','Quo 2026']];
   OB_FILTERED.forEach(function(a){
     var liveClaim=OB_CLAIMS[a.cust_no];
     var claimStatus=liveClaim?liveClaim.claimed_by:a.claim_status;
-    rows.push([a.cust_no,a.name,a.city||'',a.contact||'',a.type||'',a.prev_se1||'',a.prev_se2||'',a.s2023||0,a.s2024||0,a.lost||0,a.s2025_live||0,a.claim_status?'Claimed':'Unclaimed',claimStatus||'',a.street||'',a.vat||'',a.cr||'',a.size||'']);
+    var live=ACC_INDEX[a.cust_no]!=null?ACCOUNTS[ACC_INDEX[a.cust_no]]:null;
+    var s2026=live&&live.sales?live.sales['2026']||0:0;
+    var aw26=live&&live.award_by_year?live.award_by_year['2026']||0:0;
+    var qu26=live&&live.pipeline_by_year?live.pipeline_by_year['2026']||0:0;
+    rows.push([a.cust_no,a.name,a.city||'',a.contact||'',a.type||'',a.prev_se1||'',a.prev_se2||'',a.s2023||0,a.s2024||0,s2026,aw26,a.s2025_live||0,a.claim_status?'Claimed':'Unclaimed',claimStatus||'',a.street||'',a.vat||'',a.cr||'',a.size||'',qu26]);
   });
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Open Box');XLSX.writeFile(wb,'open_box_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
@@ -4469,10 +4481,10 @@ function ov2KpiCardDouble(label,val,sub,pair1Label,pair1Val,pair2Label,accent){
 }
 
 function renderOv2PipeKPIs(){
-  var award25=ACCOUNTS.reduce(function(s,a){return s+(a.award_by_year&&a.award_by_year['2025']||0);},0);
-  var award26=ACCOUNTS.reduce(function(s,a){return s+(a.award_by_year&&a.award_by_year['2026']||0);},0);
-  var backlog=ACCOUNTS.reduce(function(s,a){return s+(a.backlog||0);},0);
-  var hot=ACCOUNTS.reduce(function(s,a){return s+(a.hot_pipeline||0);},0);
+  var award25=TEAM_DATA.reduce(function(s,t){return s+(t.award_25||0);},0);
+  var award26=TEAM_DATA.reduce(function(s,t){return s+(t.award_26||0);},0);
+  var backlog=TEAM_DATA.reduce(function(s,t){return s+(t.backlog||0);},0);
+  var hot=TEAM_DATA.reduce(function(s,t){return s+(t.hot_pipeline||0);},0);
 
   // Future pipeline: 30/50/70% + 15% non-Applied, award year 2026
   var future=ACCOUNTS.reduce(function(s,a){
@@ -4580,7 +4592,8 @@ function renderOv2GroupBars(){
 
 function renderOv2TopSE(){
   var yr=(document.getElementById('ov2-topse-yr')||{value:'2026'}).value||'2026';
-  var ses=SE_DATA.slice().sort(function(a,b){return (b.sales&&b.sales[yr]||0)-(a.sales&&a.sales[yr]||0);}).slice(0,5);
+  var seSource=(TXN_DATA&&TXN_DATA.se_list&&TXN_DATA.se_list.length)?TXN_DATA.se_list:SE_DATA;
+  var ses=seSource.slice().sort(function(a,b){return (b.sales&&b.sales[yr]||0)-(a.sales&&a.sales[yr]||0);}).slice(0,5);
   var maxV=ses.length?(ses[0].sales&&ses[0].sales[yr]||0):1;if(!maxV)maxV=1;
   var el=document.getElementById('ov2-topse-list');if(!el)return;
   el.innerHTML=ses.map(function(s,i){
@@ -4601,6 +4614,7 @@ function renderOv2StatusBars(){
   var counts={Active:0,Inactive:0,New:0,Reactivated:0,'Active/Potential':0};
   ACCOUNTS.forEach(function(a){if(a.cust_status&&counts.hasOwnProperty(a.cust_status))counts[a.cust_status]++;});
   var total=ACCOUNTS.length;
+  var ttlEl=document.getElementById('ov2-total-accts');if(ttlEl)ttlEl.textContent=total.toLocaleString()+' total';
   var colors={Active:'#10b981',Inactive:'#9ca3af',New:'#3b82f6',Reactivated:'#f59e0b','Active/Potential':'#8b5cf6'};
   var segEl=document.getElementById('ov2-status-seg');
   var barsEl=document.getElementById('ov2-status-bars');
@@ -4649,7 +4663,7 @@ function renderOv2Insights(){
 }
 
 function ov2BuildCheckboxes(){
-  var teams=[...new Set(SE_DATA.map(function(s){return s.team;}).filter(Boolean))].sort();
+  var teams=TEAM_DATA.map(function(t){return t.team;}).filter(Boolean).sort();
   var groups=[...new Set((TXN_DATA&&TXN_DATA.se_list||SE_DATA).flatMap(function(s){return Object.keys(s.by_group||{});}).filter(Boolean))].sort();
   var tc=document.getElementById('ov2-team-checks');
   var gc=document.getElementById('ov2-group-checks');
@@ -4661,12 +4675,19 @@ function ov2BuildCheckboxes(){
       }).join('');
   }
   if(gc){
-    gc.innerHTML='<span style="font-size:9px;font-weight:500;color:var(--text3);align-self:center;margin-right:2px">GROUP</span>'
+    gc.innerHTML='<span style="font-size:9px;font-weight:500;color:var(--text3);align-self:center;margin-right:2px">GROUP</span><button onclick="ov2SelectAllGroups()" style="font-size:9px;height:18px;padding:0 6px;border:0.5px solid var(--border2);border-radius:3px;background:var(--surface);cursor:pointer;margin-right:2px">Select all</button>'
       +'<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text2);cursor:pointer;white-space:nowrap"><input type="checkbox" id="ov2-group-all" checked onchange="ov2GroupAllToggle(this)" style="width:11px;height:11px;accent-color:var(--accent)"> All</label>'
       +groups.map(function(g){
         return'<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text2);cursor:pointer;white-space:nowrap"><input type="checkbox" class="ov2-group-cb" value="'+g+'" onchange="ov2FilterChanged()" style="width:11px;height:11px;accent-color:var(--accent)"> '+g+'</label>';
       }).join('');
   }
+}
+
+function ov2SelectAllGroups(){
+  document.querySelectorAll('.ov2-group-cb').forEach(function(c){c.checked=true;});
+  var allGrp=document.getElementById('ov2-group-all');
+  if(allGrp)allGrp.checked=false;
+  ov2FilterChanged();
 }
 
 function ov2TeamAllToggle(cb){
