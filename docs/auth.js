@@ -27,17 +27,18 @@ var ShakerAuth = (function() {
     { value: 'manager_east',     label: 'East Projects Manager' },
     { value: 'manager_acser',    label: 'ACS - ER Manager' },
     { value: 'manager_direct',   label: 'Direct Channel Manager' },
+    { value: 'se',               label: 'Sales Engineer' },
   ];
 
   var FULL_ACCESS = ['admin', 'evp'];
 
   var TAB_ACCESS = {
     redlist: ['admin', 'evp', 'manager_central', 'manager_acscr', 'manager_west',
-              'manager_acswr', 'manager_east', 'manager_acser', 'manager_direct'],
+              'manager_acswr', 'manager_acser_east', 'manager_direct'],
     evp:     ['admin', 'evp'],
     inter:   ['admin', 'evp'],
     openbox: ['admin', 'evp', 'manager_central', 'manager_acscr', 'manager_west',
-              'manager_acswr', 'manager_east', 'manager_acser', 'manager_direct'],
+              'manager_acswr', 'manager_acser_east', 'manager_direct', 'se'],
   };
 
   var _session = null;
@@ -229,7 +230,18 @@ var ShakerAuth = (function() {
   function getTeam() {
     if (!_session) return null;
     if (FULL_ACCESS.indexOf(_session.role) >= 0) return null; // null = all teams
+    if (_session.role === 'se') return null; // SE sees all teams in OB
     return _session.team || null;
+  }
+
+  function getTeams() {
+    // Returns array of teams (or null for all-access)
+    if (!_session) return null;
+    if (FULL_ACCESS.indexOf(_session.role) >= 0) return null;
+    if (_session.role === 'se') return null;
+    var t = _session.team;
+    if (Array.isArray(t)) return t;
+    return t ? [t] : null;
   }
 
   function getRole() {
@@ -306,6 +318,7 @@ var ShakerAuth = (function() {
     getSession:  getSession,
     getRole:     getRole,
     getTeam:     getTeam,
+    getTeams:    getTeams,
     isAdmin:     isAdmin,
     canSee:      canSee,
     logout:      logout,
