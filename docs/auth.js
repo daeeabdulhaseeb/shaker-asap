@@ -24,8 +24,7 @@ var ShakerAuth = (function() {
     { value: 'manager_acscr',    label: 'ACS - CR Manager' },
     { value: 'manager_west',     label: 'West Projects Manager' },
     { value: 'manager_acswr',    label: 'ACS - WR Manager' },
-    { value: 'manager_east',     label: 'East Projects Manager' },
-    { value: 'manager_acser',    label: 'ACS - ER Manager' },
+    { value: 'manager_acser_east', label: 'ACS - ER & East Projects Manager' },
     { value: 'manager_direct',   label: 'Direct Channel Manager' },
     { value: 'se',               label: 'Sales Engineer' },
   ];
