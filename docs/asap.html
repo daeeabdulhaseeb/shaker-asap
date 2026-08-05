@@ -4326,11 +4326,13 @@ function loadAll(session){
   ]).then(function(results){
     ACCOUNTS=results[0];SE_DATA=results[1];TEAM_DATA=results[2];PROD_DATA=results[3];TXN_DATA=results[4]||{};
     // Filter data by team if manager role
-    var myTeam = session ? ShakerAuth.getTeam() : null;
-    if (myTeam) {
-      ACCOUNTS  = ACCOUNTS.filter(function(a){return a.curr_team===myTeam;});
-      SE_DATA   = SE_DATA.filter(function(s){return s.team===myTeam;});
-      TEAM_DATA = TEAM_DATA.filter(function(t){return t.team===myTeam;});
+    var myTeams = session ? (typeof ShakerAuth.getTeams==='function' ? ShakerAuth.getTeams() : null) : null;
+    if (!myTeams && session) { var t=ShakerAuth.getTeam(); if(t) myTeams=[t]; }
+    var isSE = session && ShakerAuth.getRole()==='se';
+    if (myTeams && !isSE) {
+      ACCOUNTS  = ACCOUNTS.filter(function(a){return myTeams.indexOf(a.curr_team)>=0;});
+      SE_DATA   = SE_DATA.filter(function(s){return myTeams.indexOf(s.team)>=0;});
+      TEAM_DATA = TEAM_DATA.filter(function(t){return myTeams.indexOf(t.team)>=0;});
     }
     ACCOUNTS.forEach(function(a,i){ACC_INDEX[a.customer]=i;});
     initFilters();
@@ -4358,6 +4360,14 @@ ShakerAuth.init({
     var label = role === 'admin' ? 'Admin' : role === 'evp' ? 'EVP' : (team || role);
     var el = document.getElementById('nav-user');
     if (el) el.textContent = label;
+
+    // SE role: hide all nav except Open Box, go straight to OB
+    if (role === 'se') {
+      document.querySelectorAll('.nav-link').forEach(function(el){
+        if(el.textContent.trim()!=='Open box') el.style.display='none';
+      });
+      showPage('openbox', document.querySelector('.nav-link'));
+    }
 
     // Restrict OB tabs based on role
     var rlTab = document.getElementById('ob-tab-redlist');
