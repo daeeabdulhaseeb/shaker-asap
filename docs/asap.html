@@ -1313,9 +1313,11 @@ tr.clickable:hover td{background:var(--surface2)}
 
   <!-- OB LIST -->
   <div id="ob-pane-list" style="display:block">
-    <div class="kpi-grid" style="grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px" id="ob-kpis"></div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:10px" id="ob-kpis"></div>
+    <div id="ob-claimed-bars" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"></div>
     <div class="filter-bar">
       <select id="ob-f-team" data-obkey="team" onchange="obChipFromSelect(this)"><option value="">All teams</option></select>
+      <select id="ob-f-claimedteam" data-obkey="claimedteam" onchange="obChipFromSelect(this)"><option value="">Claimed by team</option></select>
       <select id="ob-f-transfer" data-obkey="transfer" onchange="obChipFromSelect(this)"><option value="">Transfer type</option><option value="same">Same</option><option value="intra">Intra</option><option value="inter">Inter</option></select>
       <select id="ob-f-history" data-obkey="history" onchange="obChipFromSelect(this)"><option value="">Sales history</option><option value="yes">Has history</option><option value="no">No history</option></select>
       <select id="ob-f-claim" data-obkey="claim" onchange="obChipFromSelect(this)"><option value="">Claim status</option><option value="unclaimed">Unclaimed</option><option value="claimed">Claimed</option></select>
@@ -1402,7 +1404,14 @@ tr.clickable:hover td{background:var(--surface2)}
         <div style="font-size:10px;color:var(--text3);margin-top:8px">&#9888; Temporary PIN. Cloudflare auth coming soon.</div>
       </div>
     </div>
-    <div id="evp-content" style="display:none"><div id="evp-inner"></div></div>
+    <div id="evp-content" style="display:none">
+      <div id="evp-inner"></div>
+      <div style="border-top:1px solid var(--border);margin-top:20px;padding-top:16px">
+        <div class="page-title" style="font-size:14px;margin-bottom:4px">Open Box Claim Analytics</div>
+        <div class="page-sub" style="margin-bottom:14px">Based on live claimed accounts data from Cloudflare KV</div>
+        <div id="ob-claim-analytics"></div>
+      </div>
+    </div>
   </div>
 
   <!-- INTER-TEAM ANALYSIS -->
@@ -2566,6 +2575,10 @@ function initOBPage(){
   var cities=[...new Set(OB_LIST.map(function(a){return a.city;}).filter(Boolean))].sort();
   var csel=document.getElementById('ob-f-city');
   if(csel){cities.forEach(function(c){var o=document.createElement('option');o.value=c;o.text=c;csel.appendChild(o);});}
+  // Populate claimed team filter from OB_CLAIMS
+  var claimedTeams=[...new Set(Object.values(OB_CLAIMS).map(function(c){return c.claimed_team;}).filter(Boolean))].sort();
+  var ctsel=document.getElementById('ob-f-claimedteam');
+  if(ctsel){claimedTeams.forEach(function(t){var o=document.createElement('option');o.value=t;o.text=t;ctsel.appendChild(o);});}
   document.getElementById('ob-count-badge').textContent=OB_LIST.length;
   document.getElementById('rl-count-badge').textContent=OB_RL.length;
   OB_ACTIVE_FILTERS={};
@@ -2626,14 +2639,19 @@ function applyOBFilters(){
   var f=OB_ACTIVE_FILTERS;
   OB_FILTERED=OB_LIST.filter(function(a){
     if(f.team&&a.curr_team!==f.team.val)return false;
+    if(f.claimedteam){
+      var claim=OB_CLAIMS[a.cust_no];
+      if(!claim||(claim.claimed_team||'')!==f.claimedteam.val)return false;
+    }
     if(f.transfer&&(a.transfer||'').toLowerCase()!==f.transfer.val)return false;
     if(f.history){
       if(f.history.val==='yes'&&!(a.s2023>0||a.s2024>0))return false;
       if(f.history.val==='no'&&(a.s2023>0||a.s2024>0))return false;
     }
     if(f.claim){
-      if(f.claim.val==='claimed'&&!a.claim_status)return false;
-      if(f.claim.val==='unclaimed'&&a.claim_status)return false;
+      var isClaimed=!!(a.claim_status||OB_CLAIMS[a.cust_no]);
+      if(f.claim.val==='claimed'&&!isClaimed)return false;
+      if(f.claim.val==='unclaimed'&&isClaimed)return false;
     }
     if(f.city&&(a.city||'')!==f.city.val)return false;
     if(f.contact){
@@ -2682,18 +2700,67 @@ function obSarRaw(v){if(!v||v===0)return'--';var abs=Math.abs(v),s=v<0?'-':'';if
 
 function renderOBKPIs(){
   var total=OB_LIST.length;
-  var claimed=OB_LIST.filter(function(a){return!!a.claim_status;}).length;
+  var claimed=OB_LIST.filter(function(a){return!!a.claim_status||!!OB_CLAIMS[a.cust_no];}).length;
   var withHist=OB_LIST.filter(function(a){return a.s2024>0||a.s2023>0;}).length;
   var s2024t=OB_LIST.reduce(function(s,a){return s+(a.s2024||0);},0);
   var lostt=OB_LIST.reduce(function(s,a){return s+(a.lost||0);},0);
+
+  // Claimed accounts 2026 sales and award
+  var claimed2026Sales=0, claimed2026Award=0;
+  OB_LIST.forEach(function(a){
+    var isClaimed=!!a.claim_status||!!OB_CLAIMS[a.cust_no];
+    if(!isClaimed)return;
+    var live=ACC_INDEX[a.cust_no]!=null?ACCOUNTS[ACC_INDEX[a.cust_no]]:null;
+    if(!live)return;
+    claimed2026Sales+=(live.sales&&live.sales['2026']||0);
+    claimed2026Award+=(live.award_by_year&&live.award_by_year['2026']||0);
+  });
+
   document.getElementById('ob-kpis').innerHTML=[
     {l:'Total released',v:total,s:'accounts on program',c:'kpi-sub'},
     {l:'Claimed',v:claimed,s:total?Math.round(claimed/total*100)+'% claimed':'-',c:'kpi-pos'},
     {l:'Unclaimed',v:total-claimed,s:'available to any SE',c:'kpi-sub'},
     {l:'With sales history',v:withHist,s:'had 2023/2024 revenue',c:'kpi-sub'},
-    {l:'2024 sales at risk',v:obSarRaw(s2024t),s:'last active year total',c:'kpi-sub'},
-    {l:'Lost pipeline',v:obSarRaw(lostt),s:'0-10% quotations',c:'kpi-neg'},
+    {l:'Claimed 2026 sales',v:obSarRaw(claimed2026Sales),s:'from claimed accounts',c:'kpi-pos'},
+    {l:'Claimed 2026 award',v:obSarRaw(claimed2026Award),s:'pipeline from claimed accts',c:'kpi-sub'},
   ].map(function(k){return'<div class="kpi"><div class="kpi-label">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="'+k.c+'">'+k.s+'</div></div>';}).join('');
+
+  // Render 2026 sales and award bars by claimed team
+  var teamSales={},teamAward={};
+  OB_LIST.forEach(function(a){
+    var claim=OB_CLAIMS[a.cust_no]||(a.claim_status?{claimed_team:'Unknown'}:null);
+    if(!claim)return;
+    var t=claim.claimed_team||'Unknown';
+    var live=ACC_INDEX[a.cust_no]!=null?ACCOUNTS[ACC_INDEX[a.cust_no]]:null;
+    var s26=live&&live.sales?live.sales['2026']||0:0;
+    var aw26=live&&live.award_by_year?live.award_by_year['2026']||0:0;
+    teamSales[t]=(teamSales[t]||0)+s26;
+    teamAward[t]=(teamAward[t]||0)+aw26;
+  });
+  var salesEntries=Object.entries(teamSales).sort(function(a,b){return b[1]-a[1];});
+  var awardEntries=Object.entries(teamAward).sort(function(a,b){return b[1]-a[1];});
+  var maxS=salesEntries.length?salesEntries[0][1]:1;if(!maxS)maxS=1;
+  var maxA=awardEntries.length?awardEntries[0][1]:1;if(!maxA)maxA=1;
+  function barRows(entries,max){
+    return entries.map(function(e){
+      var w=Math.round(e[1]/max*100);
+      return'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+        +'<div style="font-size:10px;color:var(--text2);width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+obEsc(e[0])+'</div>'
+        +'<div style="flex:1;height:13px;background:var(--surface);border-radius:3px;overflow:hidden;display:flex;align-items:center">'
+        +'<div style="width:'+w+'%;height:100%;background:var(--accent);border-radius:3px;display:flex;align-items:center;padding:0 4px">'
+        +(w>20?'<span style="font-size:8px;font-weight:500;color:#fff">'+obSarRaw(e[1])+'</span>':'')
+        +'</div>'+(w<=20?'<span style="font-size:9px;color:var(--text2);padding-left:4px">'+obSarRaw(e[1])+'</span>':'')
+        +'</div></div>';
+    }).join('');
+  }
+  var barsEl=document.getElementById('ob-claimed-bars');
+  if(barsEl&&salesEntries.length){
+    barsEl.innerHTML=
+      '<div class="card" style="padding:10px 14px"><div class="card-title" style="margin-bottom:8px">2026 Sales by claimed team</div>'+barRows(salesEntries,maxS)+'</div>'
+      +'<div class="card" style="padding:10px 14px"><div class="card-title" style="margin-bottom:8px">2026 Award by claimed team</div>'+barRows(awardEntries,maxA)+'</div>';
+  } else if(barsEl){
+    barsEl.innerHTML='';
+  }
 }
 
 function renderOBTable(){
@@ -2880,6 +2947,144 @@ function renderEVP(){
   });
   html+='</tbody></table></div></div>';
   document.getElementById('evp-inner').innerHTML=html;
+  renderOBClaimAnalytics();
+}
+
+function renderOBClaimAnalytics(){
+  var el=document.getElementById('ob-claim-analytics');if(!el)return;
+  if(!Object.keys(OB_CLAIMS).length){el.innerHTML='<div style="color:var(--text3);padding:20px;text-align:center">No claimed accounts yet.</div>';return;}
+
+  // Build claimed accounts dataset
+  var claimedAccs=OB_LIST.filter(function(a){return!!OB_CLAIMS[a.cust_no]||!!a.claim_status;});
+  claimedAccs.forEach(function(a){
+    var live=ACC_INDEX[a.cust_no]!=null?ACCOUNTS[ACC_INDEX[a.cust_no]]:null;
+    var claim=OB_CLAIMS[a.cust_no]||{};
+    a._claimedBy=claim.claimed_by||a.claim_status||'Unknown';
+    a._claimedTeam=claim.claimed_team||'Unknown';
+    a._s2026=live&&live.sales?live.sales['2026']||0:0;
+    a._aw2026=live&&live.award_by_year?live.award_by_year['2026']||0:0;
+  });
+
+  function aggBy(key,valKey){
+    var m={};
+    claimedAccs.forEach(function(a){var k=a[key]||'Unknown';m[k]=(m[k]||{count:0,val:0});m[k].count++;m[k].val+=(a[valKey]||0);});
+    return Object.entries(m).sort(function(a,b){return b[1].val-a[1].val||b[1].count-a[1].count;});
+  }
+  function aggByCount(key){
+    var m={};
+    claimedAccs.forEach(function(a){var k=a[key]||'Unknown';m[k]=(m[k]||0)+1;});
+    return Object.entries(m).sort(function(a,b){return b[1]-a[1];});
+  }
+
+  function barChart(title,entries,valFn,color){
+    if(!entries.length)return'';
+    var max=entries[0][1];if(!max||max===0)max=1;
+    var rows=entries.slice(0,10).map(function(e){
+      var v=typeof valFn==='function'?valFn(e[1]):e[1];
+      var w=Math.round((typeof e[1]==='object'?e[1].val||e[1].count:e[1])/max*100);
+      return'<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+        +'<div style="font-size:10px;color:var(--text2);width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+obEsc(e[0])+'">'+obEsc(e[0])+'</div>'
+        +'<div style="flex:1;height:14px;background:var(--surface);border-radius:3px;overflow:hidden;display:flex;align-items:center">'
+        +'<div style="width:'+w+'%;height:100%;background:'+(color||'var(--accent)')+';border-radius:3px;display:flex;align-items:center;padding:0 4px">'
+        +(w>20?'<span style="font-size:8px;font-weight:500;color:#fff">'+v+'</span>':'')
+        +'</div>'+(w<=20?'<span style="font-size:9px;color:var(--text2);padding-left:4px">'+v+'</span>':'')
+        +'</div></div>';
+    }).join('');
+    return'<div class="card" style="padding:12px 14px"><div class="card-title" style="margin-bottom:8px">'+title+'</div>'+rows+'</div>';
+  }
+
+  // SE by count of claimed
+  var seCnt=aggByCount('_claimedBy');
+  var maxSECnt=seCnt.length?seCnt[0][1]:1;
+
+  // SE by 2026 sales
+  var seSales=aggBy('_claimedBy','_s2026').sort(function(a,b){return b[1].val-a[1].val;});
+  var maxSESales=seSales.length?seSales[0][1].val:1;
+
+  // SE by 2026 award
+  var seAward=aggBy('_claimedBy','_aw2026').sort(function(a,b){return b[1].val-a[1].val;});
+  var maxSEAward=seAward.length?seAward[0][1].val:1;
+
+  // Team by count
+  var teamCnt=aggByCount('_claimedTeam');
+  var maxTeamCnt=teamCnt.length?teamCnt[0][1]:1;
+
+  // Team by sales
+  var teamSales=aggBy('_claimedTeam','_s2026').sort(function(a,b){return b[1].val-a[1].val;});
+  var maxTeamSales=teamSales.length?teamSales[0][1].val:1;
+
+  // City distribution
+  var cityCnt=aggByCount('city');
+  var maxCity=cityCnt.length?cityCnt[0][1]:1;
+
+  // Type distribution
+  var typeCnt=aggByCount('type');
+  var maxType=typeCnt.length?typeCnt[0][1]:1;
+
+  function countBar(title,entries,max,color){
+    if(!entries.length)return'';
+    var rows=entries.slice(0,10).map(function(e){
+      var w=Math.round(e[1]/max*100);
+      return'<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+        +'<div style="font-size:10px;color:var(--text2);width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+obEsc(e[0])+'">'+obEsc(e[0])+'</div>'
+        +'<div style="flex:1;height:14px;background:var(--surface);border-radius:3px;overflow:hidden;display:flex;align-items:center">'
+        +'<div style="width:'+w+'%;height:100%;background:'+(color||'var(--accent)')+';border-radius:3px;display:flex;align-items:center;padding:0 4px">'
+        +(w>20?'<span style="font-size:8px;font-weight:500;color:#fff">'+e[1]+'</span>':'')
+        +'</div>'+(w<=20?'<span style="font-size:9px;color:var(--text2);padding-left:4px">'+e[1]+'</span>':'')
+        +'</div></div>';
+    }).join('');
+    return'<div class="card" style="padding:12px 14px"><div class="card-title" style="margin-bottom:8px">'+title+'</div>'+rows+'</div>';
+  }
+  function salesBar(title,entries,max,color){
+    if(!entries.length)return'';
+    var rows=entries.slice(0,10).map(function(e){
+      var v=e[1].val||0;var w=Math.round(v/max*100);
+      return'<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+        +'<div style="font-size:10px;color:var(--text2);width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+obEsc(e[0])+'">'+obEsc(e[0])+'</div>'
+        +'<div style="flex:1;height:14px;background:var(--surface);border-radius:3px;overflow:hidden;display:flex;align-items:center">'
+        +'<div style="width:'+w+'%;height:100%;background:'+(color||'var(--accent)')+';border-radius:3px;display:flex;align-items:center;padding:0 4px">'
+        +(w>20?'<span style="font-size:8px;font-weight:500;color:#fff">'+obSarRaw(v)+'</span>':'')
+        +'</div>'+(w<=20?'<span style="font-size:9px;color:var(--text2);padding-left:4px">'+obSarRaw(v)+'</span>':'')
+        +'</div></div>';
+    }).join('');
+    return'<div class="card" style="padding:12px 14px"><div class="card-title" style="margin-bottom:8px">'+title+'</div>'+rows+'</div>';
+  }
+
+  var totalClaimed=claimedAccs.length;
+  var total2026Sales=claimedAccs.reduce(function(s,a){return s+a._s2026;},0);
+  var total2026Award=claimedAccs.reduce(function(s,a){return s+a._aw2026;},0);
+
+  var kpiHtml='<div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px">'
+    +'<div class="kpi"><div class="kpi-label">Claimed accounts</div><div class="kpi-val">'+totalClaimed+'</div></div>'
+    +'<div class="kpi"><div class="kpi-label">Unique SEs claiming</div><div class="kpi-val">'+seCnt.length+'</div></div>'
+    +'<div class="kpi"><div class="kpi-label">2026 sales (claimed accts)</div><div class="kpi-val kpi-pos">'+obSarRaw(total2026Sales)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-label">2026 award (claimed accts)</div><div class="kpi-val">'+obSarRaw(total2026Award)+'</div></div>'
+    +'</div>';
+
+  el.innerHTML=kpiHtml
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">'
+    +countBar('SE — most accounts claimed',seCnt,maxSECnt,'#3b82f6')
+    +salesBar('SE — most 2026 sales from claimed',seSales,maxSESales,'#10b981')
+    +salesBar('SE — most 2026 award from claimed',seAward,maxSEAward,'#8b5cf6')
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">'
+    +countBar('Team — most accounts claimed',teamCnt,maxTeamCnt,'#f59e0b')
+    +salesBar('Team — most 2026 sales from claimed',teamSales,maxTeamSales,'#10b981')
+    +countBar('Most claimed by city',cityCnt,maxCity,'#6b7280')
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +countBar('Account type breakdown (claimed)',typeCnt,maxType,'#ec4899')
+    +'<div class="card" style="padding:12px 14px"><div class="card-title" style="margin-bottom:8px">All claimed accounts</div>'
+    +'<div class="tbl-wrap" style="border:none;border-radius:0;max-height:300px;overflow-y:auto"><table><thead><tr><th>Customer</th><th>Claimed by</th><th>Team</th><th class="r">2026 sales</th><th class="r">2026 award</th></tr></thead><tbody>'
+    +claimedAccs.map(function(a){
+      return'<tr><td style="font-size:10px;font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+obEsc(a.name||'--')+'</td>'
+        +'<td style="font-size:10px;color:var(--text2)">'+obEsc(a._claimedBy)+'</td>'
+        +'<td style="font-size:10px;color:var(--text2)">'+obEsc(a._claimedTeam)+'</td>'
+        +'<td class="r '+(a._s2026>0?'pos':'')+'">'+(a._s2026>0?obSarRaw(a._s2026):'<span class="dim">--</span>')+'</td>'
+        +'<td class="r">'+(a._aw2026>0?obSarRaw(a._aw2026):'<span class="dim">--</span>')+'</td></tr>';
+    }).join('')
+    +'</tbody></table></div></div>'
+    +'</div>';
 }
 
 // ═══════════════════════════════════════════════════════════════
