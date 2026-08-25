@@ -2543,8 +2543,8 @@ function obSwitchTab(name,el){
 // ═══════════════════════════════════════════════════════════════
 var OB_FILTERED=[];
 var OB_SORT={col:'s2024',dir:-1};
-
 var OB_ACTIVE_FILTERS={};
+var SE_TEAM_MAP={};
 
 function initOBPage(){
   if(!OB_LIST||!OB_LIST.length)return;
@@ -2575,8 +2575,14 @@ function initOBPage(){
   var cities=[...new Set(OB_LIST.map(function(a){return a.city;}).filter(Boolean))].sort();
   var csel=document.getElementById('ob-f-city');
   if(csel){cities.forEach(function(c){var o=document.createElement('option');o.value=c;o.text=c;csel.appendChild(o);});}
-  // Populate claimed team filter from OB_CLAIMS
-  var claimedTeams=[...new Set(Object.values(OB_CLAIMS).map(function(c){return c.claimed_team;}).filter(Boolean))].sort();
+  // Build SE->team map from SE_DATA for claimed team resolution
+  SE_TEAM_MAP={};
+  SE_DATA.forEach(function(s){if(s.se_name&&s.team)SE_TEAM_MAP[s.se_name]=s.team;});
+
+  // Populate claimed team filter from OB_LIST claim_status resolved via SE_TEAM_MAP
+  var claimedTeams=[...new Set(OB_LIST.filter(function(a){return a.claim_status;}).map(function(a){
+    return SE_TEAM_MAP[a.claim_status]||'Unknown';
+  }).filter(Boolean))].sort();
   var ctsel=document.getElementById('ob-f-claimedteam');
   if(ctsel){claimedTeams.forEach(function(t){var o=document.createElement('option');o.value=t;o.text=t;ctsel.appendChild(o);});}
   document.getElementById('ob-count-badge').textContent=OB_LIST.length;
@@ -2640,8 +2646,9 @@ function applyOBFilters(){
   OB_FILTERED=OB_LIST.filter(function(a){
     if(f.team&&a.curr_team!==f.team.val)return false;
     if(f.claimedteam){
-      var claim=OB_CLAIMS[a.cust_no];
-      if(!claim||(claim.claimed_team||'')!==f.claimedteam.val)return false;
+      if(!a.claim_status)return false;
+      var ct=SE_TEAM_MAP[a.claim_status]||'Unknown';
+      if(ct!==f.claimedteam.val)return false;
     }
     if(f.transfer&&(a.transfer||'').toLowerCase()!==f.transfer.val)return false;
     if(f.history){
@@ -2728,9 +2735,8 @@ function renderOBKPIs(){
   // Render 2026 sales and award bars by claimed team
   var teamSales={},teamAward={};
   OB_LIST.forEach(function(a){
-    var claim=OB_CLAIMS[a.cust_no]||(a.claim_status?{claimed_team:'Unknown'}:null);
-    if(!claim)return;
-    var t=claim.claimed_team||'Unknown';
+    if(!a.claim_status)return;
+    var t=SE_TEAM_MAP[a.claim_status]||'Unknown';
     var live=ACC_INDEX[a.cust_no]!=null?ACCOUNTS[ACC_INDEX[a.cust_no]]:null;
     var s26=live&&live.sales?live.sales['2026']||0:0;
     var aw26=live&&live.award_by_year?live.award_by_year['2026']||0:0;
@@ -2952,15 +2958,15 @@ function renderEVP(){
 
 function renderOBClaimAnalytics(){
   var el=document.getElementById('ob-claim-analytics');if(!el)return;
-  if(!Object.keys(OB_CLAIMS).length){el.innerHTML='<div style="color:var(--text3);padding:20px;text-align:center">No claimed accounts yet.</div>';return;}
+  var claimedCount=OB_LIST.filter(function(a){return!!a.claim_status;}).length;
+  if(!claimedCount){el.innerHTML='<div style="color:var(--text3);padding:20px;text-align:center">No claimed accounts yet.</div>';return;}
 
   // Build claimed accounts dataset
-  var claimedAccs=OB_LIST.filter(function(a){return!!OB_CLAIMS[a.cust_no]||!!a.claim_status;});
+  var claimedAccs=OB_LIST.filter(function(a){return!!a.claim_status;});
   claimedAccs.forEach(function(a){
     var live=ACC_INDEX[a.cust_no]!=null?ACCOUNTS[ACC_INDEX[a.cust_no]]:null;
-    var claim=OB_CLAIMS[a.cust_no]||{};
-    a._claimedBy=claim.claimed_by||a.claim_status||'Unknown';
-    a._claimedTeam=claim.claimed_team||'Unknown';
+    a._claimedBy=a.claim_status||'Unknown';
+    a._claimedTeam=SE_TEAM_MAP[a.claim_status]||'Unknown';
     a._s2026=live&&live.sales?live.sales['2026']||0:0;
     a._aw2026=live&&live.award_by_year?live.award_by_year['2026']||0:0;
   });
