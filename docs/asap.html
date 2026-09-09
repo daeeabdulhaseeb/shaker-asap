@@ -4407,12 +4407,13 @@ function renderTxnViewDelta(){
 // ═══ END TRANSACTION VIEW JS ═══════════════════════════════════════════════
 function loadAll(session){
   var base='data/';
+  var cb='?v='+Date.now();
   Promise.all([
-    fetch(base+'asap_accounts.json').then(function(r){return r.json();}),
-    fetch(base+'asap_se.json').then(function(r){return r.json();}),
-    fetch(base+'asap_teams.json').then(function(r){return r.json();}),
-    fetch(base+'asap_products.json').then(function(r){return r.json();}),
-    fetch(base+'asap_transactions.json').then(function(r){return r.json();}).catch(function(){return{};}),
+    fetch(base+'asap_accounts.json'+cb).then(function(r){return r.json();}),
+    fetch(base+'asap_se.json'+cb).then(function(r){return r.json();}),
+    fetch(base+'asap_teams.json'+cb).then(function(r){return r.json();}),
+    fetch(base+'asap_products.json'+cb).then(function(r){return r.json();}),
+    fetch(base+'asap_transactions.json'+cb).then(function(r){return r.json();}).catch(function(){return{};}),
   ]).then(function(results){
     ACCOUNTS=results[0];SE_DATA=results[1];TEAM_DATA=results[2];PROD_DATA=results[3];TXN_DATA=results[4]||{};
     // Filter data by team if manager role
