@@ -4486,6 +4486,7 @@ ShakerAuth.init({
 // -- SE PERFORMANCE PAGE --------------------------------------------------
 var SP_YEAR='all';
 var SP_METRIC='quo';
+var SP_SE_MAP={};
 
 function initSEPerf(){
   // Populate team filter
@@ -4655,6 +4656,7 @@ function renderSEPerfTable(){
 
     var scoreColor=score>=70?'var(--text-success)':score>=40?'var(--text-warning)':'var(--text-danger)';
 
+    SP_SE_MAP[idx]=se.se_name;
     html+='<tr id="sp-row-'+idx+'" onclick="spToggleExpand('+idx+')" style="cursor:pointer">'
       +'<td><div style="font-weight:500;font-size:11px">'+obEsc(se.se_name||'')+'</div>'
       +'<div style="margin-top:2px">'+tags+joinBadge+'</div></td>'
@@ -4686,10 +4688,11 @@ function spToggleExpand(idx){
   r.style.display='table-row';
   var inner=document.getElementById('sp-expand-inner-'+idx);
   if(!inner||inner.innerHTML)return;
-  // Build content now with fresh data
-  var teamF=document.getElementById('sp-f-team')&&document.getElementById('sp-f-team').value||'';
-  var filtered=SE_DATA.filter(function(s){return!teamF||s.team===teamF;});
-  var se=filtered[idx];if(!se)return;
+  // Look up SE by name stored on the row
+  var rowEl=document.getElementById('sp-row-'+idx);
+  var seName=SP_SE_MAP[idx]||'';
+  var se=SE_DATA.find(function(s){return s.se_name===seName;});
+  if(!se)return;
   var months=spGetMonths();
   var sd=spGetSEData(se);
   var html='<div style="padding:10px 14px;overflow-x:auto">'
