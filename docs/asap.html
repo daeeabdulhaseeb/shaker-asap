@@ -4539,6 +4539,7 @@ function spGetMonths(){
 
 function spGetSEData(se){
   // Returns { quo, award, inv } as month->value maps
+  if(!se)return{quo:{},award:{},inv:{}};
   var ownOnly=document.getElementById('sp-own-only')&&document.getElementById('sp-own-only').checked;
   var joinDate=se.join_date?new Date(se.join_date):null;
   var quo={};
@@ -4687,30 +4688,27 @@ function spToggleExpand(idx){
   if(isOpen){r.style.display='none';return;}
   r.style.display='table-row';
   var inner=document.getElementById('sp-expand-inner-'+idx);
-  if(!inner||inner.innerHTML)return;
-  // Look up SE by name stored on the row
-  var rowEl=document.getElementById('sp-row-'+idx);
+  if(!inner)return;
   var seName=SP_SE_MAP[idx]||'';
   var se=SE_DATA.find(function(s){return s.se_name===seName;});
-  if(!se)return;
+  if(!se){inner.innerHTML='<div style="padding:10px;color:var(--text3)">SE data not loaded</div>';return;}
   var months=spGetMonths();
   var sd=spGetSEData(se);
-  var html='<div style="padding:10px 14px;overflow-x:auto">'
-    +'<table style="min-width:700px;border-collapse:collapse;font-size:10px">'
-    +'<tr><td style="font-weight:500;width:80px;padding:2px 6px 2px 0;color:var(--text2)">Month</td>'
-    +months.map(function(m){return'<td style="text-align:center;padding:2px 3px;color:var(--text3);white-space:nowrap">'+m.replace('-','/')+'</td>';}).join('')
-    +'</tr>'
-    +'<tr><td style="padding:2px 6px 2px 0;color:#3b82f6;font-weight:500">Quo</td>'
-    +months.map(function(m){var v=sd.quo[m]||0;return'<td style="text-align:center;padding:2px 3px;'+(v>0?'background:#eff6ff;color:#1d4ed8;border-radius:2px;font-weight:500':'')+'">'+(v>0?spSar(v):'&ndash;')+'</td>';}).join('')
-    +'</tr>'
-    +'<tr><td style="padding:2px 6px 2px 0;color:#10b981;font-weight:500">Award</td>'
-    +months.map(function(m){var v=sd.award[m]||0;return'<td style="text-align:center;padding:2px 3px;'+(v>0?'background:#f0fdf4;color:#15803d;border-radius:2px;font-weight:500':'')+'">'+(v>0?spSar(v):'&ndash;')+'</td>';}).join('')
-    +'</tr>'
-    +'<tr><td style="padding:2px 6px 2px 0;color:#f59e0b;font-weight:500">Invoiced</td>'
-    +months.map(function(m){var v=sd.inv[m]||0;return'<td style="text-align:center;padding:2px 3px;'+(v>0?'background:#fffbeb;color:#b45309;border-radius:2px;font-weight:500':'')+'">'+(v>0?spSar(v):'&ndash;')+'</td>';}).join('')
-    +'</tr>'
+  function cellRow(label,color,bg,map){
+    var cells=months.map(function(m){
+      var v=map[m]||0;
+      return'<td style="text-align:center;padding:3px 4px;font-size:10px;'+(v>0?'background:'+bg+';color:'+color+';font-weight:600;border-radius:3px':'color:var(--text3)')+'">'+(v>0?spSar(v):'-')+'</td>';
+    }).join('');
+    return'<tr><td style="padding:3px 8px 3px 0;color:'+color+';font-weight:600;font-size:10px;white-space:nowrap">'+label+'</td>'+cells+'</tr>';
+  }
+  var monthHdr='<tr><td style="padding:3px 8px 3px 0;color:var(--text3);font-size:10px">Month</td>'
+    +months.map(function(m){return'<td style="text-align:center;padding:3px 4px;color:var(--text3);font-size:9px;white-space:nowrap">'+m.replace('-','/')+'</td>';}).join('')+'</tr>';
+  inner.innerHTML='<div style="padding:12px 14px;overflow-x:auto"><table style="min-width:700px;border-collapse:collapse">'
+    +monthHdr
+    +cellRow('Quotations','#1d4ed8','#eff6ff',sd.quo)
+    +cellRow('Award','#15803d','#f0fdf4',sd.award)
+    +cellRow('Invoiced','#b45309','#fffbeb',sd.inv)
     +'</table></div>';
-  inner.innerHTML=html;
 }
 
 function renderSEPerfAnalytics(){
