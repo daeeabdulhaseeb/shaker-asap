@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shaker Group — Reports</title>
+<style>
+:root{
+  --ink:#141b24; --ink-soft:#4a5563; --ink-faint:#8b96a3;
+  --line:#e4e8ec; --paper:#ffffff; --canvas:#f6f7f9;
+  --blue:#1f5fd6; --blue-soft:#eaf1fc;
+  --green:#137a4b; --green-soft:#e7f4ec;
+  --amber:#b06f10; --amber-soft:#fbf1de;
+  --violet:#5b3fb0; --violet-soft:#efe9fb;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--canvas);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh}
+.wrap{max-width:1000px;margin:0 auto;padding:56px 32px 60px}
+.masthead{text-align:center;margin-bottom:8px}
+.company{font-size:12px;color:var(--ink-faint);font-weight:600;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:30px;font-weight:680;letter-spacing:-0.02em;line-height:1.1}
+.sub{text-align:center;font-size:13px;color:var(--ink-soft);margin-top:8px;margin-bottom:44px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:26px;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:14px;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;position:relative;overflow:hidden}
+.card:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(20,27,36,.08);border-color:#d0d6dc}
+.card-top{display:flex;align-items:center;gap:14px}
+.icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon svg{width:24px;height:24px}
+.i-blue{background:var(--blue-soft);color:var(--blue)}
+.i-green{background:var(--green-soft);color:var(--green)}
+.i-amber{background:var(--amber-soft);color:var(--amber)}
+.i-violet{background:var(--violet-soft);color:var(--violet)}
+.card h2{font-size:17px;font-weight:640;letter-spacing:-0.01em}
+.card p{font-size:12.5px;color:var(--ink-soft);line-height:1.55}
+.card-foot{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;margin-top:2px}
+.f-blue{color:var(--blue)} .f-green{color:var(--green)} .f-amber{color:var(--amber)} .f-violet{color:var(--violet)}
+.tag{position:absolute;top:18px;right:18px;font-size:9.5px;font-weight:600;padding:3px 8px;border-radius:5px;letter-spacing:0.03em;text-transform:uppercase}
+.tag-ext{background:var(--amber-soft);color:var(--amber)}
+.footer{text-align:center;margin-top:40px;font-size:11px;color:var(--ink-faint)}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.wrap{padding:36px 20px}h1{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div class="company">Shaker Group · Sales Operations</div>
+    <h1>Reports &amp; Dashboards</h1>
+  </div>
+  <div class="sub">Select a report to open. Each requires sign-in.</div>
+
+  <div class="grid">
+
+    <a class="card" href="asap.html">
+      <div class="card-top">
+        <div class="icon i-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7"/><rect x="12" y="6" width="3" height="11"/><rect x="17" y="13" width="3" height="4"/></svg>
+        </div>
+        <h2>ASAP Sales Dashboard</h2>
+      </div>
+      <p>Full sales intelligence — accounts, teams, transactions, pipeline coverage, product and account analysis across the sales organization.</p>
+      <div class="card-foot f-blue">Open dashboard
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    </a>
+
+    <a class="card" href="se_report.html">
+      <div class="card-top">
+        <div class="icon i-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h2>SE Performance Report</h2>
+      </div>
+      <p>Each Sales Engineer's quotations, award and invoicing month-by-month since Jan 2025, with a composite performance score and rankings.</p>
+      <div class="card-foot f-green">Open report
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    </a>
+
+    <a class="card" href="https://app.powerbi.com/groups/me/reports/be06c352-ae94-4e09-94ec-e4ea6a07c489/690e8ea558225cc937ac?experience=power-bi" target="_blank" rel="noopener">
+      <span class="tag tag-ext">Power BI</span>
+      <div class="card-top">
+        <div class="icon i-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-4 4"/></svg>
+        </div>
+        <h2>Weekly Pipeline</h2>
+      </div>
+      <p>Live weekly pipeline tracking — tenders, backlog and award trends by product, team and stage. Opens in Power BI.</p>
+      <div class="card-foot f-amber">Open in Power BI
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg>
+      </div>
+    </a>
+
+    <a class="card" href="asap.html#openbox">
+      <div class="card-top">
+        <div class="icon i-violet">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+        </div>
+        <h2>Open Box Program</h2>
+      </div>
+      <p>Released inactive accounts available for reactivation — live tracker with city, contact, sales history, claims and red-list monitoring.</p>
+      <div class="card-foot f-violet">Open program
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="footer">Shaker Group Sales Operations · Access is restricted and logged</div>
+</div>
+</body>
+</html>
