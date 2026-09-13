@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1789304734"></script>
+<script src="auth.js?v=1789305808"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -415,17 +415,22 @@ function renderAnalytics(){
   }
 
   // Quotation
-  var quoAvg=p.map(function(se){var t=ms.reduce(function(s,m){return s+((se.monthly_quo&&se.monthly_quo[m])||0);},0);return [se.se_name,Math.round(t/activeMonths(se,1))];}).sort(function(a,b){return b[1]-a[1];});
+  // All value-based cards route through seData() so the "Own quotations only"
+  // toggle (and pre-join drop) applies here exactly as it does in the table.
+  var quoAvg=p.map(function(se){var d=seData(se);var t=ms.reduce(function(s,m){return s+(d.quo[m]||0);},0);return [se.se_name,Math.round(t/activeMonths(se,1))];}).sort(function(a,b){return b[1]-a[1];});
   var newAcc=p.map(function(se){var v=STATE.year==='2026'?se.new_accs_2026||0:STATE.year==='2025'?se.new_accs_2025||0:(se.new_accs_2025||0)+(se.new_accs_2026||0);return [se.se_name,v];}).sort(function(a,b){return b[1]-a[1];}).filter(function(e){return e[1]>0;});
   var obR=p.map(function(se){return [se.se_name,se.ob_reactivations||0];}).sort(function(a,b){return b[1]-a[1];}).filter(function(e){return e[1]>0;});
 
   // Award
-  var awdAvg=p.map(function(se){var t=ms.reduce(function(s,m){return s+((se.monthly_award&&se.monthly_award[m])||0);},0);return [se.se_name,Math.round(t/activeMonths(se,1.5))];}).sort(function(a,b){return b[1]-a[1];});
-  var hit=p.map(function(se){var q=Object.values(se.monthly_quo||{}).reduce(function(a,b){return a+b;},0);var a=Object.values(se.monthly_award||{}).reduce(function(x,y){return x+y;},0);return [se.se_name,q>0?Math.round(a/q*100):0];}).sort(function(a,b){return b[1]-a[1];}).filter(function(e){return e[1]>0;});
+  var awdAvg=p.map(function(se){var d=seData(se);var t=ms.reduce(function(s,m){return s+(d.award[m]||0);},0);return [se.se_name,Math.round(t/activeMonths(se,1.5))];}).sort(function(a,b){return b[1]-a[1];});
+  // Ratio cards (hit, a2d) stay period-independent: summed over all months,
+  // not restricted to the selected year, since quoting/award/invoicing lag
+  // across year boundaries. They do honour the own-quotations filter via d.*.
+  var hit=p.map(function(se){var d=seData(se);var q=Object.values(d.quo).reduce(function(a,b){return a+b;},0);var a=Object.values(d.award).reduce(function(x,y){return x+y;},0);return [se.se_name,q>0?Math.round(a/q*100):0];}).sort(function(a,b){return b[1]-a[1];}).filter(function(e){return e[1]>0;});
 
   // Sales
-  var invAvg=p.map(function(se){var t=ms.reduce(function(s,m){var yr=m.slice(0,4),mo=parseInt(m.slice(5));return s+((se.monthly_sales&&se.monthly_sales[yr]&&se.monthly_sales[yr][mo])||0);},0);return [se.se_name,Math.round(t/activeMonths(se,2))];}).sort(function(a,b){return b[1]-a[1];});
-  var a2d=p.map(function(se){var a=Object.values(se.monthly_award||{}).reduce(function(x,y){return x+y;},0);var iv=ms.reduce(function(s,m){var yr=m.slice(0,4),mo=parseInt(m.slice(5));return s+((se.monthly_sales&&se.monthly_sales[yr]&&se.monthly_sales[yr][mo])||0);},0);return [se.se_name,a>0?Math.round(iv/a*100):0];}).sort(function(a,b){return b[1]-a[1];}).filter(function(e){return e[1]>0;});
+  var invAvg=p.map(function(se){var d=seData(se);var t=ms.reduce(function(s,m){return s+(d.inv[m]||0);},0);return [se.se_name,Math.round(t/activeMonths(se,1.5))];}).sort(function(a,b){return b[1]-a[1];});
+  var a2d=p.map(function(se){var d=seData(se);var a=Object.values(d.award).reduce(function(x,y){return x+y;},0);var iv=Object.values(d.inv).reduce(function(x,y){return x+y;},0);return [se.se_name,a>0?Math.round(iv/a*100):0];}).sort(function(a,b){return b[1]-a[1];}).filter(function(e){return e[1]>0;});
 
   var pct=function(v){return v+'%';};
   document.getElementById('analytics').innerHTML=
@@ -442,7 +447,7 @@ function renderAnalytics(){
     +'</div>'
     +'<div class="analytics-head">Revenue delivery <span>invoiced output and how much of won work is delivered</span></div>'
     +'<div class="rank-grid g2">'
-    +card('Avg monthly invoiced','Total invoiced &divide; active months. New joiners get a two-month ramp.',invAvg,sar,'#b06f10')
+    +card('Avg monthly invoiced','Total invoiced &divide; active months. New joiners get a 1.5-month ramp.',invAvg,sar,'#b06f10')
     +card('Award-to-delivery rate','Invoiced value as a share of awarded value &mdash; execution on won work.',a2d,pct,'#d98a20')
     +'</div>';
 }
@@ -606,14 +611,14 @@ function startReport(session){
     var ddTeam=document.getElementById('dd-team');
     if(ddTeam)ddTeam.style.display='none';
   }
-  document.body.style.visibility='visible';
+  var _wrap=document.querySelector('.wrap'); if(_wrap)_wrap.style.visibility='visible';
   buildTeamMenu();
   updateTeamBtn();
   renderAll();
 }
 
 if(typeof ShakerAuth!=='undefined'){
-  document.body.style.visibility='hidden';
+  var _wrap=document.querySelector('.wrap'); if(_wrap)_wrap.style.visibility='hidden';
   ShakerAuth.init({
     onLogin: function(session){ startReport(session); },
     onFail: function(){ /* login UI shown by ShakerAuth */ }
