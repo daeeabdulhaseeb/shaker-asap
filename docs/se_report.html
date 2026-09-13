@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script src="auth.js?v=1789304734"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -583,7 +584,44 @@ var cut=cutoffMonth();
 document.getElementById('cur-month').textContent=mn[parseInt(cut.slice(5))-1]+' '+cut.slice(0,4);
 document.getElementById('gen-date').textContent='Generated '+now.getDate()+' '+mn[now.getMonth()]+' '+now.getFullYear();
 
-renderAll();
+// -- AUTH GATE --
+function startReport(session){
+  var role=session.role;
+  // SE role: no access to this report
+  if(role==='se'){
+    document.body.innerHTML='<div style="max-width:420px;margin:80px auto;text-align:center;font-family:Inter,sans-serif">'
+      +'<div style="font-size:40px;margin-bottom:12px">&#128683;</div>'
+      +'<div style="font-size:16px;font-weight:600;color:#141b24;margin-bottom:6px">Access restricted</div>'
+      +'<div style="font-size:12px;color:#8b96a3">This report is available to managers and leadership only.</div></div>';
+    return;
+  }
+  // Managers: lock to their own team(s). getTeams() returns array (or null for full access).
+  var teams=(typeof ShakerAuth.getTeams==='function')?ShakerAuth.getTeams():null;
+  if(!teams && role && role.indexOf('manager_')===0){
+    var t=ShakerAuth.getTeam(); if(t)teams=[t];
+  }
+  if(teams && teams.length && role && role.indexOf('manager_')===0){
+    STATE.teams=teams.slice();
+    // hide the team dropdown so they can't widen scope
+    var ddTeam=document.getElementById('dd-team');
+    if(ddTeam)ddTeam.style.display='none';
+  }
+  document.body.style.visibility='visible';
+  buildTeamMenu();
+  updateTeamBtn();
+  renderAll();
+}
+
+if(typeof ShakerAuth!=='undefined'){
+  document.body.style.visibility='hidden';
+  ShakerAuth.init({
+    onLogin: function(session){ startReport(session); },
+    onFail: function(){ /* login UI shown by ShakerAuth */ }
+  });
+} else {
+  // Auth unavailable (e.g. opened as local file) — render without gate
+  renderAll();
+}
 </script>
 </body>
 </html>

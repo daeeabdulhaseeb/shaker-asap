@@ -219,8 +219,7 @@ tr.clickable:hover td{background:var(--surface2)}
   <span class="nav-link" onclick="showPage('transactions',this)">Sales transactions</span>
   <span class="nav-link" onclick="showPage('openbox',this)">Open box</span>
   <span class="nav-link" onclick="showPage('overview2',this);if(!window._ov2Init){window._ov2Init=true;initOverview2();}">Overview 2.0</span>
-  <span class="nav-link" onclick="showPage('seperf',this);if(!window._seperfInit){window._seperfInit=true;initSEPerf();}">SE performance</span>
-  <span class="nav-link" onclick="showPage('seperf',this);if(!window._seperfInit){window._seperfInit=true;initSEPerf();}">SE Performance</span>
+  <span class="nav-link" id="nav-seperf" onclick="gotoSEReport()" style="display:none">SE performance</span>
   <span class="nav-updated" id="last-updated"></span>
   <span id="nav-user" style="font-size:11px;color:var(--text2);margin-left:8px;white-space:nowrap;padding:0 4px;background:var(--accent-light);border-radius:4px"></span>
   <button onclick="ShakerAuth.logout()" style="font-size:11px;padding:4px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text2);cursor:pointer;margin-left:6px;white-space:nowrap">Sign out</button>
@@ -819,93 +818,7 @@ tr.clickable:hover td{background:var(--surface2)}
   </div>
 </div>
 
-<!-- SE PERFORMANCE -->
-<div id="page-seperf" class="page">
-  <div class="page-title">SE Performance</div>
-  <div class="page-sub">Quotations, award and invoiced sales from Jan 2025 · Month by month · Click any row to expand</div>
-
-  <!-- Global filters -->
-  <div class="filter-bar" style="margin-bottom:10px">
-    <select id="sep-f-team" onchange="renderSEPerf()"><option value="">All teams</option></select>
-    <div style="display:flex;border:0.5px solid var(--border2);border-radius:var(--radius);overflow:hidden">
-      <button id="sep-yr-all" onclick="setSepYr('all',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;background:var(--accent);color:#fff;cursor:pointer">2025 + 2026</button>
-      <button id="sep-yr-2025" onclick="setSepYr('2025',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;border-left:0.5px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer">2025</button>
-      <button id="sep-yr-2026" onclick="setSepYr('2026',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;border-left:0.5px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer">2026 YTD</button>
-    </div>
-    <div style="display:flex;border:0.5px solid var(--border2);border-radius:var(--radius);overflow:hidden">
-      <button id="sep-m-quo" onclick="setSepMetric('quo',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;background:var(--accent);color:#fff;cursor:pointer">Quotations</button>
-      <button id="sep-m-award" onclick="setSepMetric('award',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;border-left:0.5px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer">Award</button>
-      <button id="sep-m-sales" onclick="setSepMetric('sales',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;border-left:0.5px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer">Invoiced</button>
-    </div>
-    <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer">
-      <input type="checkbox" id="sep-own-quo" onchange="renderSEPerf()" style="accent-color:var(--accent)"> Own quotations only
-    </label>
-    <span style="font-size:11px;color:var(--text3)" id="sep-count"></span>
-  </div>
-
-  <!-- Main SE table -->
-  <div class="tbl-wrap" style="margin-bottom:16px">
-    <table>
-      <thead style="position:sticky;top:0;z-index:2"><tr>
-        <th style="width:190px">SE name</th>
-        <th>Team</th>
-        <th class="r" onclick="sortSEP('quo_total')" style="cursor:pointer">Quo total <span class="sort-arrow" id="sa-sep-quo_total"></span></th>
-        <th class="r" onclick="sortSEP('award_total')" style="cursor:pointer">Award total <span class="sort-arrow" id="sa-sep-award_total"></span></th>
-        <th class="r" onclick="sortSEP('sales_total')" style="cursor:pointer">Invoiced total <span class="sort-arrow" id="sa-sep-sales_total"></span></th>
-        <th class="r" onclick="sortSEP('score')" style="cursor:pointer">Score <span class="sort-arrow" id="sa-sep-score"></span></th>
-        <th style="width:180px">Trend</th>
-      </tr></thead>
-      <tbody id="sep-tbody"></tbody>
-    </table>
-  </div>
-
-  <!-- Analytics sections -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
-    <div class="card" style="padding:12px 14px">
-      <div class="card-title" style="margin-bottom:2px">Quotation analytics</div>
-      <div class="card-sub" style="margin-bottom:10px">Ranked across all SEs</div>
-      <div id="sep-quo-analytics"></div>
-    </div>
-    <div class="card" style="padding:12px 14px">
-      <div class="card-title" style="margin-bottom:2px">Award analytics</div>
-      <div class="card-sub" style="margin-bottom:10px">Ranked across all SEs</div>
-      <div id="sep-award-analytics"></div>
-    </div>
-    <div class="card" style="padding:12px 14px">
-      <div class="card-title" style="margin-bottom:2px">Sales analytics</div>
-      <div class="card-sub" style="margin-bottom:10px">Ranked across all SEs</div>
-      <div id="sep-sales-analytics"></div>
-    </div>
-  </div>
-</div>
-
-<!-- SE PERFORMANCE -->
-<div id="page-seperf" class="page">
-  <div class="page-title">SE performance</div>
-  <div class="page-sub">Quotations, award and invoiced sales from Jan 2025 &middot; Month by month &middot; Click any row to expand</div>
-
-  <div class="filter-bar" style="margin-bottom:10px">
-    <select id="sp-f-team" onchange="renderSEPerfTable()"><option value="">All teams</option></select>
-    <div style="display:flex;border:0.5px solid var(--border2);border-radius:var(--radius);overflow:hidden">
-      <button id="sp-yr-all" onclick="spSetYear('all',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;background:var(--accent);color:#fff;cursor:pointer">2025 + 2026</button>
-      <button id="sp-yr-2025" onclick="spSetYear('2025',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;background:var(--surface);color:var(--text);cursor:pointer">2025</button>
-      <button id="sp-yr-2026" onclick="spSetYear('2026',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;background:var(--surface);color:var(--text);cursor:pointer">2026 YTD</button>
-    </div>
-    <div style="display:flex;border:0.5px solid var(--border2);border-radius:var(--radius);overflow:hidden">
-      <button id="sp-m-quo" onclick="spSetMetric('quo',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;background:var(--accent);color:#fff;cursor:pointer">Quotations</button>
-      <button id="sp-m-awd" onclick="spSetMetric('awd',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;background:var(--surface);color:var(--text);cursor:pointer">Award</button>
-      <button id="sp-m-inv" onclick="spSetMetric('inv',this)" style="font-size:11px;height:26px;padding:0 10px;border:none;background:var(--surface);color:var(--text);cursor:pointer">Invoiced</button>
-    </div>
-    <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer">
-      <input type="checkbox" id="sp-own-only" onchange="renderSEPerfTable()" style="width:13px;height:13px;accent-color:var(--accent)"> Own quotations only
-    </label>
-    <span style="font-size:11px;color:var(--text3)" id="sp-count"></span>
-  </div>
-
-  <div id="sp-table-wrap" class="tbl-wrap" style="margin-bottom:20px"></div>
-
-  <div id="sp-analytics"></div>
-</div>
+<!-- SE PERFORMANCE moved to standalone se_report.html (redirect via nav) -->
 
 <!-- ACCOUNT ANALYSIS -->
 <div id="page-accanalysis" class="page">
@@ -1565,6 +1478,11 @@ function showPage(id,el){
   document.querySelectorAll('.nav-link').forEach(function(l){l.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
   if(el)el.classList.add('active');
+}
+function gotoSEReport(){
+  // Redirect to standalone SE performance report.
+  // Auth on that page handles role/team gating (managers auto-locked to their team).
+  window.location.href='se_report.html';
 }
 function populateFilter(selId,values){
   var sel=document.getElementById(selId);
@@ -4458,6 +4376,15 @@ ShakerAuth.init({
         if(el.textContent.trim()!=='Open box') el.style.display='none';
       });
       showPage('openbox', document.querySelector('.nav-link'));
+    }
+
+    // SE performance nav: visible to evp/admin/managers, NOT se
+    var seperfNav = document.getElementById('nav-seperf');
+    if (seperfNav) {
+      var canSeePerf = (role === 'evp' || role === 'admin' || (role && role.indexOf('manager_') === 0));
+      seperfNav.style.display = canSeePerf ? '' : 'none';
+      window._seperfRole = role;
+      window._seperfTeam = team || '';
     }
 
     // Restrict OB tabs based on role
