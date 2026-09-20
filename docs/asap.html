@@ -1484,25 +1484,6 @@ function gotoSEReport(){
   // Auth on that page handles role/team gating (managers auto-locked to their team).
   window.location.href='se_report.html';
 }
-function applyHashRoute(){
-  // Deep-link support: asap.html#openbox opens the Open Box tab directly.
-  var h=(window.location.hash||'').replace('#','').toLowerCase();
-  if(!h)return;
-  var map={openbox:'openbox',home:'home',txnview:'txnview',accexplorer:'accexplorer',
-    seteam:'seteam',transfer:'transfer',pipeline:'pipeline',product:'product',
-    accanalysis:'accanalysis',salestxn:'salestxn',overview2:'overview2'};
-  var page=map[h];
-  if(!page)return;
-  var pageEl=document.getElementById('page-'+page);
-  if(!pageEl)return;
-  // find the matching nav link to mark active
-  var navLink=null;
-  document.querySelectorAll('.nav-link').forEach(function(l){
-    if(l.getAttribute('onclick')&&l.getAttribute('onclick').indexOf("'"+page+"'")>=0)navLink=l;
-  });
-  showPage(page,navLink);
-  if(page==='overview2'&&!window._ov2Init){window._ov2Init=true;initOverview2();}
-}
 function populateFilter(selId,values){
   var sel=document.getElementById(selId);
   if(!sel)return;
@@ -4374,8 +4355,6 @@ function loadAll(session){
       initOBPage();
       initTxnPage();
       initTxnView();
-      // Deep-link: open a specific page if URL has a hash (e.g. asap.html#openbox)
-      applyHashRoute();
     });
   }).catch(function(err){
     console.error('Data load error:',err);
