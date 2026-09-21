@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1790012613"></script>
+<script src="auth.js?v=1790029975"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -129,6 +129,19 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
 .mtable .tgt-hi{color:#0f6640;font-weight:700}
 .mtable .tgt-mid{color:#8f5a0d;font-weight:700}
 .mtable .tgt-lo{color:#c0392b;font-weight:700}
+.tag-runrate{background:#e7f3ff;color:#1f5fd6}
+.tag-project{background:#eafaf0;color:#0f6640}
+.tag-mix{background:#fff4e5;color:#8f5a0d}
+.tag-unclassified{background:#eef0f2;color:#8b96a3}
+.pf-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:11.5px}
+.pf-table .pf-head td{font-size:10px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.03em;padding:6px 8px;border-bottom:1px solid var(--line)}
+.pf-table td{padding:6px 8px;border-bottom:1px solid var(--canvas)}
+.pf-table td.num{text-align:center;font-variant-numeric:tabular-nums;width:44px}
+.pf-name{font-weight:600;color:var(--ink)}
+.pf-dx{font-size:10.5px;color:var(--ink-soft);white-space:nowrap;width:118px}
+.dxmv{display:flex;height:12px;width:118px;border-radius:3px;overflow:hidden;background:#eef0f2}
+.dxmv .dx{background:#1f5fd6}
+.dxmv .mv{background:#b06f10}
 
 /* Analytics */
 .analytics-head{font-size:15px;font-weight:650;letter-spacing:-0.01em;margin:26px 0 4px;padding-bottom:8px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:10px}
@@ -191,6 +204,12 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
       <button data-t="new">New</button>
       <button data-t="old">Old</button>
     </div>
+    <div class="seg" id="seg-type">
+      <button data-tp="all" class="on">All types</button>
+      <button data-tp="Run-rate">Run-rate</button>
+      <button data-tp="Project">Project</button>
+      <button data-tp="Mix">Mix</button>
+    </div>
     <label><input type="checkbox" id="f-own" checked> Own quotations only</label>
     <label><input type="checkbox" id="f-inactive"> Show inactive</label>
     <button class="export-btn" id="btn-export" type="button">Export to Excel</button>
@@ -230,7 +249,7 @@ var INACTIVE_SES = {
   'Ahmed Elkorany':1,'Saeed Alghizzawi':1,'Belal Sheikh Khaled':1,
   'Nour Salameh':1
 };
-var STATE = { year:'all', metric:'quo', teams:[], ses:[], own:true, tenure:'all', showInactive:false, sort:'score' };
+var STATE = { year:'all', metric:'quo', teams:[], ses:[], own:true, tenure:'all', type:'all', showInactive:false, sort:'score' };
 
 function sar(v){
   if(!v&&v!==0)return'--';
@@ -325,6 +344,7 @@ function peers(){
     if(!STATE.showInactive && INACTIVE_SES[s.se_name])return false;
     if(STATE.tenure==='new' && !s.join_date)return false;
     if(STATE.tenure==='old' && s.join_date)return false;
+    if(STATE.type!=='all' && (s.se_type||'Unclassified')!==STATE.type)return false;
     if(STATE.teams.length && STATE.teams.indexOf(s.team)===-1)return false;
     if(STATE.ses.length && STATE.ses.indexOf(s.se_name)===-1)return false;
     return true;
@@ -361,6 +381,7 @@ function renderTable(){
     if(belowKSA)tags+='<span class="tag tag-ksa">Below KSA avg</span>';
     else if(belowTeam)tags+='<span class="tag tag-team">Below team avg</span>';
     if(se.join_date)tags+='<span class="tag tag-new">Joined '+se.join_date+'</span>';
+    if(se.se_type && se.se_type!=='Unclassified')tags+='<span class="tag tag-'+se.se_type.toLowerCase().replace('-','')+'">'+se.se_type+'</span>';
     var sc=r.score>=65?'score-hi':r.score>=40?'score-mid':'score-lo';
 
     html+='<tr class="se-row" data-idx="'+idx+'" data-name="'+escAttr(se.se_name)+'">'
@@ -413,7 +434,7 @@ function toggleRow(tr){
         if(!tgt||tgt<=0)return'<td class="cell-0">–</td>';
         var cum=0;
         for(var k=1;k<=mm;k++){var key=yr+'-'+(k<10?'0':'')+k;cum+=map[key]||0;}
-        var pct=Math.round(cum/(tgt*(mm/3)*0.25)*100);
+        var pct=Math.round(cum/tgt*100);
         var cls=pct>=100?'tgt-hi':pct>=75?'tgt-mid':'tgt-lo';
         return'<td class="'+cls+'">'+pct+'%</td>';
       }).join('')+'</tr>';
@@ -463,6 +484,30 @@ function renderAnalytics(){
   var a2d=p.map(function(se){var d=seData(se);var a=Object.values(d.award).reduce(function(x,y){return x+y;},0);var iv=Object.values(d.inv).reduce(function(x,y){return x+y;},0);return [se.se_name,a>0?Math.round(iv/a*100):0];}).sort(function(a,b){return b[1]-a[1];}).filter(function(e){return e[1]>0;});
 
   var pct=function(v){return v+'%';};
+
+  // SE profile: awarded-project size mix (per unique quotation) + DX/MV product split
+  var pf=p.map(function(se){
+    var sp=se.size_projects||{Small:0,Medium:0,Large:0,Mega:0,Giga:0};
+    var dxv=0,mvv=0;
+    if(se.dx_mv)Object.keys(se.dx_mv).forEach(function(y){dxv+=se.dx_mv[y].DX||0;mvv+=se.dx_mv[y].MV||0;});
+    return {se:se,sp:sp,dx:dxv,mv:mvv,tot:sp.Small+sp.Medium+sp.Large+sp.Mega+sp.Giga};
+  }).sort(function(a,b){return b.tot-a.tot;});
+  var pfBody=pf.map(function(r){
+    var se=r.se, sp=r.sp, t=se.se_type||'Unclassified';
+    var tp=r.dx+r.mv, dxpct=tp?Math.round(r.dx/tp*100):0;
+    var bar=tp?'<div class="dxmv"><i class="dx" style="width:'+dxpct+'%"></i><i class="mv" style="width:'+(100-dxpct)+'%"></i></div>':'';
+    var lbl=tp?(dxpct+'% DX / '+(100-dxpct)+'% MV'):'&ndash;';
+    return'<tr><td class="pf-name">'+esc(se.se_name)+'</td>'
+      +'<td><span class="tag tag-'+t.toLowerCase().replace('-','')+'">'+t+'</span></td>'
+      +'<td class="num">'+sp.Small+'</td><td class="num">'+sp.Medium+'</td><td class="num">'+sp.Large+'</td>'
+      +'<td class="num">'+sp.Mega+'</td><td class="num">'+sp.Giga+'</td>'
+      +'<td>'+bar+'</td><td class="pf-dx">'+lbl+'</td></tr>';
+  }).join('');
+  var pfTable='<table class="pf-table"><tr class="pf-head">'
+    +'<td>Sales Engineer</td><td>Type</td>'
+    +'<td class="num">Small</td><td class="num">Med</td><td class="num">Large</td><td class="num">Mega</td><td class="num">Giga</td>'
+    +'<td>Product mix</td><td></td></tr>'+pfBody+'</table>';
+
   document.getElementById('analytics').innerHTML=
     '<div class="analytics-head">Quotation activity <span>value quoted, accounts sourced, dormant accounts revived</span></div>'
     +'<div class="rank-grid g3">'
@@ -479,7 +524,9 @@ function renderAnalytics(){
     +'<div class="rank-grid g2">'
     +card('Avg monthly invoiced','Total invoiced &divide; active months. New joiners get a two-month ramp.',invAvg,sar,'#b06f10')
     +card('Award-to-delivery rate','Invoiced value as a share of awarded value &mdash; execution on won work.',a2d,pct,'#d98a20')
-    +'</div>';
+    +'</div>'
+    +'<div class="analytics-head">SE profile <span>awarded-project size mix (per unique quotation no.) &amp; DX / MV product split</span></div>'
+    +pfTable;
 }
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -506,6 +553,12 @@ document.querySelectorAll('#seg-tenure button').forEach(function(b){
   b.addEventListener('click',function(){
     document.querySelectorAll('#seg-tenure button').forEach(function(x){x.classList.remove('on');});
     b.classList.add('on');STATE.tenure=b.getAttribute('data-t');buildSEMenu();renderAll();
+  });
+});
+document.querySelectorAll('#seg-type button').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('#seg-type button').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on');STATE.type=b.getAttribute('data-tp');buildSEMenu();renderAll();
   });
 });
 document.querySelectorAll('th.sortable').forEach(function(th){
