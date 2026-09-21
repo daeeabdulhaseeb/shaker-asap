@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1789889336"></script>
+<script src="auth.js?v=1789970591"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -194,6 +194,7 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
     <label><input type="checkbox" id="f-own" checked> Own quotations only</label>
     <label><input type="checkbox" id="f-inactive"> Show inactive</label>
     <button class="export-btn" id="btn-export" type="button">Export to Excel</button>
+    <button class="export-btn" id="btn-export-scores" type="button">Scores &rarr; Excel</button>
     <span class="count" id="row-count"></span>
   </div>
 
@@ -303,7 +304,7 @@ function activeMonths(se,headstart){
   return Math.max(1, active-(headstart||0));
 }
 
-function composite(se,peers){
+function scoreParts(se,peers){
   // Headstart-adjusted per-month averages: quo/2, award/2, invoiced/2
   var HS={quo:2, awd:2, inv:2};
   function perMo(s,metric){var t=activeMonths(s,HS[metric]);return t>0?total(s,metric)/t:0;}
@@ -311,8 +312,12 @@ function composite(se,peers){
   var awdA=peers.map(function(s){return perMo(s,'awd');});
   var quoA=peers.map(function(s){return perMo(s,'quo');});
   function norm(a,v){var mn=Math.min.apply(null,a),mx=Math.max.apply(null,a);return mx>mn?(v-mn)/(mx-mn)*100:50;}
-  return Math.round(0.40*norm(invA,perMo(se,'inv'))+0.40*norm(awdA,perMo(se,'awd'))+0.20*norm(quoA,perMo(se,'quo')));
+  var qi=perMo(se,'quo'), ai=perMo(se,'awd'), ii=perMo(se,'inv');
+  var qN=norm(quoA,qi), aN=norm(awdA,ai), iN=norm(invA,ii);
+  return {quoPM:qi, awdPM:ai, invPM:ii, quoN:qN, awdN:aN, invN:iN,
+          score:Math.round(0.40*iN+0.40*aN+0.20*qN)};
 }
+function composite(se,peers){ return scoreParts(se,peers).score; }
 
 function peers(){
   // Base pool: exclude inactive unless showInactive
@@ -602,6 +607,35 @@ function exportExcel(){
   XLSX.writeFile(wb, 'SE_Performance_'+stamp+'.xlsx');
 }
 document.getElementById('btn-export').addEventListener('click',exportExcel);
+
+// Composite-score export — one row per SE with score + components, respects filters
+function exportScores(){
+  var p=peers();
+  var rows=p.map(function(se){
+    return {se:se, sp:scoreParts(se,p), quo:total(se,'quo'), awd:total(se,'awd'), inv:total(se,'inv')};
+  });
+  rows.sort(function(a,b){return b.sp.score-a.sp.score;});
+  function toM(v){return v?Math.round(v/1000)/1000:0;}   // millions, 3dp
+  function r1(v){return Math.round(v*10)/10;}            // 1dp
+  var aoa=[['Rank','Sales Engineer','Team','Type','Composite score',
+            'Quo /mo (M)','Award /mo (M)','Inv /mo (M)',
+            'Quo norm','Award norm','Inv norm',
+            'Total quo (M)','Total award (M)','Total inv (M)','Tenure']];
+  rows.forEach(function(r,i){
+    var se=r.se, sp=r.sp;
+    aoa.push([i+1, se.se_name, se.team||'', se.se_type||'', sp.score,
+      toM(sp.quoPM), toM(sp.awdPM), toM(sp.invPM),
+      r1(sp.quoN), r1(sp.awdN), r1(sp.invN),
+      toM(r.quo), toM(r.awd), toM(r.inv),
+      se.join_date?'New':'Old']);
+  });
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[5,30,14,11,14,11,12,11,9,10,9,13,14,13,7].map(function(w){return{wch:w};});
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Composite Scores');
+  XLSX.writeFile(wb, 'SE_Composite_Scores_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+document.getElementById('btn-export-scores').addEventListener('click',exportScores);
 
 buildTeamMenu();
 buildSEMenu();
