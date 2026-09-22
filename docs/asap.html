@@ -4,24 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ASAP Sales Dashboard - Shaker Group</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="auth.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f8f9fa;--surface:#ffffff;--surface2:#f1f3f5;
-  --border:#e5e7eb;--border2:#d1d5db;
-  --text:#111827;--text2:#6b7280;--text3:#9ca3af;
-  --accent:#1d4ed8;--accent-light:#eff6ff;
-  --success:#16a34a;--success-bg:#f0fdf4;
-  --warn:#d97706;--warn-bg:#fffbeb;
-  --danger:#dc2626;--danger-bg:#fef2f2;
-  --info:#2563eb;--info-bg:#eff6ff;
-  --radius:8px;--radius-lg:12px;
-  --font:'DM Sans',sans-serif;
+  --bg:#edeeef;--surface:#f6f6f7;--surface2:#edeef0;
+  --border:#dcdee0;--border2:#c8cbcf;
+  --text:#2c2f33;--text2:#5c6169;--text3:#888d96;
+  --accent:#3a6b4e;--accent-light:#e8efe9;
+  --success:#3a6b4e;--success-bg:#e8efe9;
+  --warn:#7a6e3a;--warn-bg:#f5f0e0;
+  --danger:#9e4a4a;--danger-bg:#f5e8e8;
+  --info:#4a6b8a;--info-bg:#e8eff5;
+  --grid:#d5d7da;
+  --radius:6px;--radius-lg:8px;
 }
-body{font-family:var(--font);font-size:13px;color:var(--text);background:var(--bg);min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--text);background:var(--bg);min-height:100vh}
 .page{overflow:hidden}
 .nav{display:flex;align-items:center;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;position:sticky;top:0;z-index:100}
 .nav-brand{font-size:12px;font-weight:500;color:var(--text2);padding:14px 16px 14px 0;border-right:1px solid var(--border);margin-right:4px;white-space:nowrap}
@@ -203,27 +202,51 @@ tr.row-claimed{opacity:.5}tr.row-claimed td:first-child{border-left:3px solid va
 tr.row-expanded td{background:var(--accent-light)!important}
 tr.clickable{cursor:pointer}
 tr.clickable:hover td{background:var(--surface2)}
-.home-mode-btn{font-size:11px;padding:5px 12px;border:none;background:var(--surface);color:var(--text2);cursor:pointer;border-right:1px solid var(--border2);white-space:nowrap}
-.home-mode-btn:last-child{border-right:none}
-.home-mode-btn:hover{background:var(--surface2)}
-.home-mode-btn.active{background:var(--accent);color:#fff;font-weight:500}
-.home-tcb{display:inline-flex;align-items:center;gap:3px;cursor:pointer;font-size:10px;color:var(--text2);padding:2px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--surface);user-select:none}
-.home-tcb:hover{border-color:var(--accent)}
-.home-tcb.checked{background:var(--accent-light);border-color:var(--accent);color:var(--text);font-weight:500}
+/* -- Home v2 design system -- */
+.hm-hdr{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px}
+.hm-title{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+.hm-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.hm-meta{font-size:9px;color:var(--text3)}
+.kstrip{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px}
+.kp{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px}
+.kp.hi{border-left:3px solid #3a6b4e}
+.kp .kl{font-size:9px;letter-spacing:.02em;color:var(--text3);margin-bottom:1px}
+.kp .kv{font-size:14px;font-weight:600;color:var(--text)}
+.kp .ks{font-size:9px;margin-top:1px}
+.kp .ks.up{color:#3a6b4e}.kp .ks.dn{color:#9e4a4a}.kp .ks.nt{color:var(--text3)}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px}
+.cc.full{grid-column:1/-1}
+.cc-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:6px;flex-wrap:wrap}
+.cc-t{font-size:11px;font-weight:600;color:var(--text)}
+.cc-st{font-size:9px;color:var(--text3);margin-top:1px}
+.cc-ctl{display:flex;gap:2px;align-items:center;flex-wrap:wrap}
+.mbtn{font-size:8px;padding:2px 6px;border:1px solid var(--border2);border-radius:3px;background:transparent;color:var(--text3);cursor:pointer;white-space:nowrap}
+.mbtn:hover{border-color:var(--text2);color:var(--text2)}
+.mbtn.on{background:var(--text);color:var(--surface);border-color:var(--text)}
+.tdd{position:relative;display:inline-block}
+.tbtn{font-size:8px;padding:2px 6px;border:1px solid var(--border2);border-radius:3px;background:transparent;color:var(--text3);cursor:pointer}
+.tbtn:hover{border-color:var(--text2)}
+.tpop{display:none;position:absolute;right:0;top:100%;margin-top:2px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 7px;z-index:50;box-shadow:0 3px 10px rgba(0,0,0,.08);min-width:140px}
+.tpop.open{display:block}
+.tpop label{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text);padding:1px 0;cursor:pointer;white-space:nowrap}
+.cc-bars{display:flex;align-items:flex-end;gap:0;position:relative}
+.bar-group{display:flex;flex-direction:column;align-items:center;border-left:1px solid var(--grid,#d5d7da)}
+.bar-group:last-child{border-right:1px solid var(--grid,#d5d7da)}
+.y-grid{position:absolute;left:0;right:0;border-top:1px solid var(--grid,#d5d7da);pointer-events:none}
+.y-label{position:absolute;left:-2px;font-size:7px;color:var(--text3);transform:translateY(-50%)}
+.dl{font-size:7px;color:var(--text2);margin-bottom:1px;white-space:nowrap;text-align:center}
+.bl{font-size:7px;color:var(--text3);text-align:center;padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lgd{display:flex;gap:10px;margin-top:6px;font-size:9px;color:var(--text2);flex-wrap:wrap}
+.lgd i{display:inline-block;width:7px;height:7px;border-radius:1px;margin-right:3px;vertical-align:middle}
 </style>
 </head>
 <body>
 <nav class="nav">
   <span class="nav-brand">Shaker / ASAP Sales</span>
   <span class="nav-link active" onclick="showPage('home',this)">Home</span>
-  <span class="nav-link" onclick="showPage('txnview',this)">Transaction view</span>
   <span class="nav-link" onclick="showPage('accounts',this)">Account explorer</span>
-  <span class="nav-link" onclick="showPage('se',this)">SE &amp; team</span>
-  <span class="nav-link" onclick="showPage('transfer',this)">Transfer impact</span>
-  <span class="nav-link" onclick="showPage('pipeline',this)">Pipeline &amp; coverage</span>
-  <span class="nav-link" onclick="showPage('product',this)">Product analysis</span>
   <span class="nav-link" onclick="showPage('accanalysis',this);if(typeof initAccAnalysis==='function'&&!window._aaInit){window._aaInit=true;initAccAnalysis();}">Account analysis</span>
-  <span class="nav-link" onclick="showPage('transactions',this)">Sales transactions</span>
   <span class="nav-link" onclick="showPage('openbox',this)">Open box</span>
   <span class="nav-updated" id="last-updated"></span>
   <span id="nav-user" style="font-size:11px;color:var(--text2);margin-left:8px;white-space:nowrap;padding:0 4px;background:var(--accent-light);border-radius:4px"></span>
@@ -232,90 +255,12 @@ tr.clickable:hover td{background:var(--surface2)}
 
 <!-- HOME -->
 <div id="page-home" class="page active">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <div>
-      <div class="page-title">Overview</div>
-      <div class="page-sub" id="home-sub">Loading...</div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-      <!-- Time mode toggle -->
-      <div style="display:flex;gap:0;border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden" id="home-time-toggle">
-        <button class="home-mode-btn active" data-mode="yoy" onclick="setHomeMode('yoy',this)">YoY Pairings</button>
-        <button class="home-mode-btn" data-mode="quarter" onclick="setHomeMode('quarter',this)">Quarter</button>
-        <button class="home-mode-btn" data-mode="full" onclick="setHomeMode('full',this)">Full Year</button>
-        <button class="home-mode-btn" data-mode="ytd" onclick="setHomeMode('ytd',this)">YTD</button>
-      </div>
-      <!-- Team checkboxes -->
-      <div id="home-team-checks" style="display:flex;gap:6px;flex-wrap:wrap;font-size:10px;align-items:center"></div>
-    </div>
+  <div class="hm-hdr">
+    <div><div class="hm-title">ASAP Sales Intelligence</div><div class="hm-sub" id="home-sub">Loading...</div></div>
+    <div class="hm-meta"><span id="last-updated"></span></div>
   </div>
-  <span class="nav-updated" id="last-updated"></span>
-
-  <!-- KPI row -->
-  <div class="kpi-grid" id="home-kpis" style="grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:12px"></div>
-
-  <!-- Chart 1: Sales YoY -->
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-title">Invoiced sales</div>
-    <div class="card-sub" id="home-c1-sub">Monthly YoY comparison</div>
-    <div style="overflow-x:auto"><div id="home-chart-sales" style="min-height:180px;display:flex;align-items:flex-end;gap:2px;padding-top:8px"></div></div>
-    <div id="home-chart-sales-labels" style="display:flex;gap:2px;margin-top:3px"></div>
-    <div id="home-chart-sales-legend" style="display:flex;gap:14px;margin-top:8px;font-size:10px"></div>
-  </div>
-
-  <!-- Chart 2: New Accounts + OB Reactivations stacked -->
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-title">New accounts opened &amp; OB reactivations</div>
-    <div class="card-sub" id="home-c2-sub">Stacked: new account openings + open box reactivations</div>
-    <div style="overflow-x:auto"><div id="home-chart-newob" style="min-height:160px;display:flex;align-items:flex-end;gap:2px;padding-top:8px"></div></div>
-    <div id="home-chart-newob-labels" style="display:flex;gap:2px;margin-top:3px"></div>
-    <div id="home-chart-newob-legend" style="display:flex;gap:14px;margin-top:8px;font-size:10px"></div>
-  </div>
-
-  <!-- Chart 3: Account Status Breakdown stacked -->
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-title">Account status breakdown</div>
-    <div class="card-sub" id="home-c3-sub">New / Active / Inactive (Open Box) / OB Claimed</div>
-    <div style="overflow-x:auto"><div id="home-chart-status" style="min-height:180px;display:flex;align-items:flex-end;gap:2px;padding-top:8px"></div></div>
-    <div id="home-chart-status-labels" style="display:flex;gap:2px;margin-top:3px"></div>
-    <div id="home-chart-status-legend" style="display:flex;gap:14px;margin-top:8px;font-size:10px"></div>
-  </div>
-
-  <!-- Chart 4: Invoiced by Group stacked -->
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-title">Invoiced by product group</div>
-    <div class="card-sub" id="home-c4-sub">CAC Ducted / CAC Non-Ducted / RAC / Applied</div>
-    <div style="overflow-x:auto"><div id="home-chart-group" style="min-height:180px;display:flex;align-items:flex-end;gap:2px;padding-top:8px"></div></div>
-    <div id="home-chart-group-labels" style="display:flex;gap:2px;margin-top:3px"></div>
-    <div id="home-chart-group-legend" style="display:flex;gap:14px;margin-top:8px;font-size:10px"></div>
-  </div>
-
-  <!-- Chart 5: Invoiced by Contractor Size stacked -->
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-title">Invoiced by contractor size</div>
-    <div class="card-sub" id="home-c5-sub">A+ / A / B / C / D — based on peak historical sales</div>
-    <div style="overflow-x:auto"><div id="home-chart-size" style="min-height:180px;display:flex;align-items:flex-end;gap:2px;padding-top:8px"></div></div>
-    <div id="home-chart-size-labels" style="display:flex;gap:2px;margin-top:3px"></div>
-    <div id="home-chart-size-legend" style="display:flex;gap:14px;margin-top:8px;font-size:10px"></div>
-  </div>
-
-  <!-- Chart 6: Invoice by Team stacked -->
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-title">Invoiced by team</div>
-    <div class="card-sub" id="home-c6-sub">Stacked by team</div>
-    <div style="overflow-x:auto"><div id="home-chart-team" style="min-height:180px;display:flex;align-items:flex-end;gap:2px;padding-top:8px"></div></div>
-    <div id="home-chart-team-labels" style="display:flex;gap:2px;margin-top:3px"></div>
-    <div id="home-chart-team-legend" style="display:flex;gap:14px;margin-top:8px;font-size:10px"></div>
-  </div>
-
-  <!-- Chart 7: Quotation / Award / Invoice stacked -->
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-title">Quotation / Award / Invoice</div>
-    <div class="card-sub" id="home-c7-sub">Stacked comparison</div>
-    <div style="overflow-x:auto"><div id="home-chart-qai" style="min-height:180px;display:flex;align-items:flex-end;gap:2px;padding-top:8px"></div></div>
-    <div id="home-chart-qai-labels" style="display:flex;gap:2px;margin-top:3px"></div>
-    <div id="home-chart-qai-legend" style="display:flex;gap:14px;margin-top:8px;font-size:10px"></div>
-  </div>
+  <div class="kstrip" id="home-kpis"></div>
+  <div class="cgrid" id="home-cgrid"></div>
 </div>
 
 <!-- ACCOUNTS -->
@@ -398,308 +343,6 @@ tr.clickable:hover td{background:var(--surface2)}
       </tr></thead>
       <tbody id="acc-tbody"></tbody>
     </table>
-  </div>
-</div>
-
-<!-- SE & TEAM -->
-<div id="page-se" class="page">
-  <div class="page-title">SE &amp; team performance</div>
-  <div class="page-sub">Click a team to filter SE panel, click an SE to filter accounts and charts</div>
-  <div class="kpi-grid g5" id="se-kpis"></div>
-  <div class="half" style="align-items:start;margin-bottom:12px">
-    <div class="card" style="padding:0;overflow:hidden">
-      <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
-        <div><div class="card-title">Team summary</div><div class="card-sub">Click to filter</div></div>
-        <button class="btn-export" onclick="exportTeamTable()">Export</button>
-      </div>
-      <div style="max-height:220px;overflow-y:auto">
-      <table id="se-team-table">
-        <thead style="position:sticky;top:0;z-index:1"><tr>
-          <th style="cursor:pointer" onclick="sortTeam('team')">Team</th>
-          <th class="r" style="cursor:pointer" onclick="sortTeam('accts')">Accts</th>
-          <th class="r" style="cursor:pointer" onclick="sortTeam('s2024')">2024</th>
-          <th class="r" style="cursor:pointer" onclick="sortTeam('s2025')">2025</th>
-          <th class="r" style="cursor:pointer" onclick="sortTeam('s2026')">2026</th>
-          <th class="r" style="cursor:pointer" onclick="sortTeam('yoy')">GR% 25v24</th>
-          <th class="r" style="cursor:pointer" onclick="sortTeam('award')">Award</th>
-        </tr></thead>
-        <tbody id="se-team-tbody"></tbody>
-      </table>
-      </div>
-    </div>
-    <div class="card" style="padding:0;overflow:hidden">
-      <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
-        <div><div class="card-title" id="se-se-title">SE breakdown</div><div class="card-sub">Click to filter</div></div>
-        <button class="btn-export" onclick="exportSETable()">Export</button>
-      </div>
-      <div style="max-height:220px;overflow-y:auto">
-      <table id="se-se-table">
-        <thead style="position:sticky;top:0;z-index:1"><tr>
-          <th style="cursor:pointer" onclick="sortSE('se')">SE</th>
-          <th class="r" style="cursor:pointer" onclick="sortSE('accts')">Accts</th>
-          <th class="r" style="cursor:pointer" onclick="sortSE('s2025')">2025</th>
-          <th class="r" style="cursor:pointer" onclick="sortSE('s2026')">2026</th>
-          <th class="r" style="cursor:pointer" onclick="sortSE('yoy')">GR% 25v24</th>
-          <th class="r" style="cursor:pointer" onclick="sortSE('awd25')">Awd 25</th>
-          <th class="r" style="cursor:pointer" onclick="sortSE('awd26')">Awd 26</th>
-          <th class="r" style="cursor:pointer" onclick="sortSE('bl')">Backlog</th>
-          <th class="r" style="cursor:pointer" onclick="sortSE('pipe')">Hot Pipeline</th>
-        </tr></thead>
-        <tbody id="se-se-tbody"></tbody>
-      </table>
-      </div>
-    </div>
-  </div>
-  <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
-    <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center">
-      <div><div class="card-title" id="se-acc-title">Accounts</div><div class="card-sub">Click any row to drill down</div></div>
-      <button class="btn-export" onclick="exportSEAccTable()">Export</button>
-    </div>
-    <div style="max-height:300px;overflow-y:auto">
-    <table id="se-acc-table">
-      <thead style="position:sticky;top:0;z-index:1"><tr>
-        <th style="cursor:pointer" onclick="sortSEAcc('name')">Account</th>
-        <th style="cursor:pointer" onclick="sortSEAcc('type')">Type</th>
-        <th class="r" style="cursor:pointer" onclick="sortSEAcc('s2025')">2025</th>
-        <th class="r" style="cursor:pointer" onclick="sortSEAcc('s2026')">2026</th>
-        <th class="r" style="cursor:pointer" onclick="sortSEAcc('yoy')">GR% 25v24</th>
-        <th class="r" style="cursor:pointer" onclick="sortSEAcc('awd25')">Awd 25</th>
-        <th class="r" style="cursor:pointer" onclick="sortSEAcc('awd26')">Awd 26</th>
-      </tr></thead>
-      <tbody id="se-acc-tbody"></tbody>
-    </table>
-    </div>
-  </div>
-  <div class="half">
-    <div class="card">
-      <div class="card-title" id="se-chart-title">Monthly sales</div>
-      <div class="card-sub">2024 vs 2025 - bars grouped by month</div>
-      <div class="month-chart" id="se-monthly-chart"></div>
-      <div class="chart-legend">
-        <span><span class="legend-dot" style="background:#93c5fd"></span>2024</span>
-        <span><span class="legend-dot" style="background:#3b82f6"></span>2025</span>
-        <span><span class="legend-dot" style="background:#f59e0b"></span>2026</span>
-        <span id="sel-month-label" style="margin-left:auto;color:var(--accent);font-size:10px"></span>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title" id="se-group-title">Sales by product group</div>
-      <div class="card-sub">2024 vs 2025</div>
-      <div id="se-group-bars"></div>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-title" id="se-flags-title">Decision flags</div>
-    <div class="card-sub">Auto-generated from performance data</div>
-    <div id="se-flags" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"></div>
-  </div>
-</div>
-
-<!-- TRANSFER IMPACT -->
-<div id="page-transfer" class="page">
-  <div class="page-title">Transfer impact analysis</div>
-  <div class="page-sub">Before (old SE) vs after (new SE) - sales, pipeline, award</div>
-  <div class="filter-bar">
-    <select id="tr-f-type" onchange="applyTransferFilters()">
-      <option value="inter">Inter-team transfers</option>
-      <option value="intra">Intra-team transfers</option>
-      <option value="">All transfers</option>
-    </select>
-    <select id="tr-f-oldteam" onchange="applyTransferFilters()"><option value="">All old teams</option></select>
-    <select id="tr-f-newteam" onchange="applyTransferFilters()"><option value="">All new teams</option></select>
-    <select id="tr-f-size" onchange="applyTransferFilters()">
-      <option value="">All sizes</option><option value="A+">A+</option><option value="A">A</option><option value="B">B</option>
-    </select>
-    <button class="btn-clear" onclick="clearTransferFilters()">Clear</button>
-    <button class="btn-export" onclick="exportTransferTable()">Export</button>
-    <span class="filter-count" id="tr-count"></span>
-  </div>
-  <div class="kpi-grid g4" id="tr-kpis"></div>
-  <div class="two-col">
-    <div class="card" style="padding:0;overflow:hidden">
-      <div style="padding:12px 14px 8px"><div class="card-title">Account-level before vs after</div><div class="card-sub">Sales comparison</div></div>
-      <div class="tbl-wrap" style="border:none;border-radius:0">
-        <table id="tr-table">
-          <thead><tr>
-            <th>Account</th><th>Size</th><th>Old SE</th><th>New SE</th>
-            <th class="r">2024 sales</th><th class="r">2025 sales</th><th class="r">Sales delta</th>
-            <th class="r">Pipeline delta</th><th class="r">Award delta</th>
-          </tr></thead>
-          <tbody id="tr-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div>
-      <div class="card">
-        <div class="card-title">Transfer route breakdown</div>
-        <table class="tbl">
-          <thead><tr><th>Route</th><th class="r">Accounts</th><th class="r">Avg delta sales</th></tr></thead>
-          <tbody id="tr-routes-tbody"></tbody>
-        </table>
-      </div>
-      <div class="card"><div class="card-title">Transfer insights</div><div id="tr-insights"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- PIPELINE -->
-<div id="page-pipeline" class="page">
-  <div class="page-title">Pipeline &amp; coverage</div>
-  <div class="page-sub">Hot pipeline (50%+70%) - Award (90%+100%) - Backlog - VALID/NOT DUPLICATE only</div>
-  <div class="filter-bar">
-    <select id="pl-f-team" onchange="applyPipelineFilters()"><option value="">All teams</option></select>
-    <select id="pl-f-se" onchange="applyPipelineFilters()"><option value="">All SEs</option></select>
-    <button class="btn-clear" onclick="clearPipelineFilters()">Clear</button>
-    <button class="btn-export" onclick="exportPipelineTable()">Export</button>
-  </div>
-  <div class="kpi-grid g4" id="pl-kpis"></div>
-  <div class="two-col">
-    <div class="card"><div class="card-title">Pipeline by team</div><div id="pl-team-bars"></div></div>
-    <div class="card">
-      <div class="card-title">Coverage alerts</div>
-      <div id="pl-alerts"></div>
-      <div class="divider"></div>
-      <div class="card-title" style="margin-bottom:8px">Pipeline probability split</div>
-      <div id="pl-prob-bars"></div>
-    </div>
-  </div>
-  <div class="card" style="padding:0;overflow:hidden">
-    <div style="padding:12px 14px 8px"><div class="card-title">Pipeline detail by SE</div></div>
-    <div class="tbl-wrap" style="border:none;border-radius:0">
-      <table id="pl-table">
-        <thead><tr>
-          <th>SE</th><th>Team</th><th class="r">2025 sales</th>
-          <th class="r">Hot pipeline</th><th class="r">Award</th><th class="r">Backlog</th><th class="r">Coverage</th>
-        </tr></thead>
-        <tbody id="pl-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- PRODUCT -->
-<div id="page-product" class="page">
-  <div class="page-title">Product analysis</div>
-  <div class="page-sub">Sales by group - market shift detection - account-level product behaviour</div>
-  <div class="filter-bar">
-    <select id="prod-f-team" onchange="applyProductFilters()"><option value="">All teams</option></select>
-    <select id="prod-f-se" onchange="applyProductFilters()"><option value="">All SEs</option></select>
-    <button class="btn-clear" onclick="clearProductFilters()">Clear</button>
-    <button class="btn-export" onclick="exportProductTable()">Export</button>
-  </div>
-  <div class="kpi-grid g4" id="prod-kpis"></div>
-  <div class="two-col">
-    <div class="card"><div class="card-title">Market group shift 2023-2024-2025</div><div id="prod-group-bars"></div></div>
-    <div class="card"><div class="card-title">Account-level group shifts</div><div id="prod-shifts"></div></div>
-  </div>
-  <div class="card" style="padding:0;overflow:hidden">
-    <div style="padding:12px 14px 8px"><div class="card-title">Account product detail</div></div>
-    <div class="tbl-wrap" style="border:none;border-radius:0">
-      <table id="prod-table">
-        <thead><tr>
-          <th>Account</th><th>Type</th><th>SE / team</th>
-          <th>Top group 2023</th><th>Top group 2024</th><th>Top group 2025</th>
-          <th class="c">Shifted?</th><th class="r">2025 sales</th>
-        </tr></thead>
-        <tbody id="prod-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- TRANSACTION VIEW -->
-<div id="page-txnview" class="page">
-  <div class="page-title">Transaction view</div>
-  <div class="page-sub" id="txnview-sub">Sales by invoicing SE &amp; team &mdash; who actually booked the revenue, regardless of account ownership &nbsp;&middot;&nbsp; <span id="txnview-latest-lbl"></span></div>
-
-  <!-- KPI CARDS -->
-  <div class="kpi-grid" id="txnview-kpis" style="grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px"></div>
-
-  <!-- GROWTH METRICS -->
-  <div class="half" style="margin-bottom:14px">
-    <div class="card">
-      <div class="card-title" style="margin-bottom:8px">Growth metrics</div>
-      <div id="txnview-mom-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px"></div>
-    </div>
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div class="card-title" id="txnview-topse-title">Top 5 salesmen (transaction)</div>
-        <select id="txnview-topse-yr" onchange="renderTxnViewTopSE()" style="font-size:11px;padding:2px 6px;border:1px solid var(--border2);border-radius:var(--radius);height:24px;background:var(--surface)">
-          <option value="2026">2026 YTD</option>
-          <option value="2025">2025</option>
-          <option value="2024">2024</option>
-        </select>
-      </div>
-      <div id="txnview-topse-list"></div>
-    </div>
-  </div>
-
-  <!-- TEAM + GROUP BARS -->
-  <div class="three-col" style="margin-bottom:14px">
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div class="card-title" id="txnview-team-title">Sales by team (transaction)</div>
-        <select id="txnview-team-yr" onchange="renderTxnViewTeamBars()" style="font-size:11px;padding:2px 6px;border:1px solid var(--border2);border-radius:var(--radius);height:24px;background:var(--surface)">
-          <option value="2026">2026 YTD</option><option value="2025">2025</option><option value="2024">2024</option>
-        </select>
-      </div>
-      <div id="txnview-team-bars"></div>
-    </div>
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div class="card-title" id="txnview-group-title">Top product groups (transaction)</div>
-        <select id="txnview-group-yr" onchange="renderTxnViewGroupBars()" style="font-size:11px;padding:2px 6px;border:1px solid var(--border2);border-radius:var(--radius);height:24px;background:var(--surface)">
-          <option value="2026">2026 YTD</option><option value="2025">2025</option><option value="2024">2024</option>
-        </select>
-      </div>
-      <div id="txnview-group-bars"></div>
-    </div>
-    <div class="card">
-      <div class="card-title" style="margin-bottom:8px">SE count by team (transaction)</div>
-      <div id="txnview-se-count-bars"></div>
-    </div>
-  </div>
-
-  <!-- MONTHLY TREND -->
-  <div class="card" style="margin-bottom:14px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
-          <div class="card-title">Monthly sales trend (transaction basis)</div>
-          <button id="txnview-btn-m" onclick="setTxnViewMtrendView('month')" style="font-size:10px;padding:2px 8px;border:1px solid var(--accent);border-radius:20px;background:var(--accent);color:#fff;cursor:pointer">Monthly</button>
-          <button id="txnview-btn-q" onclick="setTxnViewMtrendView('quarter')" style="font-size:10px;padding:2px 8px;border:1px solid var(--border2);border-radius:20px;background:var(--surface);color:var(--text2);cursor:pointer">Quarterly</button>
-        </div>
-        <div class="card-sub">2024=grey 2025=blue 2026=amber</div>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <select id="txnview-mtrend-qtr" onchange="renderTxnViewMonthly()" style="font-size:11px;padding:2px 6px;border:1px solid var(--border2);border-radius:var(--radius);height:26px;background:var(--surface)">
-          <option value="">All quarters</option>
-          <option value="1">Q1</option><option value="2">Q2</option><option value="3">Q3</option><option value="4">Q4</option>
-        </select>
-        <select id="txnview-mtrend-month" onchange="renderTxnViewMonthly()" style="font-size:11px;padding:2px 6px;border:1px solid var(--border2);border-radius:var(--radius);height:26px;background:var(--surface)">
-          <option value="">All months</option>
-          <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
-          <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
-          <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
-          <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
-        </select>
-        <button onclick="clearTxnViewMtrend()" style="font-size:11px;padding:2px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);cursor:pointer;height:26px">Clear</button>
-      </div>
-    </div>
-    <div style="display:flex;gap:2px;align-items:flex-end;height:110px" id="txnview-monthly-bars"></div>
-    <div style="display:flex;gap:2px;margin-top:3px" id="txnview-monthly-labels"></div>
-    <div style="display:flex;gap:16px;margin-top:8px;font-size:10px">
-      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#d1d5db;margin-right:3px;vertical-align:middle"></span>2024</span>
-      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3b82f6;margin-right:3px;vertical-align:middle"></span>2025</span>
-      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f59e0b;margin-right:3px;vertical-align:middle"></span>2026 YTD</span>
-    </div>
-  </div>
-
-  <!-- OWNERSHIP vs TRANSACTION DELTA -->
-  <div class="card">
-    <div class="card-title" style="margin-bottom:4px">Ownership vs Transaction delta (2025)</div>
-    <div class="card-sub" style="margin-bottom:10px">Positive = team invoiced more than they own. Negative = team invoiced less than they own (revenue leaked to other teams).</div>
-    <div id="txnview-delta-bars"></div>
   </div>
 </div>
 
@@ -1093,98 +736,6 @@ tr.clickable:hover td{background:var(--surface2)}
 
 </div>
 
-<!-- SALES TRANSACTIONS -->
-<div id="page-transactions" class="page">
-  <div class="page-title">Sales transactions</div>
-  <div class="page-sub">Sales grouped by invoicing SE &amp; team (transaction booking) &mdash; not account ownership. Reflects who actually invoiced, regardless of account assignment.</div>
-
-  <!-- KPIs -->
-  <div class="kpi-grid g5" id="txn-kpis" style="margin-bottom:14px"></div>
-
-  <!-- CHARTS ROW -->
-  <div class="half" style="margin-bottom:14px">
-    <div class="card">
-      <div class="card-title">Sales by team (transaction) &mdash; 2025</div>
-      <div id="txn-team-bars" style="margin-top:4px"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Sales by product group &mdash; 2025</div>
-      <div id="txn-group-bars" style="margin-top:4px"></div>
-    </div>
-  </div>
-
-  <!-- MONTHLY TREND -->
-  <div class="card" style="margin-bottom:14px">
-    <div class="card-title">Monthly sales trend &mdash; transaction booking</div>
-    <div id="txn-monthly-bars" style="display:flex;align-items:flex-end;gap:3px;height:80px;border-bottom:1px solid var(--border);margin-top:8px"></div>
-    <div id="txn-monthly-labels" style="display:flex;gap:3px;margin-top:4px"></div>
-  </div>
-
-  <!-- FILTERS -->
-  <div class="filter-bar">
-    <select id="txn-f-team" onchange="applyTxnFilters()"><option value="">All teams (transaction)</option></select>
-    <select id="txn-f-se" onchange="applyTxnFilters()"><option value="">All SEs</option></select>
-    <select id="txn-f-group" onchange="applyTxnFilters()">
-      <option value="">All groups</option>
-      <option value="CAC Ducted">CAC Ducted</option>
-      <option value="CAC Non-Ducted">CAC Non-Ducted</option>
-      <option value="RAC">RAC</option>
-      <option value="Applied">Applied</option>
-    </select>
-    <input type="text" id="txn-f-search" placeholder="Search account..." oninput="applyTxnFilters()">
-    <span style="font-size:11px;color:var(--text3)" id="txn-filter-count"></span>
-    <button class="btn-export" onclick="exportTxnTable()">Export</button>
-  </div>
-
-  <!-- SE SUMMARY TABLE -->
-  <div class="section" style="margin-bottom:14px">
-    <div class="section-title" style="margin-bottom:8px">SE transaction summary</div>
-    <div class="tbl-wrap" style="max-height:240px;overflow-y:auto">
-      <table>
-        <thead style="position:sticky;top:0;z-index:2"><tr>
-          <th onclick="sortTxnSE('se_name')" style="cursor:pointer">SE name <span class="sort-arrow" id="sa-txn-se-se_name"></span></th>
-          <th onclick="sortTxnSE('team')" style="cursor:pointer">Team <span class="sort-arrow" id="sa-txn-se-team"></span></th>
-          <th class="r" onclick="sortTxnSE('s2023')" style="cursor:pointer">2023 <span class="sort-arrow" id="sa-txn-se-s2023"></span></th>
-          <th class="r" onclick="sortTxnSE('s2024')" style="cursor:pointer">2024 <span class="sort-arrow" id="sa-txn-se-s2024"></span></th>
-          <th class="r" onclick="sortTxnSE('s2025')" style="cursor:pointer">2025 <span class="sort-arrow" id="sa-txn-se-s2025"></span></th>
-          <th class="r" onclick="sortTxnSE('s2026')" style="cursor:pointer">2026 YTD <span class="sort-arrow" id="sa-txn-se-s2026"></span></th>
-          <th class="r" onclick="sortTxnSE('yoy')" style="cursor:pointer">GR% 25v24 <span class="sort-arrow" id="sa-txn-se-yoy"></span></th>
-          <th class="r" onclick="sortTxnSE('cust_count')" style="cursor:pointer">Accounts <span class="sort-arrow" id="sa-txn-se-cust_count"></span></th>
-        </tr></thead>
-        <tbody id="txn-se-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ACCOUNT TABLE (same structure as Account Explorer) -->
-  <div class="section">
-    <div class="section-title" style="margin-bottom:8px">Account detail &mdash; by invoicing SE</div>
-    <div class="section-sub" style="margin-bottom:8px">Shows pipeline from the account&apos;s owner. For admin view this matches Account Explorer; for managers it shows accounts they invoiced (including those not owned by their team).</div>
-    <div class="tbl-wrap" style="height:65vh;overflow-y:auto">
-      <table>
-        <thead style="position:sticky;top:0;z-index:2"><tr>
-          <th onclick="sortTxnAcc('name')" style="cursor:pointer">Customer name <span class="sort-arrow" id="sa-txn-acc-name"></span></th>
-          <th onclick="sortTxnAcc('type')" style="cursor:pointer">Type <span class="sort-arrow" id="sa-txn-acc-type"></span></th>
-          <th onclick="sortTxnAcc('size')" style="cursor:pointer">Size <span class="sort-arrow" id="sa-txn-acc-size"></span></th>
-          <th onclick="sortTxnAcc('txn_se')" style="cursor:pointer">Invoicing SE <span class="sort-arrow" id="sa-txn-acc-txn_se"></span></th>
-          <th onclick="sortTxnAcc('txn_team')" style="cursor:pointer">Invoicing team <span class="sort-arrow" id="sa-txn-acc-txn_team"></span></th>
-          <th onclick="sortTxnAcc('curr_se')" style="cursor:pointer">Owner SE <span class="sort-arrow" id="sa-txn-acc-curr_se"></span></th>
-          <th onclick="sortTxnAcc('curr_team')" style="cursor:pointer">Owner team <span class="sort-arrow" id="sa-txn-acc-curr_team"></span></th>
-          <th class="r" onclick="sortTxnAcc('s2023')" style="cursor:pointer">2023 <span class="sort-arrow" id="sa-txn-acc-s2023"></span></th>
-          <th class="r" onclick="sortTxnAcc('s2024')" style="cursor:pointer">2024 <span class="sort-arrow" id="sa-txn-acc-s2024"></span></th>
-          <th class="r" onclick="sortTxnAcc('s2025')" style="cursor:pointer">2025 <span class="sort-arrow" id="sa-txn-acc-s2025"></span></th>
-          <th class="r" onclick="sortTxnAcc('s2026')" style="cursor:pointer">2026 YTD <span class="sort-arrow" id="sa-txn-acc-s2026"></span></th>
-          <th class="r" onclick="sortTxnAcc('yoy')" style="cursor:pointer">GR% 25v24 <span class="sort-arrow" id="sa-txn-acc-yoy"></span></th>
-          <th class="r" onclick="sortTxnAcc('hot')" style="cursor:pointer">Hot pipeline <span class="sort-arrow" id="sa-txn-acc-hot"></span></th>
-          <th class="r" onclick="sortTxnAcc('award')" style="cursor:pointer">Award <span class="sort-arrow" id="sa-txn-acc-award"></span></th>
-          <th class="r" onclick="sortTxnAcc('backlog')" style="cursor:pointer">Backlog <span class="sort-arrow" id="sa-txn-acc-backlog"></span></th>
-        </tr></thead>
-        <tbody id="txn-acc-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
 <!-- OPEN BOX -->
 <div id="page-openbox" class="page">
   <div class="page-title">Open box program</div>
@@ -1386,548 +937,205 @@ function initFilters(){
   populateFilter('acc-f-team',teams);
   populateFilter('acc-f-oldteam',oldTeams);
   populateFilter('acc-f-se',ses);
-  populateFilter('tr-f-oldteam',oldTeams);
-  populateFilter('tr-f-newteam',teams);
-  populateFilter('pl-f-team',teams);
-  populateFilter('pl-f-se',ses);
-  populateFilter('prod-f-team',teams);
-  populateFilter('prod-f-se',ses);
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HOME PAGE — New chart system with time modes + team filter
+// HOME v2 — Muted earth tones, per-chart controls, grid lines
 // ═══════════════════════════════════════════════════════════════
-var HOME_MODE='yoy'; // yoy | quarter | full | ytd
-var HOME_TEAMS=[]; // selected teams (empty = all)
-var HOME_ALL_TEAMS=[];
 var HOME_YRS=[2025,2026];
-var HOME_LATEST_MON=1; // latest month with data in latest year
-var HOME_COLORS={'2024':'#9ca3af','2025':'#3b82f6','2026':'#f59e0b','2023':'#d1d5db'};
-var TEAM_COLORS=['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4'];
+var HOME_LATEST_MON=1;
+var C25='#a8b5a0';var C26='#3a6b4e';
+var TCOLS=['#3a6b4e','#7a6e3a','#4a6b8a','#8a4a4a','#6a4a8a','#3a7a7a','#8a6a3a'];
+var CST={};
+var CDEFS=[
+  {id:'sales',t:'Invoiced sales',st:'Monthly invoiced value'},
+  {id:'newob',t:'New accounts & OB reactivations',st:'Account openings by month'},
+  {id:'status',t:'Account status',st:'New / Active / Inactive / OB Claimed'},
+  {id:'group',t:'Invoiced by group',st:'CAC Ducted / Non-Ducted / RAC / Applied'},
+  {id:'size',t:'Invoiced by contractor size',st:'By peak historical sales tier'},
+  {id:'team',t:'Invoiced by team',st:'Stacked by team'},
+  {id:'qai',t:'Quotation / Award / Invoice',st:'Pipeline funnel comparison'}
+];
 
-function setHomeMode(mode,el){
-  HOME_MODE=mode;
-  document.querySelectorAll('.home-mode-btn').forEach(function(b){b.classList.remove('active');});
-  if(el)el.classList.add('active');
-  renderAllHomeCharts();
+function cst(id){if(!CST[id])CST[id]={mode:'yoy',teams:null};return CST[id];}
+function cTeams(id){var st=cst(id);if(!st.teams)return TEAM_DATA;return TEAM_DATA.filter(function(t){return st.teams.indexOf(t.team)>=0;});}
+function cTN(id){var st=cst(id);return st.teams||TEAM_DATA.map(function(t){return t.team;});}
+function sarS(v){if(!v)return'';var n=Math.abs(v);if(n>=1e6)return(v<0?'-':'')+(n/1e6).toFixed(1)+'M';if(n>=1e3)return(v<0?'-':'')+Math.round(n/1e3)+'K';return String(Math.round(v));}
+function latMon(teams){var l=0;teams.forEach(function(t){var ms=(t.monthly_sales&&t.monthly_sales['2026'])||{};for(var m=12;m>=1;m--){if(ms[String(m)]>0){if(m>l)l=m;break;}}});return l||1;}
+function aggM(teams,fld,yr){var r={};for(var m=1;m<=12;m++)r[m]=0;teams.forEach(function(t){var ms=(t[fld]&&t[fld][String(yr)])||{};for(var m=1;m<=12;m++)r[m]+=parseFloat(ms[String(m)]||0);});return r;}
+function aggMK(teams,fld,yr){var r={};for(var m=1;m<=12;m++)r[m]={};teams.forEach(function(t){var ms=(t[fld]&&t[fld][String(yr)])||{};for(var m=1;m<=12;m++){var b=ms[String(m)]||{};Object.keys(b).forEach(function(k){r[m][k]=(r[m][k]||0)+parseFloat(b[k]||0);});}});return r;}
+function aggQA(teams,fld,yr){var r={};for(var m=1;m<=12;m++)r[m]=0;teams.forEach(function(t){var d=t[fld]||{};Object.keys(d).forEach(function(k){var p=k.split('-');if(parseInt(p[0])===yr){var m=parseInt(p[1]);r[m]=(r[m]||0)+parseFloat(d[k]||0);}});});return r;}
+function aggStat(teams,yr,m){var ct={'New':0,'Active':0,'Inactive':0,'OB Claimed':0};teams.forEach(function(t){var ms=t.monthly_status&&t.monthly_status[String(yr)];if(ms&&ms[String(m)]){var c=ms[String(m)];Object.keys(c).forEach(function(k){ct[k]=(ct[k]||0)+(c[k]||0);});}});return ct;}
+function sumMs(d,ms){return ms.reduce(function(a,m){return a+(d[m]||0);},0);}
+function sumMsK(dk,ms,keys){var r={};keys.forEach(function(k){r[k]=0;});ms.forEach(function(m){var b=dk[m]||{};keys.forEach(function(k){r[k]+=(b[k]||0);});});return r;}
+
+function bkts(mode,yr,lat){
+  if(mode==='yoy'){var b=[];for(var m=1;m<=12;m++)b.push({l:MONTHS[m-1],ms:[m]});return b;}
+  if(mode==='quarter')return[[1,2,3],[4,5,6],[7,8,9],[10,11,12]].map(function(ms,i){return{l:'Q'+(i+1),ms:ms};});
+  if(mode==='full')return[{l:String(yr),ms:[1,2,3,4,5,6,7,8,9,10,11,12]}];
+  if(mode==='ytd'){var ms=[];for(var m=1;m<=lat;m++)ms.push(m);return[{l:'YTD',ms:ms}];}
+  return[];
 }
 
-function initHomeTeamChecks(){
-  HOME_ALL_TEAMS=TEAM_DATA.map(function(t){return t.team;});
-  HOME_TEAMS=HOME_ALL_TEAMS.slice();
-  var el=document.getElementById('home-team-checks');if(!el)return;
-  var html='<label class="home-tcb checked" style="font-weight:600" onclick="toggleHomeTeamAll(this)"><input type="checkbox" checked style="display:none" id="home-tcb-all">All</label>';
-  HOME_ALL_TEAMS.forEach(function(t,i){
-    html+='<label class="home-tcb checked"><input type="checkbox" checked style="display:none" class="home-tcb-inp" value="'+t+'" onchange="onHomeTeamChange()">'+t+'</label>';
-  });
-  el.innerHTML=html;
+function buildCtl(id){
+  var st=cst(id);
+  var modes=[{k:'yoy',l:'YoY'},{k:'quarter',l:'Qtr'},{k:'full',l:'Year'},{k:'ytd',l:'YTD'}];
+  var h=modes.map(function(m){return'<button class="mbtn'+(st.mode===m.k?' on':'')+'" onclick="setHM(''+id+'',''+m.k+'',this)">'+m.l+'</button>';}).join('');
+  h+='<div class="tdd"><button class="tbtn" onclick="togTP(''+id+'')">Teams &#9662;</button>';
+  h+='<div class="tpop" id="tp-'+id+'">';
+  h+='<label><input type="checkbox" checked onchange="togTA(''+id+'',this)"> <b>All</b></label>';
+  TEAM_DATA.forEach(function(t){var chk=(!st.teams||st.teams.indexOf(t.team)>=0)?'checked':'';h+='<label><input type="checkbox" '+chk+' value="'+t.team+'" class="tcb-'+id+'" onchange="onTCb(''+id+'')"> '+t.team+'</label>';});
+  h+='</div></div>';
+  return h;
 }
+function setHM(id,mode,btn){cst(id).mode=mode;btn.parentElement.querySelectorAll('.mbtn').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');renderC(id);}
+function togTP(id){var p=document.getElementById('tp-'+id);if(p)p.classList.toggle('open');}
+function togTA(id,cb){document.querySelectorAll('.tcb-'+id).forEach(function(c){c.checked=cb.checked;});onTCb(id);}
+function onTCb(id){var sel=[];document.querySelectorAll('.tcb-'+id+':checked').forEach(function(c){sel.push(c.value);});cst(id).teams=sel.length===TEAM_DATA.length?null:sel;renderC(id);}
+document.addEventListener('click',function(e){if(!e.target.closest('.tdd'))document.querySelectorAll('.tpop.open').forEach(function(p){p.classList.remove('open');});});
 
-function toggleHomeTeamAll(lbl){
-  var allCb=document.getElementById('home-tcb-all');
-  var cbs=document.querySelectorAll('.home-tcb-inp');
-  var newState=!allCb.checked;
-  allCb.checked=newState;
-  lbl.classList.toggle('checked',newState);
-  cbs.forEach(function(c){c.checked=newState;c.parentElement.classList.toggle('checked',newState);});
-  onHomeTeamChange();
-}
-
-function onHomeTeamChange(){
-  HOME_TEAMS=[];
-  document.querySelectorAll('.home-tcb-inp:checked').forEach(function(c){HOME_TEAMS.push(c.value);});
-  var allCb=document.getElementById('home-tcb-all');
-  var allLbl=allCb?allCb.parentElement:null;
-  if(allCb){allCb.checked=HOME_TEAMS.length===HOME_ALL_TEAMS.length;if(allLbl)allLbl.classList.toggle('checked',allCb.checked);}
-  renderAllHomeCharts();
-}
-
-function homeTeams(){
-  return HOME_TEAMS.length?TEAM_DATA.filter(function(t){return HOME_TEAMS.indexOf(t.team)>=0;}):TEAM_DATA;
-}
-
-function homeLatestMon(){
-  var latest=0;
-  homeTeams().forEach(function(t){
-    var ms=(t.monthly_sales&&t.monthly_sales['2026'])||{};
-    for(var m=12;m>=1;m--){if(ms[String(m)]>0){if(m>latest)latest=m;break;}}
-  });
-  return latest||1;
-}
-
-// -- Aggregation helpers --
-function aggMonthly(field,yr){
-  // Aggregate a monthly field across selected teams. Returns {1:val,2:val,...}
-  var result={};for(var m=1;m<=12;m++)result[m]=0;
-  homeTeams().forEach(function(t){
-    var ms=(t[field]&&t[field][String(yr)])||{};
-    for(var m=1;m<=12;m++){result[m]+=parseFloat(ms[String(m)]||0);}
-  });
-  return result;
-}
-
-function aggMonthlyKeyed(field,yr){
-  // Aggregate a monthly breakdown field (e.g. monthly_sales_by_group). Returns {month:{key:val}}
-  var result={};
-  for(var m=1;m<=12;m++)result[m]={};
-  homeTeams().forEach(function(t){
-    var ms=(t[field]&&t[field][String(yr)])||{};
-    for(var m=1;m<=12;m++){
-      var bucket=ms[String(m)]||{};
-      Object.keys(bucket).forEach(function(k){result[m][k]=(result[m][k]||0)+parseFloat(bucket[k]||0);});
-    }
-  });
-  return result;
-}
-
-function aggQuoAward(field,yr){
-  // monthly_quo and monthly_award are keyed as 'YYYY-MM'
-  var result={};for(var m=1;m<=12;m++)result[m]=0;
-  homeTeams().forEach(function(t){
-    var d=t[field]||{};
-    Object.keys(d).forEach(function(k){
-      var parts=k.split('-');if(parseInt(parts[0])===yr){
-        var m=parseInt(parts[1]);result[m]=(result[m]||0)+parseFloat(d[k]||0);
-      }
-    });
-  });
-  return result;
-}
-
-// -- Build time buckets based on mode --
-function homeBuckets(yr){
-  var lm=homeLatestMon();
-  if(HOME_MODE==='yoy'){
-    // Monthly: 1..12, but limited by data for latest year
-    var maxM=(yr===Math.max.apply(null,HOME_YRS))?lm:12;
-    var b=[];for(var m=1;m<=maxM;m++)b.push({label:MONTHS[m-1],months:[m]});
-    return b;
-  }
-  if(HOME_MODE==='quarter'){
-    var qs=[[1,2,3],[4,5,6],[7,8,9],[10,11,12]];
-    return qs.map(function(ms,i){return{label:'Q'+(i+1),months:ms};});
-  }
-  if(HOME_MODE==='full'){
-    return [{label:String(yr),months:[1,2,3,4,5,6,7,8,9,10,11,12]}];
-  }
-  if(HOME_MODE==='ytd'){
-    var ms=[];for(var m=1;m<=lm;m++)ms.push(m);
-    return [{label:'Jan-'+MONTHS[lm-1],months:ms}];
-  }
-  return [];
-}
-
-function sumBucket(monthlyData,months){
-  return months.reduce(function(s,m){return s+(monthlyData[m]||0);},0);
-}
-
-function sumBucketKeyed(monthlyKeyed,months,keys){
-  var result={};
-  keys.forEach(function(k){result[k]=0;});
-  months.forEach(function(m){
-    var bucket=monthlyKeyed[m]||{};
-    keys.forEach(function(k){result[k]+=(bucket[k]||0);});
-  });
-  return result;
-}
-
-// -- Generic YoY paired bar chart renderer --
-function renderYoyBars(containerId,labelId,legendId,series,yrs){
-  // series: [{label, values:{yr:val}}] for simple bars
-  // For stacked: [{label, stacks:{yr:[{key,val,color}]}}]
-  var el=document.getElementById(containerId);
-  var lbl=document.getElementById(labelId);
-  var leg=document.getElementById(legendId);
-  if(!el)return;
-
-  var isStacked=series.length>0&&series[0].stacks;
+// Bar renderer with y-grid, paired x-labels, data labels
+function drawBars(el,series,yrs,opts){
+  opts=opts||{};
+  var isStk=series.length>0&&series[0].stk;
   var maxV=0;
-  series.forEach(function(s){
-    yrs.forEach(function(yr){
-      if(isStacked){
-        var total=(s.stacks[yr]||[]).reduce(function(a,b){return a+b.val;},0);
-        if(total>maxV)maxV=total;
-      } else {
-        var v=s.values[yr]||0;if(v>maxV)maxV=v;
-      }
-    });
-  });
+  series.forEach(function(s){yrs.forEach(function(yr){
+    if(isStk){var t=(s.stk[yr]||[]).reduce(function(a,b){return a+b.v;},0);if(t>maxV)maxV=t;}
+    else{var v=s.vals[yr]||0;if(v>maxV)maxV=v;}
+  });});
   if(!maxV)maxV=1;
-  var barH=160;
-
-  var barsHtml='';
-  var labelsHtml='';
-  series.forEach(function(s,si){
-    // Group of bars for this bucket
-    barsHtml+='<div style="display:flex;align-items:flex-end;gap:1px;flex:1;min-width:'+(yrs.length*14)+'px">';
-    yrs.forEach(function(yr){
-      if(isStacked){
-        var stk=s.stacks[yr]||[];
-        var total=stk.reduce(function(a,b){return a+b.val;},0);
-        var h=Math.round(total/maxV*barH);
-        barsHtml+='<div style="flex:1;height:'+h+'px;display:flex;flex-direction:column-reverse;border-radius:2px 2px 0 0;overflow:hidden;min-height:'+(total>0?2:0)+'px" title="'+String(yr)+': '+sar(total)+'">';
-        stk.forEach(function(seg){
-          var sh=total>0?Math.max(Math.round(seg.val/total*h),seg.val>0?1:0):0;
-          barsHtml+='<div style="height:'+sh+'px;background:'+seg.color+';min-height:'+(seg.val>0?1:0)+'px"></div>';
-        });
-        barsHtml+='</div>';
-      } else {
-        var v=s.values[yr]||0;
-        var h=Math.round(v/maxV*barH);
-        barsHtml+='<div style="flex:1;height:'+h+'px;background:'+(HOME_COLORS[yr]||'#999')+';border-radius:2px 2px 0 0;min-height:'+(v>0?2:0)+'px" title="'+s.label+' '+yr+': '+sar(v)+'"></div>';
-      }
+  var H=130;
+  var bw=Math.max(8,Math.min(18,Math.floor(380/(series.length*yrs.length))));
+  var lat=opts.lat||8;
+  var gridH='';
+  for(var i=1;i<=4;i++){var pv=i*25;gridH+='<div class="y-grid" style="bottom:'+pv+'%"></div><div class="y-label" style="bottom:'+pv+'%;left:-28px">'+sarS(maxV*pv/100)+'</div>';}
+  var h='<div style="padding-left:30px;overflow-x:auto"><div class="cc-bars" style="height:'+H+'px">'+gridH;
+  if(opts.paired){
+    series.forEach(function(s,si){
+      var mi=si+1;
+      h+='<div class="bar-group" style="min-width:'+(bw*yrs.length+4)+'px"><div style="display:flex;align-items:flex-end;gap:1px;height:'+H+'px;padding:0 2px">';
+      yrs.forEach(function(yr){
+        var col=yr===yrs[0]?C25:C26;
+        var hasD=yr===yrs[0]||mi<=lat;
+        if(isStk){
+          var segs=hasD?(s.stk[yr]||[]):(s.stk[yr]||[]).map(function(x){return{k:x.k,v:0,c:x.c};});
+          var total=segs.reduce(function(a,b){return a+b.v;},0);var bh=Math.round(total/maxV*H);
+          h+='<div style="width:'+bw+'px;display:flex;flex-direction:column;align-items:center">';
+          h+='<div class="dl">'+(total>0?sarS(total):'')+'</div>';
+          h+='<div style="width:100%;height:'+bh+'px;display:flex;flex-direction:column-reverse;border-radius:1px 1px 0 0;overflow:hidden">';
+          segs.forEach(function(seg){var sh=total>0?Math.max(Math.round(seg.v/total*bh),seg.v>0?1:0):0;h+='<div style="height:'+sh+'px;background:'+seg.c+'" title="'+seg.k+': '+sarS(seg.v)+'"></div>';});
+          h+='</div></div>';
+        } else {
+          var v=hasD?(s.vals[yr]||0):0;var bh=Math.round(v/maxV*H);
+          h+='<div style="width:'+bw+'px;display:flex;flex-direction:column;align-items:center">';
+          h+='<div class="dl">'+(v>0?sarS(v):'')+'</div>';
+          h+='<div style="width:100%;height:'+bh+'px;background:'+col+';border-radius:1px 1px 0 0;min-height:'+(v>0?1:0)+'px" title="'+sar(v)+'"></div></div>';
+        }
+      });
+      h+='</div><div style="display:flex;gap:0">';
+      yrs.forEach(function(yr){var hasD=yr===yrs[0]||(mi<=lat);h+='<div class="bl" style="width:'+bw+'px">'+(hasD?(s.l+' '+String(yr).slice(2)):'')+'</div>';});
+      h+='</div></div>';
     });
-    barsHtml+='</div>';
-    labelsHtml+='<div style="flex:1;text-align:center;font-size:9px;color:var(--text3);min-width:'+(yrs.length*14)+'px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+s.label+'</div>';
-  });
-  el.innerHTML=barsHtml;
-  if(lbl)lbl.innerHTML=labelsHtml;
+  } else {
+    series.forEach(function(s){
+      var col=s.yr?((s.yr===yrs[0])?C25:C26):C26;
+      h+='<div class="bar-group" style="min-width:'+(bw+6)+'px"><div style="display:flex;align-items:flex-end;gap:1px;height:'+H+'px;padding:0 2px">';
+      if(isStk){
+        var segs=s.stk[s.yr||yrs[0]]||[];var total=segs.reduce(function(a,b){return a+b.v;},0);var bh=Math.round(total/maxV*H);
+        h+='<div style="width:'+bw+'px;display:flex;flex-direction:column;align-items:center"><div class="dl">'+(total>0?sarS(total):'')+'</div>';
+        h+='<div style="width:100%;height:'+bh+'px;display:flex;flex-direction:column-reverse;border-radius:1px 1px 0 0;overflow:hidden">';
+        segs.forEach(function(seg){var sh=total>0?Math.max(Math.round(seg.v/total*bh),seg.v>0?1:0):0;h+='<div style="height:'+sh+'px;background:'+seg.c+'"></div>';});
+        h+='</div></div>';
+      } else {
+        var v=s.v||0;var bh=Math.round(v/maxV*H);
+        h+='<div style="width:'+bw+'px;display:flex;flex-direction:column;align-items:center"><div class="dl">'+(v>0?sarS(v):'')+'</div>';
+        h+='<div style="width:100%;height:'+bh+'px;background:'+col+';border-radius:1px 1px 0 0"></div></div>';
+      }
+      h+='</div><div class="bl">'+s.l+'</div></div>';
+    });
+  }
+  h+='</div></div>';
+  if(opts.legend)h+='<div class="lgd">'+opts.legend.map(function(it){return'<span><i style="background:'+it.c+'"></i>'+it.l+'</span>';}).join('')+'</div>';
+  el.innerHTML=h;
 }
 
-function makeLegend(items){
-  return items.map(function(it){
-    return'<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+it.color+';margin-right:3px;vertical-align:middle"></span>'+it.label+'</span>';
-  }).join('');
+function renderC(id){
+  var teams=cTeams(id),mode=cst(id).mode,lat=latMon(teams),el=document.getElementById('b-'+id);
+  if(!el)return;
+  var paired=mode==='yoy';
+  var yrs=HOME_YRS;
+
+  if(id==='sales'){
+    var m0=aggM(teams,'monthly_sales',yrs[0]),m1=aggM(teams,'monthly_sales',yrs[1]);
+    if(paired){var s=[];for(var i=0;i<12;i++)s.push({l:MONTHS[i],vals:{'2025':m0[i+1]||0,'2026':m1[i+1]||0}});drawBars(el,s,yrs,{paired:true,lat:lat,legend:[{l:'2025',c:C25},{l:'2026 YTD',c:C26}]});}
+    else{var s=[];yrs.forEach(function(yr){var md=yr===yrs[0]?m0:m1;bkts(mode,yr,lat).forEach(function(b){s.push({l:b.l+' '+String(yr).slice(2),v:sumMs(md,b.ms),yr:yr});});});drawBars(el,s,yrs,{legend:[{l:'2025',c:C25},{l:'2026 YTD',c:C26}]});}
+  }
+  else if(id==='newob'){
+    var tN=cTN(id);var nc={};yrs.forEach(function(yr){nc[yr]={};for(var m=1;m<=12;m++)nc[yr][m]=0;});
+    ACCOUNTS.forEach(function(a){if(tN.indexOf(a.curr_team)<0)return;if(!a.created_on)return;var yr,mn;if(a.created_on.indexOf('/')>0){var p=a.created_on.split('/');yr=parseInt(p[2]);mn=parseInt(p[0]);}else if(a.created_on.indexOf('-')>0){var p=a.created_on.split('-');yr=parseInt(p[0]);mn=parseInt(p[1]);}if(nc[yr]&&mn>=1&&mn<=12)nc[yr][mn]++;});
+    if(paired){var s=[];for(var m=1;m<=12;m++)s.push({l:MONTHS[m-1],vals:{'2025':nc[2025][m]||0,'2026':nc[2026][m]||0}});drawBars(el,s,yrs,{paired:true,lat:lat,legend:[{l:'2025',c:C25},{l:'2026',c:C26}]});}
+    else{var s=[];yrs.forEach(function(yr){bkts(mode,yr,lat).forEach(function(b){s.push({l:b.l+' '+String(yr).slice(2),v:b.ms.reduce(function(a,m){return a+(nc[yr][m]||0);},0),yr:yr});});});drawBars(el,s,yrs,{legend:[{l:'2025',c:C25},{l:'2026',c:C26}]});}
+  }
+  else if(id==='status'){
+    var cats=['New','Active','Inactive','OB Claimed'];var cC={'New':'#6a9a7a','Active':'#3a6b4e','Inactive':'#b8bcc0','OB Claimed':'#7a6e3a'};
+    if(paired){var s=[];for(var m=1;m<=12;m++){var stk={};yrs.forEach(function(yr){var ct=aggStat(teams,yr,m);stk[yr]=cats.map(function(c){return{k:c,v:ct[c]||0,c:cC[c]};});});s.push({l:MONTHS[m-1],stk:stk});}drawBars(el,s,yrs,{paired:true,lat:lat,legend:cats.map(function(c){return{l:c,c:cC[c]};})});}
+    else{var s=[];yrs.forEach(function(yr){bkts(mode,yr,lat).forEach(function(b){var ct={'New':0,'Active':0,'Inactive':0,'OB Claimed':0};b.ms.forEach(function(m){var c=aggStat(teams,yr,m);Object.keys(c).forEach(function(k){ct[k]+=c[k];});});var stk={};stk[yr]=cats.map(function(c){return{k:c,v:ct[c]||0,c:cC[c]};});s.push({l:b.l+' '+String(yr).slice(2),stk:stk,yr:yr});});});drawBars(el,s,yrs,{legend:cats.map(function(c){return{l:c,c:cC[c]};})});}
+  }
+  else if(id==='group'){
+    var grps=['CAC Ducted','CAC Non-Ducted','RAC','Applied'];var gC={'CAC Ducted':'#3a6b4e','CAC Non-Ducted':'#6a9a7a','RAC':'#a8b5a0','Applied':'#7a6e3a'};
+    if(paired){var s=[];for(var m=1;m<=12;m++){var stk={};yrs.forEach(function(yr){var mk=aggMK(teams,'monthly_sales_by_group',yr);stk[yr]=grps.map(function(g){return{k:g,v:(mk[m]&&mk[m][g])||0,c:gC[g]};});});s.push({l:MONTHS[m-1],stk:stk});}drawBars(el,s,yrs,{paired:true,lat:lat,legend:grps.map(function(g){return{l:g,c:gC[g]};})});}
+    else{var s=[];yrs.forEach(function(yr){var mk=aggMK(teams,'monthly_sales_by_group',yr);bkts(mode,yr,lat).forEach(function(b){var a=sumMsK(mk,b.ms,grps);var stk={};stk[yr]=grps.map(function(g){return{k:g,v:a[g]||0,c:gC[g]};});s.push({l:b.l+' '+String(yr).slice(2),stk:stk,yr:yr});});});drawBars(el,s,yrs,{legend:grps.map(function(g){return{l:g,c:gC[g]};})});}
+  }
+  else if(id==='size'){
+    var tiers=['A+','A','B','C','D'];var tC={'A+':'#1e3a2a','A':'#3a6b4e','B':'#6a9a7a','C':'#a8b5a0','D':'#b8bcc0'};
+    if(paired){var s=[];for(var m=1;m<=12;m++){var stk={};yrs.forEach(function(yr){var mk=aggMK(teams,'monthly_sales_by_size',yr);stk[yr]=tiers.map(function(t){return{k:t,v:(mk[m]&&mk[m][t])||0,c:tC[t]};});});s.push({l:MONTHS[m-1],stk:stk});}drawBars(el,s,yrs,{paired:true,lat:lat,legend:tiers.map(function(t){return{l:t,c:tC[t]};})});}
+    else{var s=[];yrs.forEach(function(yr){var mk=aggMK(teams,'monthly_sales_by_size',yr);bkts(mode,yr,lat).forEach(function(b){var a=sumMsK(mk,b.ms,tiers);var stk={};stk[yr]=tiers.map(function(t){return{k:t,v:a[t]||0,c:tC[t]};});s.push({l:b.l+' '+String(yr).slice(2),stk:stk,yr:yr});});});drawBars(el,s,yrs,{legend:tiers.map(function(t){return{l:t,c:tC[t]};})});}
+  }
+  else if(id==='team'){
+    if(paired){var s=[];for(var m=1;m<=12;m++){var stk={};yrs.forEach(function(yr){stk[yr]=teams.map(function(t,i){var ms=(t.monthly_sales&&t.monthly_sales[String(yr)])||{};return{k:t.team,v:parseFloat(ms[String(m)]||0),c:TCOLS[i%TCOLS.length]};});});s.push({l:MONTHS[m-1],stk:stk});}drawBars(el,s,yrs,{paired:true,lat:lat,legend:teams.map(function(t,i){return{l:t.team,c:TCOLS[i%TCOLS.length]};})});}
+    else{var s=[];yrs.forEach(function(yr){bkts(mode,yr,lat).forEach(function(b){var stk={};stk[yr]=teams.map(function(t,i){var ms=(t.monthly_sales&&t.monthly_sales[String(yr)])||{};var v=b.ms.reduce(function(a,m){return a+parseFloat(ms[String(m)]||0);},0);return{k:t.team,v:v,c:TCOLS[i%TCOLS.length]};});s.push({l:b.l+' '+String(yr).slice(2),stk:stk,yr:yr});});});drawBars(el,s,yrs,{legend:teams.map(function(t,i){return{l:t.team,c:TCOLS[i%TCOLS.length]};})});}
+  }
+  else if(id==='qai'){
+    var cats=['Quotation','Award','Invoice'];var cC={'Quotation':'#a8b5a0','Award':'#7a6e3a','Invoice':'#3a6b4e'};
+    if(paired){var s=[];for(var m=1;m<=12;m++){var stk={};yrs.forEach(function(yr){var q=aggQA(teams,'monthly_quo',yr),a=aggQA(teams,'monthly_award',yr),inv=aggM(teams,'monthly_sales',yr);stk[yr]=[{k:'Quotation',v:q[m]||0,c:cC['Quotation']},{k:'Award',v:a[m]||0,c:cC['Award']},{k:'Invoice',v:inv[m]||0,c:cC['Invoice']}];});s.push({l:MONTHS[m-1],stk:stk});}drawBars(el,s,yrs,{paired:true,lat:lat,legend:cats.map(function(c){return{l:c,c:cC[c]};})});}
+    else{var s=[];yrs.forEach(function(yr){var q=aggQA(teams,'monthly_quo',yr),a=aggQA(teams,'monthly_award',yr),inv=aggM(teams,'monthly_sales',yr);bkts(mode,yr,lat).forEach(function(b){var stk={};stk[yr]=[{k:'Quotation',v:sumMs(q,b.ms),c:cC['Quotation']},{k:'Award',v:sumMs(a,b.ms),c:cC['Award']},{k:'Invoice',v:sumMs(inv,b.ms),c:cC['Invoice']}];s.push({l:b.l+' '+String(yr).slice(2),stk:stk,yr:yr});});});drawBars(el,s,yrs,{legend:cats.map(function(c){return{l:c,c:cC[c]};})});}
+  }
 }
 
-function makeYrLegend(yrs){
-  return makeLegend(yrs.map(function(yr){return{label:String(yr)+(yr===Math.max.apply(null,HOME_YRS)?' YTD':''),color:HOME_COLORS[yr]||'#999'};}));
+function renderHomeKPIs(){
+  var teams=TEAM_DATA,lat=latMon(teams);
+  var y26=0,y25=0;teams.forEach(function(t){var m6=(t.monthly_sales&&t.monthly_sales['2026'])||{};var m5=(t.monthly_sales&&t.monthly_sales['2025'])||{};for(var m=1;m<=lat;m++){y26+=parseFloat(m6[String(m)]||0);y25+=parseFloat(m5[String(m)]||0);}});
+  var yoy=y25>0?((y26-y25)/y25*100):null;
+  var t25=teams.reduce(function(a,t){return a+(t.sales['2025']||0);},0);var t24=teams.reduce(function(a,t){return a+(t.sales['2024']||0);},0);
+  var pipe=teams.reduce(function(a,t){return a+(t.hot_pipeline||0);},0);
+  var a25=teams.reduce(function(a,t){return a+(t.award_25||0);},0);var a26=teams.reduce(function(a,t){return a+(t.award_26||0);},0);
+  var bl=teams.reduce(function(a,t){return a+(t.backlog||0);},0);
+  var kpis=[
+    {l:'2026 YTD',v:sar(y26),s:yoy!=null?(yoy>=0?'+':'')+yoy.toFixed(1)+'%':'',sc:yoy>=0?'up':'dn',hi:1},
+    {l:'2025',v:sar(t25),s:t24>0?pct((t25-t24)/t24*100):'',sc:t25>=t24?'up':'dn'},
+    {l:'2024',v:sar(t24)},
+    {l:'Hot pipeline',v:sar(pipe),s:'50-70%',sc:'nt'},
+    {l:'Award 25+26',v:sar(a25+a26),s:'25: '+sar(a25),sc:'nt'},
+    {l:'Backlog',v:sar(bl),s:'90-100%',sc:'nt'}
+  ];
+  document.getElementById('home-kpis').innerHTML=kpis.map(function(k){return'<div class="kp'+(k.hi?' hi':'')+'"><div class="kl">'+k.l+'</div><div class="kv">'+k.v+'</div>'+(k.s?'<div class="ks '+(k.sc||'nt')+'">'+k.s+'</div>':'')+'</div>';}).join('');
 }
 
-// ═══════════════════════════════════════════════════════════════
 function renderAllHomeCharts(){
-  HOME_LATEST_MON=homeLatestMon();
-  renderHomeKPIs();
-  renderHomeSales();
-  renderHomeNewOB();
-  renderHomeStatus();
-  renderHomeGroup();
-  renderHomeSize();
-  renderHomeTeamChart();
-  renderHomeQAI();
+  var g=document.getElementById('home-cgrid');
+  g.innerHTML=CDEFS.map(function(c,i){return'<div class="cc'+(i===CDEFS.length-1?' full':'')+'"><div class="cc-h"><div><span class="cc-t">'+c.t+'</span><div class="cc-st">'+c.st+'</div></div><div class="cc-ctl" id="ctl-'+c.id+'"></div></div><div id="b-'+c.id+'"></div></div>';}).join('');
+  CDEFS.forEach(function(c){document.getElementById('ctl-'+c.id).innerHTML=buildCtl(c.id);renderC(c.id);});
 }
 
 function renderHome(){
   if(!TEAM_DATA.length)return;
-  HOME_YRS=[2025,2026];
-  HOME_LATEST_MON=homeLatestMon();
-  document.getElementById('home-sub').textContent=ACCOUNTS.length+' accounts — Sales, Pipeline & Award intelligence';
-  document.getElementById('last-updated').textContent='Generated: '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-  initHomeTeamChecks();
+  HOME_LATEST_MON=latMon(TEAM_DATA);
+  document.getElementById('home-sub').textContent=ACCOUNTS.length+' accounts · Sales & pipeline intelligence';
+  document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  renderHomeKPIs();
   renderAllHomeCharts();
 }
 
-// -- KPIs --
-function renderHomeKPIs(){
-  var teams=homeTeams();
-  var t26=teams.reduce(function(s,t){return s+(t.sales['2026']||0);},0);
-  var t25=teams.reduce(function(s,t){return s+(t.sales['2025']||0);},0);
-  var t24=teams.reduce(function(s,t){return s+(t.sales['2024']||0);},0);
-  var lm=HOME_LATEST_MON;
-  var ytd26=0,ytd25=0;
-  teams.forEach(function(t){
-    var ms26=(t.monthly_sales&&t.monthly_sales['2026'])||{};
-    var ms25=(t.monthly_sales&&t.monthly_sales['2025'])||{};
-    for(var m=1;m<=lm;m++){ytd26+=parseFloat(ms26[String(m)]||0);ytd25+=parseFloat(ms25[String(m)]||0);}
-  });
-  var yoy=ytd25>0?((ytd26-ytd25)/ytd25*100):null;
-  var pipe=teams.reduce(function(s,t){return s+(t.hot_pipeline||0);},0);
-  var awd25=teams.reduce(function(s,t){return s+(t.award_25||0);},0);
-  var awd26=teams.reduce(function(s,t){return s+(t.award_26||0);},0);
-  var bl=teams.reduce(function(s,t){return s+(t.backlog||0);},0);
-  var kpis=[
-    {l:'2026 YTD (Jan-'+MONTHS[lm-1]+')',v:sar(ytd26),s:yoy!=null?(yoy>=0?'+ ':'- ')+Math.abs(yoy).toFixed(1)+'% vs 25':'--',c:yoy!=null?(yoy>=0?'kpi-pos':'kpi-neg'):'kpi-sub',hi:true},
-    {l:'2025 Full Year',v:sar(t25),s:t24>0?pct((t25-t24)/t24*100)+' vs 24':'--',c:t24>0&&t25>=t24?'kpi-pos':'kpi-neg'},
-    {l:'2024 Full Year',v:sar(t24)},
-    {l:'Hot Pipeline',v:sar(pipe),s:'50%+70%',c:'kpi-sub'},
-    {l:'Award 25+26',v:sar(awd25+awd26),s:'25: '+sar(awd25)+' · 26: '+sar(awd26),c:'kpi-sub'},
-    {l:'Backlog',v:sar(bl),s:'90%+100%',c:'kpi-sub'},
-  ];
-  document.getElementById('home-kpis').innerHTML=kpis.map(function(k){
-    var st=k.hi?'background:var(--accent-light);border:1px solid #bfdbfe;':'';
-    return'<div class="kpi" style="'+st+'"><div class="kpi-label">'+(k.l||'')+'</div><div class="kpi-val">'+(k.v||'--')+'</div>'+(k.s?'<div class="'+(k.c||'kpi-sub')+'">'+k.s+'</div>':'')+'</div>';
-  }).join('');
-}
-
-// -- Chart 1: Sales --
-function renderHomeSales(){
-  var yrs=HOME_YRS;
-  var buckets0=homeBuckets(yrs[0]);
-  var series=[];
-  if(HOME_MODE==='yoy'){
-    // Paired: each month has a bar per year
-    var maxM=Math.max(buckets0.length,homeBuckets(yrs[1]).length);
-    var m25=aggMonthly('monthly_sales',yrs[0]);
-    var m26=aggMonthly('monthly_sales',yrs[1]);
-    for(var i=0;i<maxM;i++){
-      series.push({label:MONTHS[i],values:{'2025':m25[i+1]||0,'2026':m26[i+1]||0}});
-    }
-  } else {
-    var b25=homeBuckets(yrs[0]),b26=homeBuckets(yrs[1]);
-    var m25=aggMonthly('monthly_sales',yrs[0]),m26=aggMonthly('monthly_sales',yrs[1]);
-    var maxLen=Math.max(b25.length,b26.length);
-    for(var i=0;i<maxLen;i++){
-      var lbl=(b25[i]?b25[i].label:'')+(HOME_MODE==='full'||HOME_MODE==='ytd'?'':' ');
-      if(HOME_MODE==='full'||HOME_MODE==='ytd') lbl='';
-      series.push({label:lbl||b25[i].label,values:{'2025':b25[i]?sumBucket(m25,b25[i].months):0,'2026':b26[i]?sumBucket(m26,b26[i].months):0}});
-    }
-  }
-  renderYoyBars('home-chart-sales','home-chart-sales-labels','home-chart-sales-legend',series,yrs);
-  document.getElementById('home-chart-sales-legend').innerHTML=makeYrLegend(yrs);
-}
-
-// -- Chart 2: New Accounts + OB Reactivations stacked --
-function renderHomeNewOB(){
-  var yrs=HOME_YRS;
-  // Count new accounts by created_on month, filtered by selected teams
-  var selTeams=HOME_TEAMS.length?HOME_TEAMS:HOME_ALL_TEAMS;
-  var newCounts={};var obCounts={};
-  yrs.forEach(function(yr){newCounts[yr]={};obCounts[yr]={};for(var m=1;m<=12;m++){newCounts[yr][m]=0;obCounts[yr][m]=0;}});
-  ACCOUNTS.forEach(function(a){
-    if(selTeams.indexOf(a.curr_team)<0)return;
-    if(a.created_on){
-      var yr,mon;
-      if(a.created_on.indexOf('/')>0){var p=a.created_on.split('/');if(p.length===3){yr=parseInt(p[2]);mon=parseInt(p[0]);}}
-      else if(a.created_on.indexOf('-')>0){var p=a.created_on.split('-');if(p.length===3){yr=parseInt(p[0]);mon=parseInt(p[1]);}}
-      if(newCounts[yr]&&mon>=1&&mon<=12)newCounts[yr][mon]++;
-    }
-  });
-  // OB reactivations: only have annual totals per SE, approximate evenly across months
-  // For now, use SE-level data allocated to first month
-  var newColor='#3b82f6',obColor='#f59e0b';
-  var series=[];
-  if(HOME_MODE==='yoy'){
-    var lm=HOME_LATEST_MON;
-    for(var m=1;m<=Math.max(12,lm);m++){
-      var stacks={};
-      yrs.forEach(function(yr){
-        stacks[yr]=[{key:'new',val:newCounts[yr][m]||0,color:newColor},{key:'ob',val:obCounts[yr][m]||0,color:obColor}];
-      });
-      if(m>lm&&m>12)break;
-      series.push({label:MONTHS[m-1],stacks:stacks});
-    }
-  } else {
-    yrs.forEach(function(yr){
-      var buckets=homeBuckets(yr);
-      buckets.forEach(function(b){
-        var nv=b.months.reduce(function(s,m){return s+(newCounts[yr][m]||0);},0);
-        var ov=b.months.reduce(function(s,m){return s+(obCounts[yr][m]||0);},0);
-        var stacks={};stacks[yr]=[{key:'new',val:nv,color:newColor},{key:'ob',val:ov,color:obColor}];
-        series.push({label:b.label+' '+String(yr).slice(2),stacks:stacks});
-      });
-    });
-  }
-  renderYoyBars('home-chart-newob','home-chart-newob-labels','home-chart-newob-legend',series,yrs);
-  document.getElementById('home-chart-newob-legend').innerHTML=makeLegend([{label:'New accounts',color:newColor},{label:'OB reactivations',color:obColor}]);
-}
-
-// -- Chart 3: Account Status Breakdown --
-function renderHomeStatus(){
-  var yrs=HOME_YRS;
-  var selTeams=HOME_TEAMS.length?HOME_TEAMS:HOME_ALL_TEAMS;
-  var lm=HOME_LATEST_MON;
-  var cats=['New','Active','Inactive (OB)','OB Claimed'];
-  var catColors={'New':'#3b82f6','Active':'#22c55e','Inactive (OB)':'#9ca3af','OB Claimed':'#f59e0b'};
-
-  // For each year+month, classify accounts
-  function classifyAccounts(yr,months){
-    var counts={'New':0,'Active':0,'Inactive (OB)':0,'OB Claimed':0};
-    var cutoffDate=new Date(yr,months[months.length-1],1); // end of period
-    var sixMonthsAgo=new Date(cutoffDate);sixMonthsAgo.setMonth(sixMonthsAgo.getMonth()-6);
-
-    ACCOUNTS.forEach(function(a){
-      if(selTeams.indexOf(a.curr_team)<0)return;
-      // OB Claimed
-      if(a.claim_status){counts['OB Claimed']++;return;}
-      // New: created in last 6 months
-      if(a.created_on){
-        var cd;
-        if(a.created_on.indexOf('/')>0){var p=a.created_on.split('/');if(p.length===3)cd=new Date(parseInt(p[2]),parseInt(p[0])-1,parseInt(p[1]));}
-        else if(a.created_on.indexOf('-')>0){var p=a.created_on.split('-');if(p.length===3)cd=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));}
-        if(cd&&cd>=sixMonthsAgo&&cd<=cutoffDate){counts['New']++;return;}
-      }
-      // Active: has quo, award, or invoice in last 6 months
-      var hasActivity=false;
-      // Check sales in recent months
-      if(a.sales){
-        var checkYrs=[yr,yr-1];
-        checkYrs.forEach(function(cy){
-          var sv=a.sales[String(cy)]||0;
-          if(sv>0)hasActivity=true; // simplified — checking annual sales as proxy
-        });
-      }
-      // Check projects for recent quotation/award
-      if(a.projects){
-        a.projects.forEach(function(p){
-          if(p.valid_from){
-            var pd=new Date(p.valid_from+'-01');
-            if(pd>=sixMonthsAgo&&pd<=cutoffDate)hasActivity=true;
-          }
-          if(p.expected_award){
-            var ad=new Date(p.expected_award+'-01');
-            if(ad>=sixMonthsAgo&&ad<=cutoffDate)hasActivity=true;
-          }
-        });
-      }
-      if(hasActivity){counts['Active']++;} else {counts['Inactive (OB)']++;}
-    });
-    return counts;
-  }
-
-  var series=[];
-  if(HOME_MODE==='yoy'){
-    for(var m=1;m<=HOME_LATEST_MON;m++){
-      var stacks={};
-      yrs.forEach(function(yr){
-        var cls=classifyAccounts(yr,[m]);
-        stacks[yr]=cats.map(function(c){return{key:c,val:cls[c]||0,color:catColors[c]};});
-      });
-      series.push({label:MONTHS[m-1],stacks:stacks});
-    }
-  } else {
-    yrs.forEach(function(yr){
-      homeBuckets(yr).forEach(function(b){
-        var cls=classifyAccounts(yr,b.months);
-        var stacks={};stacks[yr]=cats.map(function(c){return{key:c,val:cls[c]||0,color:catColors[c]};});
-        series.push({label:b.label+' '+String(yr).slice(2),stacks:stacks});
-      });
-    });
-  }
-  renderYoyBars('home-chart-status','home-chart-status-labels','home-chart-status-legend',series,yrs);
-  document.getElementById('home-chart-status-legend').innerHTML=makeLegend(cats.map(function(c){return{label:c,color:catColors[c]};}));
-}
-
-// -- Chart 4: Invoiced by Group --
-function renderHomeGroup(){
-  var yrs=HOME_YRS;
-  var groups=['CAC Ducted','CAC Non-Ducted','RAC','Applied'];
-  var gColors={'CAC Ducted':'#3b82f6','CAC Non-Ducted':'#06b6d4','RAC':'#22c55e','Applied':'#f59e0b'};
-  var series=[];
-
-  if(HOME_MODE==='yoy'){
-    for(var m=1;m<=HOME_LATEST_MON;m++){
-      var stacks={};
-      yrs.forEach(function(yr){
-        var mk=aggMonthlyKeyed('monthly_sales_by_group',yr);
-        stacks[yr]=groups.map(function(g){return{key:g,val:(mk[m]&&mk[m][g])||0,color:gColors[g]};});
-      });
-      series.push({label:MONTHS[m-1],stacks:stacks});
-    }
-  } else {
-    yrs.forEach(function(yr){
-      var mk=aggMonthlyKeyed('monthly_sales_by_group',yr);
-      homeBuckets(yr).forEach(function(b){
-        var agg=sumBucketKeyed(mk,b.months,groups);
-        var stacks={};stacks[yr]=groups.map(function(g){return{key:g,val:agg[g]||0,color:gColors[g]};});
-        series.push({label:b.label+' '+String(yr).slice(2),stacks:stacks});
-      });
-    });
-  }
-  renderYoyBars('home-chart-group','home-chart-group-labels','home-chart-group-legend',series,yrs);
-  document.getElementById('home-chart-group-legend').innerHTML=makeLegend(groups.map(function(g){return{label:g,color:gColors[g]};}));
-}
-
-// -- Chart 5: Invoiced by Contractor Size --
-function renderHomeSize(){
-  var yrs=HOME_YRS;
-  var tiers=['A+','A','B','C','D'];
-  var tColors={'A+':'#3b82f6','A':'#22c55e','B':'#f59e0b','C':'#9ca3af','D':'#ef4444'};
-  var series=[];
-
-  if(HOME_MODE==='yoy'){
-    for(var m=1;m<=HOME_LATEST_MON;m++){
-      var stacks={};
-      yrs.forEach(function(yr){
-        var mk=aggMonthlyKeyed('monthly_sales_by_size',yr);
-        stacks[yr]=tiers.map(function(t){return{key:t,val:(mk[m]&&mk[m][t])||0,color:tColors[t]};});
-      });
-      series.push({label:MONTHS[m-1],stacks:stacks});
-    }
-  } else {
-    yrs.forEach(function(yr){
-      var mk=aggMonthlyKeyed('monthly_sales_by_size',yr);
-      homeBuckets(yr).forEach(function(b){
-        var agg=sumBucketKeyed(mk,b.months,tiers);
-        var stacks={};stacks[yr]=tiers.map(function(t){return{key:t,val:agg[t]||0,color:tColors[t]};});
-        series.push({label:b.label+' '+String(yr).slice(2),stacks:stacks});
-      });
-    });
-  }
-  renderYoyBars('home-chart-size','home-chart-size-labels','home-chart-size-legend',series,yrs);
-  document.getElementById('home-chart-size-legend').innerHTML=makeLegend(tiers.map(function(t){return{label:t,color:tColors[t]};}));
-}
-
-// -- Chart 6: Invoice by Team stacked --
-function renderHomeTeamChart(){
-  var yrs=HOME_YRS;
-  var teams=homeTeams();
-  var teamNames=teams.map(function(t){return t.team;});
-  var series=[];
-
-  if(HOME_MODE==='yoy'){
-    for(var m=1;m<=HOME_LATEST_MON;m++){
-      var stacks={};
-      yrs.forEach(function(yr){
-        stacks[yr]=teams.map(function(t,i){
-          var ms=(t.monthly_sales&&t.monthly_sales[String(yr)])||{};
-          return{key:t.team,val:parseFloat(ms[String(m)]||0),color:TEAM_COLORS[i%TEAM_COLORS.length]};
-        });
-      });
-      series.push({label:MONTHS[m-1],stacks:stacks});
-    }
-  } else {
-    yrs.forEach(function(yr){
-      var buckets=homeBuckets(yr);
-      buckets.forEach(function(b){
-        var stacks={};
-        stacks[yr]=teams.map(function(t,i){
-          var ms=(t.monthly_sales&&t.monthly_sales[String(yr)])||{};
-          var v=b.months.reduce(function(s,m){return s+parseFloat(ms[String(m)]||0);},0);
-          return{key:t.team,val:v,color:TEAM_COLORS[i%TEAM_COLORS.length]};
-        });
-        series.push({label:b.label+' '+String(yr).slice(2),stacks:stacks});
-      });
-    });
-  }
-  renderYoyBars('home-chart-team','home-chart-team-labels','home-chart-team-legend',series,yrs);
-  document.getElementById('home-chart-team-legend').innerHTML=makeLegend(teams.map(function(t,i){return{label:t.team,color:TEAM_COLORS[i%TEAM_COLORS.length]};}));
-}
-
-// -- Chart 7: Quotation / Award / Invoice stacked --
-function renderHomeQAI(){
-  var yrs=HOME_YRS;
-  var cats=['Quotation','Award','Invoice'];
-  var cColors={'Quotation':'#8b5cf6','Award':'#f59e0b','Invoice':'#22c55e'};
-  var series=[];
-
-  if(HOME_MODE==='yoy'){
-    for(var m=1;m<=HOME_LATEST_MON;m++){
-      var stacks={};
-      yrs.forEach(function(yr){
-        var q=aggQuoAward('monthly_quo',yr);
-        var a=aggQuoAward('monthly_award',yr);
-        var inv=aggMonthly('monthly_sales',yr);
-        stacks[yr]=[{key:'Quotation',val:q[m]||0,color:cColors['Quotation']},{key:'Award',val:a[m]||0,color:cColors['Award']},{key:'Invoice',val:inv[m]||0,color:cColors['Invoice']}];
-      });
-      series.push({label:MONTHS[m-1],stacks:stacks});
-    }
-  } else {
-    yrs.forEach(function(yr){
-      var q=aggQuoAward('monthly_quo',yr);
-      var a=aggQuoAward('monthly_award',yr);
-      var inv=aggMonthly('monthly_sales',yr);
-      homeBuckets(yr).forEach(function(b){
-        var qv=b.months.reduce(function(s,m){return s+(q[m]||0);},0);
-        var av=b.months.reduce(function(s,m){return s+(a[m]||0);},0);
-        var iv=b.months.reduce(function(s,m){return s+(inv[m]||0);},0);
-        var stacks={};stacks[yr]=[{key:'Quotation',val:qv,color:cColors['Quotation']},{key:'Award',val:av,color:cColors['Award']},{key:'Invoice',val:iv,color:cColors['Invoice']}];
-        series.push({label:b.label+' '+String(yr).slice(2),stacks:stacks});
-      });
-    });
-  }
-  renderYoyBars('home-chart-qai','home-chart-qai-labels','home-chart-qai-legend',series,yrs);
-  document.getElementById('home-chart-qai-legend').innerHTML=makeLegend(cats.map(function(c){return{label:c,color:cColors[c]};}));
-}
 
 var ACC_SORT={col:'transfer_type',dir:1};
 var ACC_FOCUS=false;
@@ -4591,10 +3799,8 @@ function loadAll(session){
     ShakerAuth.loadClaims(function(claims){
       OB_CLAIMS = claims;
       renderAccTable();
-      renderAccCharts();renderHome();renderSEPage();applyTransferFilters();applyPipelineFilters();applyProductFilters();
+      renderAccCharts();renderHome();
       initOBPage();
-      initTxnPage();
-      initTxnView();
     });
   }).catch(function(err){
     console.error('Data load error:',err);
