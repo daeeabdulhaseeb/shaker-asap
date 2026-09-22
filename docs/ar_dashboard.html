@@ -107,7 +107,7 @@ main{max-width:1340px;margin:0 auto;padding:18px 22px}
         <span><i style="background:#6250d6;border-radius:50%"></i>Coll. rate %</span>
         <span><i style="background:#eda100;border-radius:50%"></i>DSO days ▸</span>
       </div>
-      <div class="canwrap"><canvas id="c2"></canvas></div>
+      <div class="canwrap" style="height:220px"><canvas id="c2"></canvas></div>
     </div>
 
     <!-- C3: Aging split -->
@@ -120,7 +120,7 @@ main{max-width:1340px;margin:0 auto;padding:18px 22px}
         <span><i style="background:#eda100"></i>30–60</span>
         <span><i style="background:#e24b4a"></i>60+</span>
       </div>
-      <div class="canwrap"><canvas id="c3"></canvas></div>
+      <div class="canwrap" style="height:220px"><canvas id="c3"></canvas></div>
     </div>
   </div>
 
@@ -130,7 +130,7 @@ main{max-width:1340px;margin:0 auto;padding:18px 22px}
       <h2>Overdue by team — <span id="c4title">current</span></h2>
       <p class="sub">Current period vs comparison. Spot which team is driving overdue.</p>
       <div class="ctrls" id="fc4"></div>
-      <div class="canwrap"><canvas id="c4"></canvas></div>
+      <div class="canwrap" style="height:220px"><canvas id="c4"></canvas></div>
     </div>
 
     <!-- C5: OVD trend by team -->
@@ -139,7 +139,7 @@ main{max-width:1340px;margin:0 auto;padding:18px 22px}
       <p class="sub">Sequential Jan-2025 → latest. One line per team.</p>
       <div class="ctrls" id="fc5"></div>
       <div class="leg" id="leg5"></div>
-      <div class="canwrap"><canvas id="c5"></canvas></div>
+      <div class="canwrap" style="height:220px"><canvas id="c5"></canvas></div>
     </div>
 
     <!-- C6: Invoice vs collected by team -->
@@ -148,7 +148,7 @@ main{max-width:1340px;margin:0 auto;padding:18px 22px}
       <p class="sub">Solid = invoiced · dashed = collected · Gap = net book growth</p>
       <div class="ctrls" id="fc6"></div>
       <div class="leg" id="leg6"></div>
-      <div class="canwrap"><canvas id="c6"></canvas></div>
+      <div class="canwrap" style="height:220px"><canvas id="c6"></canvas></div>
     </div>
   </div>
 </main>
@@ -297,13 +297,14 @@ function renderC1(){
 // Chart 2: Collections bars + rate line + DSO
 function renderC2(){
   kill('c2');const teams=activeTeams('c2');const{periods,labels}=getPeriodSeq();
-  const prevOf=p=>periods[periods.indexOf(p)-1]||null;
+  // always use sequential ALL_PERIODS for prev month — not display order
+  const seqPrevOf=p=>{const i=ALL_PERIODS.indexOf(p);return i>0?ALL_PERIODS[i-1]:null;};
   charts.c2=new Chart(document.getElementById('c2'),{
     data:{labels,datasets:[
-      {type:'bar',label:'Collected',data:periods.map(p=>{const pv=prevOf(p);return pv?+(collInd(pv,p,teams)/1e6).toFixed(2):null;}),
+      {type:'bar',label:'Collected',data:periods.map(p=>{const pv=seqPrevOf(p);return pv?+(collInd(pv,p,teams)/1e6).toFixed(2):null;}),
         backgroundColor:periods.map(p=>isCompar(p)?'#1baf7a55':'#1baf7a'),order:2,
-        datalabels:{display:ctx=>{const v=ctx.dataset.data[ctx.dataIndex];return v&&Math.abs(v)>0.5;},color:'#fff',font:{size:9,weight:'600'},formatter:v=>fmtV(v*1e6),anchor:'center',align:'center'}},
-      {type:'line',label:'Coll. rate %',data:periods.map(p=>{const pv=prevOf(p);if(!pv)return null;const pr=agg(pv,teams),cr=agg(p,teams);if(!pr||!cr)return null;const d=pr.rec+cr.inv;return d?+((collInd(pv,p,teams)/d)*100).toFixed(1):null;}),
+        datalabels:{display:ctx=>{const v=ctx.dataset.data[ctx.dataIndex];return v!=null&&Math.abs(v)>1;},color:'#fff',font:{size:9,weight:'600'},formatter:v=>fmtV(v*1e6),anchor:'center',align:'center'}},
+      {type:'line',label:'Coll. rate %',data:periods.map(p=>{const pv=seqPrevOf(p);if(!pv)return null;const pr=agg(pv,teams),cr=agg(p,teams);if(!pr||!cr)return null;const d=pr.rec+cr.inv;return d?+((collInd(pv,p,teams)/d)*100).toFixed(1):null;}),
         borderColor:'#6250d6',backgroundColor:'transparent',pointRadius:3,tension:0.3,borderWidth:2,order:1,
         datalabels:lineNoDL()},
       {type:'line',label:'DSO days',data:periods.map(p=>{const a=agg(p,teams);return a?.dso?+a.dso.toFixed(0):null;}),
@@ -327,7 +328,7 @@ function renderC3(){
   const mkBar=(k,col,lbl)=>({type:'bar',label:lbl,stack:'s',
     data:periods.map(p=>{const a=agg(p,teams);return a?+(a[k]/1e6).toFixed(2):null;}),
     backgroundColor:periods.map(p=>isCompar(p)?col+'55':col),
-    datalabels:{display:ctx=>{const v=ctx.dataset.data[ctx.dataIndex];return v&&v>0.5;},color:'#fff',font:{size:9,weight:'600'},formatter:v=>fmtV(v*1e6),anchor:'center',align:'center'}
+    datalabels:{display:ctx=>{const v=ctx.dataset.data[ctx.dataIndex];return v!=null&&Math.abs(v)>2;},color:'#fff',font:{size:9,weight:'600'},formatter:v=>fmtV(v*1e6),anchor:'center',align:'center'}
   });
   charts.c3=new Chart(document.getElementById('c3'),{
     data:{labels,datasets:[mkBar('o30','#1baf7a','0–30'),mkBar('o60','#eda100','30–60'),mkBar('o90','#e24b4a','60+')]},
