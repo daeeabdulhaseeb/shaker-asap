@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1790057266"></script>
+<script src="auth.js?v=1790067840"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -1300,18 +1300,27 @@ document.querySelectorAll('th.sortable-t').forEach(function(th){
 
 // ---- MAIN renderSETrends ----
 function renderSETrends(p,ms){
+  // Normalization pool: all active SEs filtered by team only (not SE checkbox).
+  // This prevents scores collapsing to 50 when the SE filter narrows to 1 person,
+  // and ensures compare-mode can always find both SEs.
+  var normPool = SE_DATA.filter(function(s){
+    if(!STATE.showInactive && INACTIVE_SES[s.se_name])return false;
+    if(STATE.trendTeams.length && STATE.trendTeams.indexOf(s.team)===-1)return false;
+    return true;
+  });
+
   if(STATE.compare){
     // Compare mode: render SE A and SE B side by side
-    var seA=p.find(function(s){return s.se_name===document.getElementById('se-pick-a').value;});
-    var seB=p.find(function(s){return s.se_name===document.getElementById('se-pick-b').value;});
+    var seA=normPool.find(function(s){return s.se_name===document.getElementById('se-pick-a').value;});
+    var seB=normPool.find(function(s){return s.se_name===document.getElementById('se-pick-b').value;});
     ['score','tgt','pipe','acc'].forEach(function(k){
       var ha=document.getElementById('cmp-h-'+k+'-a');
       var hb=document.getElementById('cmp-h-'+k+'-b');
       if(ha)ha.textContent=(seA?seA.se_name:'—');
       if(hb)hb.textContent=(seB?seB.se_name:'—');
     });
-    renderSEChartsFor(seA,p,ms,'ch-cmp-score-a','ch-cmp-tgt-a','ch-cmp-pipe-a','ch-cmp-acc-a');
-    renderSEChartsFor(seB,p,ms,'ch-cmp-score-b','ch-cmp-tgt-b','ch-cmp-pipe-b','ch-cmp-acc-b');
+    renderSEChartsFor(seA,normPool,ms,'ch-cmp-score-a','ch-cmp-tgt-a','ch-cmp-pipe-a','ch-cmp-acc-a');
+    renderSEChartsFor(seB,normPool,ms,'ch-cmp-score-b','ch-cmp-tgt-b','ch-cmp-pipe-b','ch-cmp-acc-b');
   } else {
     // Normal mode: first checked SE, or first in pool
     var tp=trendPool();
@@ -1319,7 +1328,7 @@ function renderSETrends(p,ms){
     if(STATE.trendSEs.length){
       se=tp.find(function(s){return STATE.trendSEs.indexOf(s.se_name)>=0;})||tp[0];
     }
-    renderSEChartsFor(se,p,ms,'ch-se-score','ch-se-tgt','ch-se-pipe','ch-se-acc');
+    renderSEChartsFor(se,normPool,ms,'ch-se-score','ch-se-tgt','ch-se-pipe','ch-se-acc');
   }
 }
 
