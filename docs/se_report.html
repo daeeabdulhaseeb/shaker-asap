@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1790067840"></script>
+<script src="auth.js?v=1790081081"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -215,25 +215,7 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
 
   <!-- ===== VIEW: TRENDS ===== -->
   <div class="view active" id="view-trends">
-    <div class="analytics-head" style="margin-top:18px">KSA overview <span>monthly quotation, award &amp; invoiced — all active SEs</span></div>
-    <div class="chart-row c1">
-      <div class="chart-box"><h3>Monthly pipeline — YoY</h3>
-        <div class="chart-desc">Stacked: Quotation + Award + Invoiced by month, paired Jan-25 / Jan-26 etc.</div>
-        <canvas id="ch-ksa-stack"></canvas>
-      </div>
-    </div>
-    <div class="chart-row c2">
-      <div class="chart-box"><h3>Product mix trend — DX vs MV</h3>
-        <div class="chart-desc">Monthly invoiced split: DX (RAC + CAC) vs MV (Applied)</div>
-        <canvas id="ch-dxmv"></canvas>
-      </div>
-      <div class="chart-box"><h3>New accounts opened</h3>
-        <div class="chart-desc">KSA total new accounts per period</div>
-        <canvas id="ch-newacc"></canvas>
-      </div>
-    </div>
-
-    <div class="analytics-head">Per-SE trends <span>filter by team / engineer, or compare two SEs side-by-side</span></div>
+    <div class="analytics-head">SE Performance <span>filter by team / engineer, or compare two SEs side-by-side</span></div>
     <div class="trend-controls">
       <div class="dropdown" id="dd-trend-team">
         <button class="dd-btn" type="button">All teams <span class="dd-caret">&#9662;</span></button>
@@ -254,8 +236,8 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
     <!-- Normal per-SE charts (single SE or aggregated multi-select) -->
     <div id="se-normal">
       <div class="chart-row c2">
-        <div class="chart-box"><h3>Score breakdown trend</h3>
-          <div class="chart-desc">Stacked: quo/award/inv score components; line: total composite score. YoY paired.</div>
+        <div class="chart-box"><h3>Composite score trend</h3>
+          <div class="chart-desc">SE score vs KSA average &amp; team average. YoY paired.</div>
           <canvas id="ch-se-score"></canvas>
         </div>
         <div class="chart-box"><h3>Target achievement by quarter</h3>
@@ -264,15 +246,19 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
         </div>
       </div>
       <div class="chart-row c1">
-        <div class="chart-box"><h3>Monthly pipeline — YoY</h3>
+        <div class="chart-box" style="max-height:420px"><h3>Monthly pipeline — YoY</h3>
           <div class="chart-desc">Quotation, award &amp; invoiced values. 2025 lighter, 2026 darker.</div>
           <canvas id="ch-se-pipe"></canvas>
         </div>
       </div>
       <div class="chart-row c2">
-        <div class="chart-box"><h3>New accounts &amp; OB reactivations</h3>
-          <div class="chart-desc">Stacked: new accounts + OB reactivations per year</div>
+        <div class="chart-box"><h3>New accounts &amp; OB reactivations — YoY</h3>
+          <div class="chart-desc">New accounts + OB reactivations per year, paired.</div>
           <canvas id="ch-se-acc"></canvas>
+        </div>
+        <div class="chart-box"><h3>Product mix — DX vs MV</h3>
+          <div class="chart-desc">Invoiced split: DX (RAC + CAC) vs MV (Applied), paired.</div>
+          <canvas id="ch-se-mix"></canvas>
         </div>
       </div>
     </div>
@@ -280,31 +266,31 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
     <!-- Compare mode: side-by-side SE A vs SE B -->
     <div id="se-compare" style="display:none">
       <div class="chart-row c2">
-        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-a">A</span><h3 id="cmp-h-score-a">Score breakdown</h3></div>
-          <div class="chart-desc">Stacked score components + total line</div>
+        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-a">A</span><h3 id="cmp-h-score-a">Score</h3></div>
+          <div class="chart-desc">SE score vs KSA avg &amp; team avg</div>
           <canvas id="ch-cmp-score-a"></canvas>
         </div>
-        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-b">B</span><h3 id="cmp-h-score-b">Score breakdown</h3></div>
-          <div class="chart-desc">Stacked score components + total line</div>
+        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-b">B</span><h3 id="cmp-h-score-b">Score</h3></div>
+          <div class="chart-desc">SE score vs KSA avg &amp; team avg</div>
           <canvas id="ch-cmp-score-b"></canvas>
         </div>
       </div>
       <div class="chart-row c2">
-        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-a">A</span><h3 id="cmp-h-tgt-a">Target achievement</h3></div>
+        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-a">A</span><h3 id="cmp-h-tgt-a">Target</h3></div>
           <div class="chart-desc">Cumulative actual / annual target</div>
           <canvas id="ch-cmp-tgt-a"></canvas>
         </div>
-        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-b">B</span><h3 id="cmp-h-tgt-b">Target achievement</h3></div>
+        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-b">B</span><h3 id="cmp-h-tgt-b">Target</h3></div>
           <div class="chart-desc">Cumulative actual / annual target</div>
           <canvas id="ch-cmp-tgt-b"></canvas>
         </div>
       </div>
       <div class="chart-row c2">
-        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-a">A</span><h3 id="cmp-h-pipe-a">Monthly pipeline</h3></div>
+        <div class="chart-box" style="max-height:420px"><div class="cmp-header"><span class="cmp-badge cmp-badge-a">A</span><h3 id="cmp-h-pipe-a">Pipeline</h3></div>
           <div class="chart-desc">Quotation + Award + Invoiced, YoY</div>
           <canvas id="ch-cmp-pipe-a"></canvas>
         </div>
-        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-b">B</span><h3 id="cmp-h-pipe-b">Monthly pipeline</h3></div>
+        <div class="chart-box" style="max-height:420px"><div class="cmp-header"><span class="cmp-badge cmp-badge-b">B</span><h3 id="cmp-h-pipe-b">Pipeline</h3></div>
           <div class="chart-desc">Quotation + Award + Invoiced, YoY</div>
           <canvas id="ch-cmp-pipe-b"></canvas>
         </div>
@@ -317,6 +303,16 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
         <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-b">B</span><h3 id="cmp-h-acc-b">Accounts</h3></div>
           <div class="chart-desc">New accounts + OB reactivations</div>
           <canvas id="ch-cmp-acc-b"></canvas>
+        </div>
+      </div>
+      <div class="chart-row c2">
+        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-a">A</span><h3 id="cmp-h-mix-a">Product mix</h3></div>
+          <div class="chart-desc">DX vs MV invoiced</div>
+          <canvas id="ch-cmp-mix-a"></canvas>
+        </div>
+        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-b">B</span><h3 id="cmp-h-mix-b">Product mix</h3></div>
+          <div class="chart-desc">DX vs MV invoiced</div>
+          <canvas id="ch-cmp-mix-b"></canvas>
         </div>
       </div>
     </div>
@@ -942,7 +938,6 @@ function renderTrends(){
   Chart.register(ChartDataLabels);
   Chart.defaults.set('plugins.datalabels',{display:false});
   var p=trendPool(), ms=months();
-  renderKSAStack(p,ms); renderDXMV(p,ms); renderNewAcc(p);
   if(!_trendsReady){
     buildTrendTeamMenu();
     buildTrendSEMenu();
@@ -952,53 +947,10 @@ function renderTrends(){
   renderTrendsTable();
 }
 
-function renderKSAStack(p,ms){
-  var ctx=getCtx('ch-ksa-stack');if(!ctx)return;
-  var yoy=yoyMonths(ms);
-  var labels=[],q25=[],q26=[],a25=[],a26=[],i25=[],i26=[];
-  yoy.forEach(function(pt){
-    labels.push(pt.label);
-    var q=0,a=0,iv=0;
-    p.forEach(function(se){var d=seData(se);q+=d.quo[pt.key]||0;a+=d.award[pt.key]||0;iv+=d.inv[pt.key]||0;});
-    if(pt.yr==='2025'){q25.push(q/1e6);a25.push(a/1e6);i25.push(iv/1e6);q26.push(0);a26.push(0);i26.push(0);}
-    else{q26.push(q/1e6);a26.push(a/1e6);i26.push(iv/1e6);q25.push(0);a25.push(0);i25.push(0);}
-  });
-  _charts['ch-ksa-stack']=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[
-    {label:'Quo 25',data:q25,backgroundColor:C.quo25,stack:'s',datalabels:dlLight},
-    {label:'Awd 25',data:a25,backgroundColor:C.awd25,stack:'s',datalabels:dlLight},
-    {label:'Inv 25',data:i25,backgroundColor:C.inv25,stack:'s',datalabels:dlLight},
-    {label:'Quo 26',data:q26,backgroundColor:C.quo26,stack:'s',datalabels:dlWhite},
-    {label:'Awd 26',data:a26,backgroundColor:C.awd26,stack:'s',datalabels:dlWhite},
-    {label:'Inv 26',data:i26,backgroundColor:C.inv26,stack:'s',datalabels:dlWhite}
-  ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}},datalabels:{formatter:fmtM}},scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:65}},y:{stacked:true,ticks:{callback:function(v){return v+'M'}}}}}});
-}
-
-function renderDXMV(p,ms){
-  var ctx=getCtx('ch-dxmv');if(!ctx)return;
-  var yrs=[...new Set(ms.map(function(m){return m.slice(0,4);}))].sort();
-  var labels=[],dxD=[],mvD=[];
-  yrs.forEach(function(yr){
-    var dx=0,mv=0;
-    p.forEach(function(se){if(se.dx_mv&&se.dx_mv[yr]){dx+=se.dx_mv[yr].DX||0;mv+=se.dx_mv[yr].MV||0;}});
-    labels.push(yr);dxD.push(dx/1e6);mvD.push(mv/1e6);
-  });
-  _charts['ch-dxmv']=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[
-    {label:'DX',data:dxD,backgroundColor:yrs.map(function(y){return y==='2025'?C.dx25:C.dx26;}),datalabels:dlWhite},
-    {label:'MV',data:mvD,backgroundColor:yrs.map(function(y){return y==='2025'?C.mv25:C.mv26;}),datalabels:dlLight}
-  ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}},datalabels:{formatter:fmtM}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:function(v){return v+'M'}}}}}});
-}
-
-function renderNewAcc(p){
-  var ctx=getCtx('ch-newacc');if(!ctx)return;
-  var t25=0,t26=0,ob=0;
-  p.forEach(function(se){t25+=se.new_accs_2025||0;t26+=se.new_accs_2026||0;ob+=se.ob_reactivations||0;});
-  _charts['ch-newacc']=new Chart(ctx,{type:'bar',data:{labels:['2025','2026 YTD'],datasets:[
-    {label:'New accounts',data:[t25,t26],backgroundColor:[C.acc25,C.acc26],
-     datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:11,weight:'bold'},color:function(ctx){return ctx.dataIndex===0?'#333':'#fff';},anchor:'center'}},
-    {label:'OB reactivations',data:[ob,0],backgroundColor:[C.ob25,C.ob26],
-     datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:11,weight:'bold'},color:'#333',anchor:'center'}}
-  ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}},datalabels:{formatter:fmtN}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,beginAtZero:true}}}});
-}
+// YoY gridline helper: darker line between each year-pair boundary
+function yoyGridColor(ctx){return(ctx.index>0&&ctx.index%2===0)?'rgba(0,0,0,0.18)':'rgba(0,0,0,0.04)';}
+// Tight bar spacing for paired charts
+var BAR_TIGHT={barPercentage:0.92,categoryPercentage:0.88};
 
 // ---- TREND FILTER MENUS (Item 1) ----
 function trendPool(){
@@ -1093,43 +1045,49 @@ document.getElementById('se-pick-a').addEventListener('change',function(){render
 document.getElementById('se-pick-b').addEventListener('change',function(){renderTrends();});
 
 // ---- CHART RENDERING (refactored) ----
-// Renders score/target/pipeline/accounts for one SE onto canvases with given prefix
-function renderSEChartsFor(se,p,ms,idScore,idTgt,idPipe,idAcc){
+// Renders score/target/pipeline/accounts/mix for one SE
+function renderSEChartsFor(se,p,ms,idScore,idTgt,idPipe,idAcc,idMix){
   if(!se)return;
 
-  // SCORE BREAKDOWN
+  // COMPOSITE SCORE — 3 lines: SE, KSA avg, team avg
   (function(){
     var ctx=getCtx(idScore);if(!ctx)return;
     var yoy=yoyMonths(ms), HS={quo:2,awd:2,inv:2};
-    var labels=[],quoC25=[],awdC25=[],invC25=[],quoC26=[],awdC26=[],invC26=[],scoreLine=[];
+    var teamPeers=p.filter(function(s){return s.team===se.team;});
+    var labels=[],seLine=[],ksaLine=[],teamLine=[];
     for(var i=0;i<yoy.length;i++){
       var pt=yoy[i]; labels.push(pt.label);
       var slice=ms.filter(function(m){return m<=pt.key;});
-      if(!slice.length){quoC25.push(0);awdC25.push(0);invC25.push(0);quoC26.push(0);awdC26.push(0);invC26.push(0);scoreLine.push(0);continue;}
+      if(!slice.length){seLine.push(null);ksaLine.push(null);teamLine.push(null);continue;}
       function totalS(s,metric){var d=seData(s),v=0,k=metric==='awd'?'award':metric==='inv'?'inv':'quo';slice.forEach(function(m){v+=d[k][m]||0;});return v;}
       function amS(s,hs){var jd=s.join_date;if(!jd)return Math.max(1,slice.length-hs);var y=parseInt(jd.slice(0,4)),m=parseInt(jd.slice(5,7)),last=slice[slice.length-1],ly=parseInt(last.slice(0,4)),lm=parseInt(last.slice(5)),active=(ly-y)*12+(lm-m)+1;return Math.max(1,(active<1?0:active)-hs);}
       function pmS(s,metric){var t=amS(s,HS[metric]);return t>0?totalS(s,metric)/t:0;}
       var iA=p.map(function(s){return pmS(s,'inv');}),aA=p.map(function(s){return pmS(s,'awd');}),qA=p.map(function(s){return pmS(s,'quo');});
       function nrm(a,v){var mn=Math.min.apply(null,a),mx=Math.max.apply(null,a);return mx>mn?(v-mn)/(mx-mn)*100:50;}
-      var qn=nrm(qA,pmS(se,'quo')),an=nrm(aA,pmS(se,'awd')),in_=nrm(iA,pmS(se,'inv'));
-      var qw=Math.round(0.20*qn),aw=Math.round(0.40*an),iw=Math.round(0.40*in_),ttl=qw+aw+iw;
-      if(pt.yr==='2025'){quoC25.push(qw);awdC25.push(aw);invC25.push(iw);quoC26.push(0);awdC26.push(0);invC26.push(0);}
-      else{quoC26.push(qw);awdC26.push(aw);invC26.push(iw);quoC25.push(0);awdC25.push(0);invC25.push(0);}
-      scoreLine.push(ttl);
+      function composeScore(s){
+        var qn=nrm(qA,pmS(s,'quo')),an=nrm(aA,pmS(s,'awd')),in_=nrm(iA,pmS(s,'inv'));
+        return Math.round(0.20*qn)+Math.round(0.40*an)+Math.round(0.40*in_);
+      }
+      seLine.push(composeScore(se));
+      // KSA avg
+      var ksaSum=0;p.forEach(function(s){ksaSum+=composeScore(s);});
+      ksaLine.push(Math.round(ksaSum/p.length));
+      // Team avg
+      var tSum=0;teamPeers.forEach(function(s){tSum+=composeScore(s);});
+      teamLine.push(teamPeers.length?Math.round(tSum/teamPeers.length):null);
     }
-    _charts[idScore]=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[
-      {label:'Quo score (20%)',data:quoC25,backgroundColor:C.quo25,stack:'s',datalabels:{display:false}},
-      {label:'Awd score (40%)',data:awdC25,backgroundColor:C.awd25,stack:'s',datalabels:{display:false}},
-      {label:'Inv score (40%)',data:invC25,backgroundColor:C.inv25,stack:'s',datalabels:{display:false}},
-      {label:'Quo 26',data:quoC26,backgroundColor:C.quo26,stack:'s',datalabels:{display:false}},
-      {label:'Awd 26',data:awdC26,backgroundColor:C.awd26,stack:'s',datalabels:{display:false}},
-      {label:'Inv 26',data:invC26,backgroundColor:C.inv26,stack:'s',datalabels:{display:false}},
-      {label:'Total score',data:scoreLine,type:'line',borderColor:'#141b24',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#141b24',borderWidth:2,tension:0.3,order:0,yAxisID:'y',
-       datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:9,weight:'bold'},color:'#141b24',anchor:'end',align:'top'}}
-    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10},filter:function(item){return ['Quo score (20%)','Awd score (40%)','Inv score (40%)','Total score'].indexOf(item.text)>=0;}}},datalabels:{formatter:function(v){return v||'';}}},scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:65}},y:{stacked:true,min:0,max:100,ticks:{callback:function(v){return v}}}}}});
+    _charts[idScore]=new Chart(ctx,{type:'line',data:{labels:labels,datasets:[
+      {label:se.se_name,data:seLine,borderColor:'#141b24',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#141b24',borderWidth:2.5,tension:0.3,
+       datalabels:{display:function(c){return c.dataIndex===seLine.length-1&&seLine[c.dataIndex]!=null;},font:{size:10,weight:'bold'},color:'#141b24',anchor:'end',align:'top'}},
+      {label:'KSA avg',data:ksaLine,borderColor:'rgba(31,95,214,0.55)',backgroundColor:'transparent',pointRadius:0,borderWidth:1.8,borderDash:[6,3],tension:0.3,
+       datalabels:{display:function(c){return c.dataIndex===ksaLine.length-1&&ksaLine[c.dataIndex]!=null;},font:{size:9},color:'rgba(31,95,214,0.8)',anchor:'end',align:'bottom'}},
+      {label:'Team avg',data:teamLine,borderColor:'rgba(15,102,64,0.55)',backgroundColor:'transparent',pointRadius:0,borderWidth:1.8,borderDash:[3,3],tension:0.3,
+       datalabels:{display:function(c){return c.dataIndex===teamLine.length-1&&teamLine[c.dataIndex]!=null;},font:{size:9},color:'rgba(15,102,64,0.8)',anchor:'end',align:'bottom'}}
+    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10}}},datalabels:{formatter:function(v){return v!=null?v:'';}}},
+      scales:{x:{ticks:{font:{size:9},maxRotation:65},grid:{color:yoyGridColor}},y:{min:0,max:100,ticks:{callback:function(v){return v}}}}}});
   })();
 
-  // TARGET ACHIEVEMENT
+  // TARGET ACHIEVEMENT — tighter bars, yoy gridlines
   (function(){
     var ctx=getCtx(idTgt);if(!ctx)return;
     var d=seData(se),at=se.award_tgt||{},it=se.inv_tgt||{};
@@ -1151,14 +1109,14 @@ function renderSEChartsFor(se,p,ms,idScore,idTgt,idPipe,idAcc){
       });
     });
     _charts[idTgt]=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[
-      {label:'Award tgt %',data:awdPct,backgroundColor:awdPct.map(function(_,i){return labels[i].indexOf('25')>=0?C.awd25:C.awd26;}),
-       datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:9,weight:'bold'},color:'#333',anchor:'end',align:'top'}},
-      {label:'Inv tgt %',data:invPct,backgroundColor:invPct.map(function(_,i){return labels[i].indexOf('25')>=0?C.inv25:C.inv26;}),
-       datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:9,weight:'bold'},color:'#333',anchor:'end',align:'top'}}
-    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}},datalabels:{formatter:fmtPct}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:function(v){return v+'%'}}}}}});
+      Object.assign({label:'Award tgt %',data:awdPct,backgroundColor:awdPct.map(function(_,i){return labels[i].indexOf('25')>=0?C.awd25:C.awd26;}),
+       datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:9,weight:'bold'},color:'#333',anchor:'end',align:'top'}},BAR_TIGHT),
+      Object.assign({label:'Inv tgt %',data:invPct,backgroundColor:invPct.map(function(_,i){return labels[i].indexOf('25')>=0?C.inv25:C.inv26;}),
+       datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:9,weight:'bold'},color:'#333',anchor:'end',align:'top'}},BAR_TIGHT)
+    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}},datalabels:{formatter:fmtPct}},scales:{x:{ticks:{font:{size:10}},grid:{color:yoyGridColor}},y:{ticks:{callback:function(v){return v+'%'}}}}}});
   })();
 
-  // PIPELINE
+  // PIPELINE — tighter bars, capped height, yoy gridlines
   (function(){
     var ctx=getCtx(idPipe);if(!ctx)return;
     var d=seData(se),yoy=yoyMonths(ms);
@@ -1169,25 +1127,47 @@ function renderSEChartsFor(se,p,ms,idScore,idTgt,idPipe,idAcc){
       if(pt.yr==='2025'){q25.push(q);a25.push(a);i25.push(iv);q26.push(0);a26.push(0);i26.push(0);}
       else{q26.push(q);a26.push(a);i26.push(iv);q25.push(0);a25.push(0);i25.push(0);}
     });
+    var dlL=Object.assign({},dlLight,{anchor:'end',align:'top'});
+    var dlW=Object.assign({},dlWhite,{anchor:'end',align:'top'});
     _charts[idPipe]=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[
-      {label:'Quo 25',data:q25,backgroundColor:C.quo25,stack:'s',datalabels:dlLight},
-      {label:'Awd 25',data:a25,backgroundColor:C.awd25,stack:'s',datalabels:dlLight},
-      {label:'Inv 25',data:i25,backgroundColor:C.inv25,stack:'s',datalabels:dlLight},
-      {label:'Quo 26',data:q26,backgroundColor:C.quo26,stack:'s',datalabels:dlWhite},
-      {label:'Awd 26',data:a26,backgroundColor:C.awd26,stack:'s',datalabels:dlWhite},
-      {label:'Inv 26',data:i26,backgroundColor:C.inv26,stack:'s',datalabels:dlWhite}
-    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10},filter:function(item){return ['Quo 25','Awd 25','Inv 25'].indexOf(item.text)>=0;}}},datalabels:{formatter:fmtM}},scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:65}},y:{stacked:true,ticks:{callback:function(v){return v+'M'}}}}}});
+      Object.assign({label:'Quo 25',data:q25,backgroundColor:C.quo25,stack:'s',datalabels:dlL},BAR_TIGHT),
+      Object.assign({label:'Awd 25',data:a25,backgroundColor:C.awd25,stack:'s',datalabels:dlL},BAR_TIGHT),
+      Object.assign({label:'Inv 25',data:i25,backgroundColor:C.inv25,stack:'s',datalabels:dlL},BAR_TIGHT),
+      Object.assign({label:'Quo 26',data:q26,backgroundColor:C.quo26,stack:'s',datalabels:dlW},BAR_TIGHT),
+      Object.assign({label:'Awd 26',data:a26,backgroundColor:C.awd26,stack:'s',datalabels:dlW},BAR_TIGHT),
+      Object.assign({label:'Inv 26',data:i26,backgroundColor:C.inv26,stack:'s',datalabels:dlW},BAR_TIGHT)
+    ]},options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.8,plugins:{legend:{position:'top',labels:{font:{size:10},filter:function(item){return ['Quo 25','Awd 25','Inv 25'].indexOf(item.text)>=0;}}},datalabels:{formatter:fmtM}},scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:65},grid:{color:yoyGridColor}},y:{stacked:true,ticks:{callback:function(v){return v+'M'}}}}}});
   })();
 
-  // ACCOUNTS
+  // ACCOUNTS — YoY paired: [NewAcc 25 | NewAcc 26] [OB 25 | OB 26]
   (function(){
     var ctx=getCtx(idAcc);if(!ctx)return;
-    _charts[idAcc]=new Chart(ctx,{type:'bar',data:{labels:['2025','2026 YTD'],datasets:[
-      {label:'New accounts',data:[se.new_accs_2025||0,se.new_accs_2026||0],backgroundColor:[C.acc25,C.acc26],
-       datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:11,weight:'bold'},color:function(ctx){return ctx.dataIndex===0?'#333':'#fff';},anchor:'center'}},
-      {label:'OB reactivations',data:[se.ob_reactivations||0,0],backgroundColor:[C.ob25,C.ob26],
-       datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:11,weight:'bold'},color:'#333',anchor:'center'}}
-    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}},datalabels:{formatter:fmtN}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,beginAtZero:true}}}});
+    var labels=['New Accs 25','New Accs 26','OB React 25','OB React 26'];
+    var vals=[se.new_accs_2025||0, se.new_accs_2026||0, se.ob_reactivations||0, 0];
+    var bgc=[C.acc25, C.acc26, C.ob25, C.ob26];
+    _charts[idAcc]=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[
+      Object.assign({data:vals,backgroundColor:bgc,
+       datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:11,weight:'bold'},
+        color:function(ctx){var i=ctx.dataIndex;return(i===1||i===3)?'#fff':'#333';},anchor:'end',align:'top'}},BAR_TIGHT)
+    ]},options:{responsive:true,plugins:{legend:{display:false},datalabels:{formatter:fmtN}},
+      scales:{x:{ticks:{font:{size:10}},grid:{color:function(ctx){return ctx.index===2?'rgba(0,0,0,0.18)':'rgba(0,0,0,0.04)';}}},y:{beginAtZero:true}}}});
+  })();
+
+  // PRODUCT MIX — DX vs MV, YoY paired: [DX 25 | DX 26] [MV 25 | MV 26]
+  (function(){
+    var ctx=getCtx(idMix);if(!ctx)return;
+    var dm=se.dx_mv||{};
+    var dx25=(dm['2025']&&dm['2025'].DX||0)/1e6, dx26=(dm['2026']&&dm['2026'].DX||0)/1e6;
+    var mv25=(dm['2025']&&dm['2025'].MV||0)/1e6, mv26=(dm['2026']&&dm['2026'].MV||0)/1e6;
+    var labels=['DX 25','DX 26','MV 25','MV 26'];
+    var vals=[dx25,dx26,mv25,mv26];
+    var bgc=[C.dx25,C.dx26,C.mv25,C.mv26];
+    _charts[idMix]=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[
+      Object.assign({data:vals,backgroundColor:bgc,
+       datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:11,weight:'bold'},
+        color:function(ctx){var i=ctx.dataIndex;return(i===1||i===3)?'#fff':'#333';},anchor:'end',align:'top'}},BAR_TIGHT)
+    ]},options:{responsive:true,plugins:{legend:{display:false},datalabels:{formatter:fmtM}},
+      scales:{x:{ticks:{font:{size:10}},grid:{color:function(ctx){return ctx.index===2?'rgba(0,0,0,0.18)':'rgba(0,0,0,0.04)';}}},y:{beginAtZero:true,ticks:{callback:function(v){return v+'M'}}}}}});
   })();
 }
 
@@ -1313,14 +1293,14 @@ function renderSETrends(p,ms){
     // Compare mode: render SE A and SE B side by side
     var seA=normPool.find(function(s){return s.se_name===document.getElementById('se-pick-a').value;});
     var seB=normPool.find(function(s){return s.se_name===document.getElementById('se-pick-b').value;});
-    ['score','tgt','pipe','acc'].forEach(function(k){
+    ['score','tgt','pipe','acc','mix'].forEach(function(k){
       var ha=document.getElementById('cmp-h-'+k+'-a');
       var hb=document.getElementById('cmp-h-'+k+'-b');
       if(ha)ha.textContent=(seA?seA.se_name:'—');
       if(hb)hb.textContent=(seB?seB.se_name:'—');
     });
-    renderSEChartsFor(seA,normPool,ms,'ch-cmp-score-a','ch-cmp-tgt-a','ch-cmp-pipe-a','ch-cmp-acc-a');
-    renderSEChartsFor(seB,normPool,ms,'ch-cmp-score-b','ch-cmp-tgt-b','ch-cmp-pipe-b','ch-cmp-acc-b');
+    renderSEChartsFor(seA,normPool,ms,'ch-cmp-score-a','ch-cmp-tgt-a','ch-cmp-pipe-a','ch-cmp-acc-a','ch-cmp-mix-a');
+    renderSEChartsFor(seB,normPool,ms,'ch-cmp-score-b','ch-cmp-tgt-b','ch-cmp-pipe-b','ch-cmp-acc-b','ch-cmp-mix-b');
   } else {
     // Normal mode: first checked SE, or first in pool
     var tp=trendPool();
@@ -1328,7 +1308,7 @@ function renderSETrends(p,ms){
     if(STATE.trendSEs.length){
       se=tp.find(function(s){return STATE.trendSEs.indexOf(s.se_name)>=0;})||tp[0];
     }
-    renderSEChartsFor(se,normPool,ms,'ch-se-score','ch-se-tgt','ch-se-pipe','ch-se-acc');
+    renderSEChartsFor(se,normPool,ms,'ch-se-score','ch-se-tgt','ch-se-pipe','ch-se-acc','ch-se-mix');
   }
 }
 
