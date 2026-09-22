@@ -14,7 +14,9 @@
 }
 *{box-sizing:border-box}html,body{margin:0}
 body{font-family:var(--body);background:var(--surface);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased}
-body.auth-pending{visibility:hidden}
+body.auth-pending header,
+body.auth-pending .modebar,
+body.auth-pending main{visibility:hidden}
 header{background:var(--ink)}
 .hwrap{max-width:1340px;margin:0 auto;padding:13px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .brand h1{font-family:var(--disp);font-weight:700;font-size:18px;margin:0;color:#fff}
