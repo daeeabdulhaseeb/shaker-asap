@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1790081081"></script>
+<script src="auth.js?v=1790082878"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -185,9 +185,8 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
 .trend-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 6px;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:8px}
 .trend-controls label{font-size:12px;color:var(--ink-soft);font-weight:600}
 .trend-controls select{font-family:inherit;font-size:12px;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-weight:500;min-width:180px}
-.cmp-toggle{font-family:inherit;font-size:11.5px;height:30px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink-soft);cursor:pointer;font-weight:600;white-space:nowrap;transition:none}
-.cmp-toggle.on{background:var(--violet);color:#fff;border-color:var(--violet)}
 .cmp-vs{font-size:12px;font-weight:700;color:var(--ink-faint)}
+#seg-compare button{min-width:76px}
 .cmp-header{display:flex;align-items:center;gap:6px;margin-bottom:2px}
 .cmp-header .cmp-badge{font-size:10px;font-weight:700;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
 .cmp-badge-a{background:var(--blue)}
@@ -225,11 +224,20 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
         <button class="dd-btn" type="button">All engineers <span class="dd-caret">&#9662;</span></button>
         <div class="dd-menu" id="dd-trend-se-menu"></div>
       </div>
-      <button class="cmp-toggle" id="btn-compare" type="button">Compare</button>
-      <span id="cmp-picks" style="display:none">
+      <div class="seg" id="seg-compare">
+        <button data-cmp="off" class="on">Off</button>
+        <button data-cmp="se">SE vs SE</button>
+        <button data-cmp="team">SE vs Team</button>
+      </div>
+      <span id="cmp-picks-se" style="display:none">
         <select id="se-pick-a"></select>
         <span class="cmp-vs">vs</span>
         <select id="se-pick-b"></select>
+      </span>
+      <span id="cmp-picks-team" style="display:none">
+        <select id="se-pick-cmp"></select>
+        <span class="cmp-vs">vs</span>
+        <select id="team-pick-b"></select>
       </span>
     </div>
 
@@ -427,7 +435,7 @@ var INACTIVE_SES = {
 };
 var STATE = { year:'all', metric:'quo', teams:[], ses:[], own:true, tenure:'all', type:'all', showInactive:false, sort:'score',
   // Trends page state
-  trendTeams:[], trendSEs:[], trendMetric:'quo', trendSort:'score', compare:false };
+  trendTeams:[], trendSEs:[], trendMetric:'quo', trendSort:'score', compare:'off' };
 
 function sar(v){
   if(!v&&v!==0)return'--';
@@ -948,7 +956,9 @@ function renderTrends(){
 }
 
 // YoY gridline helper: darker line between each year-pair boundary
-function yoyGridColor(ctx){return(ctx.index>0&&ctx.index%2===0)?'rgba(0,0,0,0.18)':'rgba(0,0,0,0.04)';}
+function yoyGridColor(ctx){return(ctx.index>0&&ctx.index%2===0)?'rgba(0,0,0,0.32)':'rgba(0,0,0,0.05)';}
+function yoyGridWidth(ctx){return(ctx.index>0&&ctx.index%2===0)?1.5:0.5;}
+var yoyGrid={color:yoyGridColor,lineWidth:yoyGridWidth};
 // Tight bar spacing for paired charts
 var BAR_TIGHT={barPercentage:0.92,categoryPercentage:0.88};
 
@@ -1018,31 +1028,116 @@ function updateTrendSEBtn(){
 document.querySelector('#dd-trend-team .dd-btn').addEventListener('click',function(e){e.stopPropagation();toggleDropdown('dd-trend-team-menu');});
 document.querySelector('#dd-trend-se .dd-btn').addEventListener('click',function(e){e.stopPropagation();toggleDropdown('dd-trend-se-menu');});
 
-// ---- COMPARE MODE (Item 2) ----
+// ---- COMPARE MODE (SE vs SE / SE vs Team) ----
 function populateCompareDropdowns(pool){
   var names=pool.map(function(s){return s.se_name;}).sort();
-  ['se-pick-a','se-pick-b'].forEach(function(id,idx){
+  ['se-pick-a','se-pick-b','se-pick-cmp'].forEach(function(id){
     var sel=document.getElementById(id);
     var cur=sel.value; sel.innerHTML='';
     names.forEach(function(n){
       var o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);
     });
     if(cur && names.indexOf(cur)>=0)sel.value=cur;
-    else if(names.length>idx)sel.value=names[idx];
+    else if(names.length)sel.value=names[0];
   });
+  // For SE vs SE, default B to second name
+  var selB=document.getElementById('se-pick-b');
+  if(!selB.value && names.length>1)selB.value=names[1];
+  // Populate team dropdown
+  populateTeamDropdown(pool);
 }
 
-document.getElementById('btn-compare').addEventListener('click',function(){
-  STATE.compare=!STATE.compare;
-  this.classList.toggle('on',STATE.compare);
-  document.getElementById('cmp-picks').style.display=STATE.compare?'inline':'none';
-  document.getElementById('dd-trend-se').style.display=STATE.compare?'none':'';
-  document.getElementById('se-normal').style.display=STATE.compare?'none':'';
-  document.getElementById('se-compare').style.display=STATE.compare?'':'none';
-  renderTrends();
+function populateTeamDropdown(pool){
+  var teams=[...new Set(pool.map(function(s){return s.team;}).filter(Boolean))].sort();
+  var sel=document.getElementById('team-pick-b');
+  var cur=sel.value; sel.innerHTML='';
+  teams.forEach(function(t){
+    var o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);
+  });
+  if(cur && teams.indexOf(cur)>=0) sel.value=cur;
+  else {
+    // Default to selected SE's team
+    var seA=document.getElementById('se-pick-cmp').value;
+    var rec=pool.find(function(s){return s.se_name===seA;});
+    if(rec && teams.indexOf(rec.team)>=0) sel.value=rec.team;
+    else if(teams.length) sel.value=teams[0];
+  }
+}
+
+// Build a synthetic SE record that aggregates a team's data
+function buildTeamAggregate(teamName, pool, ms){
+  var members=pool.filter(function(s){return s.team===teamName;});
+  if(!members.length) return null;
+  var agg={se_name:teamName+' (team)', team:teamName, _isTeam:true,
+    monthly_quo:{}, monthly_award:{}, monthly_sales:{},
+    new_accs_2025:0, new_accs_2026:0, ob_reactivations:0, dx_mv:{}};
+  // Sum pipeline across members (monthly_quo and monthly_award are flat {key:val})
+  // monthly_sales is nested {year:{month:val}} — build both formats
+  ms.forEach(function(m){
+    var q=0,a=0,iv=0;
+    members.forEach(function(se){
+      var d=seData(se); q+=d.quo[m]||0; a+=d.award[m]||0; iv+=d.inv[m]||0;
+    });
+    agg.monthly_quo[m]=q; agg.monthly_award[m]=a;
+    // monthly_sales in nested format
+    var yr=m.slice(0,4), mo=String(parseInt(m.slice(5)));
+    if(!agg.monthly_sales[yr]) agg.monthly_sales[yr]={};
+    agg.monthly_sales[yr][mo]=iv;
+  });
+  // Sum accounts
+  members.forEach(function(se){
+    agg.new_accs_2025+=(se.new_accs_2025||0);
+    agg.new_accs_2026+=(se.new_accs_2026||0);
+    agg.ob_reactivations+=(se.ob_reactivations||0);
+  });
+  // Sum DX/MV
+  members.forEach(function(se){
+    if(!se.dx_mv) return;
+    Object.keys(se.dx_mv).forEach(function(yr){
+      if(!agg.dx_mv[yr]) agg.dx_mv[yr]={DX:0,MV:0};
+      agg.dx_mv[yr].DX+=(se.dx_mv[yr].DX||0);
+      agg.dx_mv[yr].MV+=(se.dx_mv[yr].MV||0);
+    });
+  });
+  // Sum targets (for team-level target %)
+  var at={}, it={};
+  members.forEach(function(se){
+    if(se.award_tgt) Object.keys(se.award_tgt).forEach(function(yr){ at[yr]=(at[yr]||0)+se.award_tgt[yr]; });
+    if(se.inv_tgt) Object.keys(se.inv_tgt).forEach(function(yr){ it[yr]=(it[yr]||0)+se.inv_tgt[yr]; });
+  });
+  if(Object.keys(at).length) agg.award_tgt=at;
+  if(Object.keys(it).length) agg.inv_tgt=it;
+  return agg;
+}
+
+// Segmented compare control
+document.querySelectorAll('#seg-compare button').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('#seg-compare button').forEach(function(x){x.classList.remove('on');});
+    btn.classList.add('on');
+    STATE.compare=btn.getAttribute('data-cmp');
+    var isSE=STATE.compare==='se', isTm=STATE.compare==='team', isOff=STATE.compare==='off';
+    document.getElementById('cmp-picks-se').style.display=isSE?'inline':'none';
+    document.getElementById('cmp-picks-team').style.display=isTm?'inline':'none';
+    document.getElementById('dd-trend-se').style.display=isOff?'':'none';
+    document.getElementById('se-normal').style.display=isOff?'':'none';
+    document.getElementById('se-compare').style.display=isOff?'none':'';
+    renderTrends();
+  });
 });
 document.getElementById('se-pick-a').addEventListener('change',function(){renderTrends();});
 document.getElementById('se-pick-b').addEventListener('change',function(){renderTrends();});
+document.getElementById('se-pick-cmp').addEventListener('change',function(){
+  // When SE changes in team mode, default team to that SE's team
+  var pool=SE_DATA.filter(function(s){return !INACTIVE_SES[s.se_name]||STATE.showInactive;});
+  var se=pool.find(function(s){return s.se_name===this.value;}.bind(this));
+  if(se){
+    var tSel=document.getElementById('team-pick-b');
+    if([].slice.call(tSel.options).some(function(o){return o.value===se.team;})) tSel.value=se.team;
+  }
+  renderTrends();
+});
+document.getElementById('team-pick-b').addEventListener('change',function(){renderTrends();});
 
 // ---- CHART RENDERING (refactored) ----
 // Renders score/target/pipeline/accounts/mix for one SE
@@ -1084,7 +1179,7 @@ function renderSEChartsFor(se,p,ms,idScore,idTgt,idPipe,idAcc,idMix){
       {label:'Team avg',data:teamLine,borderColor:'rgba(15,102,64,0.55)',backgroundColor:'transparent',pointRadius:0,borderWidth:1.8,borderDash:[3,3],tension:0.3,
        datalabels:{display:function(c){return c.dataIndex===teamLine.length-1&&teamLine[c.dataIndex]!=null;},font:{size:9},color:'rgba(15,102,64,0.8)',anchor:'end',align:'bottom'}}
     ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10}}},datalabels:{formatter:function(v){return v!=null?v:'';}}},
-      scales:{x:{ticks:{font:{size:9},maxRotation:65},grid:{color:yoyGridColor}},y:{min:0,max:100,ticks:{callback:function(v){return v}}}}}});
+      scales:{x:{ticks:{font:{size:9},maxRotation:65},grid:yoyGrid},y:{min:0,max:100,ticks:{callback:function(v){return v}}}}}});
   })();
 
   // TARGET ACHIEVEMENT — tighter bars, yoy gridlines
@@ -1113,7 +1208,7 @@ function renderSEChartsFor(se,p,ms,idScore,idTgt,idPipe,idAcc,idMix){
        datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:9,weight:'bold'},color:'#333',anchor:'end',align:'top'}},BAR_TIGHT),
       Object.assign({label:'Inv tgt %',data:invPct,backgroundColor:invPct.map(function(_,i){return labels[i].indexOf('25')>=0?C.inv25:C.inv26;}),
        datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:9,weight:'bold'},color:'#333',anchor:'end',align:'top'}},BAR_TIGHT)
-    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}},datalabels:{formatter:fmtPct}},scales:{x:{ticks:{font:{size:10}},grid:{color:yoyGridColor}},y:{ticks:{callback:function(v){return v+'%'}}}}}});
+    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}},datalabels:{formatter:fmtPct}},scales:{x:{ticks:{font:{size:10}},grid:yoyGrid},y:{ticks:{callback:function(v){return v+'%'}}}}}});
   })();
 
   // PIPELINE — tighter bars, capped height, yoy gridlines
@@ -1136,38 +1231,41 @@ function renderSEChartsFor(se,p,ms,idScore,idTgt,idPipe,idAcc,idMix){
       Object.assign({label:'Quo 26',data:q26,backgroundColor:C.quo26,stack:'s',datalabels:dlW},BAR_TIGHT),
       Object.assign({label:'Awd 26',data:a26,backgroundColor:C.awd26,stack:'s',datalabels:dlW},BAR_TIGHT),
       Object.assign({label:'Inv 26',data:i26,backgroundColor:C.inv26,stack:'s',datalabels:dlW},BAR_TIGHT)
-    ]},options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.8,plugins:{legend:{position:'top',labels:{font:{size:10},filter:function(item){return ['Quo 25','Awd 25','Inv 25'].indexOf(item.text)>=0;}}},datalabels:{formatter:fmtM}},scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:65},grid:{color:yoyGridColor}},y:{stacked:true,ticks:{callback:function(v){return v+'M'}}}}}});
+    ]},options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.8,plugins:{legend:{position:'top',labels:{font:{size:10},filter:function(item){return ['Quo 25','Awd 25','Inv 25'].indexOf(item.text)>=0;}}},datalabels:{formatter:fmtM}},scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:65},grid:yoyGrid},y:{stacked:true,ticks:{callback:function(v){return v+'M'}}}}}});
   })();
 
-  // ACCOUNTS — YoY paired: [NewAcc 25 | NewAcc 26] [OB 25 | OB 26]
+  // ACCOUNTS — stacked [New Accs + OB], YoY paired x-axis [2025 | 2026]
   (function(){
     var ctx=getCtx(idAcc);if(!ctx)return;
-    var labels=['New Accs 25','New Accs 26','OB React 25','OB React 26'];
-    var vals=[se.new_accs_2025||0, se.new_accs_2026||0, se.ob_reactivations||0, 0];
-    var bgc=[C.acc25, C.acc26, C.ob25, C.ob26];
+    var labels=['2025','2026'];
+    var na=[se.new_accs_2025||0, se.new_accs_2026||0];
+    var ob=[se.ob_reactivations||0, 0];
+    var pairGrid={color:function(c){return c.index===1?'rgba(0,0,0,0.32)':'rgba(0,0,0,0.05)';},lineWidth:function(c){return c.index===1?1.5:0.5;}};
     _charts[idAcc]=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[
-      Object.assign({data:vals,backgroundColor:bgc,
-       datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:11,weight:'bold'},
-        color:function(ctx){var i=ctx.dataIndex;return(i===1||i===3)?'#fff':'#333';},anchor:'end',align:'top'}},BAR_TIGHT)
-    ]},options:{responsive:true,plugins:{legend:{display:false},datalabels:{formatter:fmtN}},
-      scales:{x:{ticks:{font:{size:10}},grid:{color:function(ctx){return ctx.index===2?'rgba(0,0,0,0.18)':'rgba(0,0,0,0.04)';}}},y:{beginAtZero:true}}}});
+      Object.assign({label:'New accounts',data:na,backgroundColor:[C.acc25,C.acc26],stack:'s',
+       datalabels:{display:function(c){return c.dataset.data[c.dataIndex]>0;},font:{size:11,weight:'bold'},
+        color:function(c){return c.dataIndex===0?'#333':'#fff';},anchor:'center'}},BAR_TIGHT),
+      Object.assign({label:'OB reactivations',data:ob,backgroundColor:[C.ob25,C.ob26],stack:'s',
+       datalabels:{display:function(c){return c.dataset.data[c.dataIndex]>0;},font:{size:11,weight:'bold'},color:'#333',anchor:'center'}},BAR_TIGHT)
+    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}},datalabels:{formatter:fmtN}},
+      scales:{x:{stacked:true,ticks:{font:{size:10}},grid:pairGrid},y:{stacked:true,beginAtZero:true}}}});
   })();
 
-  // PRODUCT MIX — DX vs MV, YoY paired: [DX 25 | DX 26] [MV 25 | MV 26]
+  // PRODUCT MIX — stacked [DX + MV], YoY paired x-axis [2025 | 2026]
   (function(){
     var ctx=getCtx(idMix);if(!ctx)return;
     var dm=se.dx_mv||{};
-    var dx25=(dm['2025']&&dm['2025'].DX||0)/1e6, dx26=(dm['2026']&&dm['2026'].DX||0)/1e6;
-    var mv25=(dm['2025']&&dm['2025'].MV||0)/1e6, mv26=(dm['2026']&&dm['2026'].MV||0)/1e6;
-    var labels=['DX 25','DX 26','MV 25','MV 26'];
-    var vals=[dx25,dx26,mv25,mv26];
-    var bgc=[C.dx25,C.dx26,C.mv25,C.mv26];
-    _charts[idMix]=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[
-      Object.assign({data:vals,backgroundColor:bgc,
-       datalabels:{display:function(ctx){return ctx.dataset.data[ctx.dataIndex]>0;},font:{size:11,weight:'bold'},
-        color:function(ctx){var i=ctx.dataIndex;return(i===1||i===3)?'#fff':'#333';},anchor:'end',align:'top'}},BAR_TIGHT)
-    ]},options:{responsive:true,plugins:{legend:{display:false},datalabels:{formatter:fmtM}},
-      scales:{x:{ticks:{font:{size:10}},grid:{color:function(ctx){return ctx.index===2?'rgba(0,0,0,0.18)':'rgba(0,0,0,0.04)';}}},y:{beginAtZero:true,ticks:{callback:function(v){return v+'M'}}}}}});
+    var dx=[((dm['2025']&&dm['2025'].DX)||0)/1e6, ((dm['2026']&&dm['2026'].DX)||0)/1e6];
+    var mv=[((dm['2025']&&dm['2025'].MV)||0)/1e6, ((dm['2026']&&dm['2026'].MV)||0)/1e6];
+    var pairGrid={color:function(c){return c.index===1?'rgba(0,0,0,0.32)':'rgba(0,0,0,0.05)';},lineWidth:function(c){return c.index===1?1.5:0.5;}};
+    _charts[idMix]=new Chart(ctx,{type:'bar',data:{labels:['2025','2026'],datasets:[
+      Object.assign({label:'DX (RAC + CAC)',data:dx,backgroundColor:[C.dx25,C.dx26],stack:'s',
+       datalabels:{display:function(c){return c.dataset.data[c.dataIndex]>0;},font:{size:11,weight:'bold'},
+        color:function(c){return c.dataIndex===0?'#333':'#fff';},anchor:'center'}},BAR_TIGHT),
+      Object.assign({label:'MV (Applied)',data:mv,backgroundColor:[C.mv25,C.mv26],stack:'s',
+       datalabels:{display:function(c){return c.dataset.data[c.dataIndex]>0;},font:{size:11,weight:'bold'},color:'#333',anchor:'center'}},BAR_TIGHT)
+    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}},datalabels:{formatter:fmtM}},
+      scales:{x:{stacked:true,ticks:{font:{size:10}},grid:pairGrid},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return v+'M'}}}}}});
   })();
 }
 
@@ -1281,16 +1379,14 @@ document.querySelectorAll('th.sortable-t').forEach(function(th){
 // ---- MAIN renderSETrends ----
 function renderSETrends(p,ms){
   // Normalization pool: all active SEs filtered by team only (not SE checkbox).
-  // This prevents scores collapsing to 50 when the SE filter narrows to 1 person,
-  // and ensures compare-mode can always find both SEs.
   var normPool = SE_DATA.filter(function(s){
     if(!STATE.showInactive && INACTIVE_SES[s.se_name])return false;
     if(STATE.trendTeams.length && STATE.trendTeams.indexOf(s.team)===-1)return false;
     return true;
   });
 
-  if(STATE.compare){
-    // Compare mode: render SE A and SE B side by side
+  if(STATE.compare==='se'){
+    // SE vs SE compare
     var seA=normPool.find(function(s){return s.se_name===document.getElementById('se-pick-a').value;});
     var seB=normPool.find(function(s){return s.se_name===document.getElementById('se-pick-b').value;});
     ['score','tgt','pipe','acc','mix'].forEach(function(k){
@@ -1301,6 +1397,21 @@ function renderSETrends(p,ms){
     });
     renderSEChartsFor(seA,normPool,ms,'ch-cmp-score-a','ch-cmp-tgt-a','ch-cmp-pipe-a','ch-cmp-acc-a','ch-cmp-mix-a');
     renderSEChartsFor(seB,normPool,ms,'ch-cmp-score-b','ch-cmp-tgt-b','ch-cmp-pipe-b','ch-cmp-acc-b','ch-cmp-mix-b');
+
+  } else if(STATE.compare==='team'){
+    // SE vs Team compare
+    var seC=normPool.find(function(s){return s.se_name===document.getElementById('se-pick-cmp').value;});
+    var teamName=document.getElementById('team-pick-b').value;
+    var teamAgg=buildTeamAggregate(teamName, normPool, ms);
+    ['score','tgt','pipe','acc','mix'].forEach(function(k){
+      var ha=document.getElementById('cmp-h-'+k+'-a');
+      var hb=document.getElementById('cmp-h-'+k+'-b');
+      if(ha)ha.textContent=(seC?seC.se_name:'—');
+      if(hb)hb.textContent=(teamAgg?teamAgg.se_name:'—');
+    });
+    renderSEChartsFor(seC,normPool,ms,'ch-cmp-score-a','ch-cmp-tgt-a','ch-cmp-pipe-a','ch-cmp-acc-a','ch-cmp-mix-a');
+    renderSEChartsFor(teamAgg,normPool,ms,'ch-cmp-score-b','ch-cmp-tgt-b','ch-cmp-pipe-b','ch-cmp-acc-b','ch-cmp-mix-b');
+
   } else {
     // Normal mode: first checked SE, or first in pool
     var tp=trendPool();
