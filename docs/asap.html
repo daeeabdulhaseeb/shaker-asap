@@ -980,11 +980,12 @@ function bkts(mode,yr,lat){
 function buildCtl(id){
   var st=cst(id);
   var modes=[{k:'yoy',l:'YoY'},{k:'quarter',l:'Qtr'},{k:'full',l:'Year'},{k:'ytd',l:'YTD'}];
-  var h=modes.map(function(m){return'<button class="mbtn'+(st.mode===m.k?' on':'')+'" onclick="setHM(''+id+'',''+m.k+'',this)">'+m.l+'</button>';}).join('');
-  h+='<div class="tdd"><button class="tbtn" onclick="togTP(''+id+'')">Teams &#9662;</button>';
+  var q='&apos;';
+  var h=modes.map(function(m){return'<button class="mbtn'+(st.mode===m.k?' on':'')+'" onclick="setHM('+q+id+q+','+q+m.k+q+',this)">'+m.l+'</button>';}).join('');
+  h+='<div class="tdd"><button class="tbtn" onclick="togTP('+q+id+q+')">Teams &#9662;</button>';
   h+='<div class="tpop" id="tp-'+id+'">';
-  h+='<label><input type="checkbox" checked onchange="togTA(''+id+'',this)"> <b>All</b></label>';
-  TEAM_DATA.forEach(function(t){var chk=(!st.teams||st.teams.indexOf(t.team)>=0)?'checked':'';h+='<label><input type="checkbox" '+chk+' value="'+t.team+'" class="tcb-'+id+'" onchange="onTCb(''+id+'')"> '+t.team+'</label>';});
+  h+='<label><input type="checkbox" checked onchange="togTA('+q+id+q+',this)"> <b>All</b></label>';
+  TEAM_DATA.forEach(function(t){var chk=(!st.teams||st.teams.indexOf(t.team)>=0)?'checked':'';h+='<label><input type="checkbox" '+chk+' value="'+t.team+'" class="tcb-'+id+'" onchange="onTCb('+q+id+q+')"> '+t.team+'</label>';});
   h+='</div></div>';
   return h;
 }
