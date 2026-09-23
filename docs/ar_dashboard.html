@@ -57,6 +57,16 @@ main{max-width:1340px;margin:0 auto;padding:18px 22px}
 .canwrap{position:relative;width:100%;height:230px}
 .canwrap canvas{position:absolute;top:0;left:0;width:100%!important;height:100%!important}
 #oudModal td{padding:6px 8px;border-top:1px solid #EEF1EE}
+.focusbtn{position:absolute;top:12px;right:14px;border:0.5px solid var(--line);background:var(--panel);border-radius:6px;width:26px;height:26px;font-size:13px;line-height:1;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.focusbtn:hover{background:var(--surface);color:var(--ink)}
+#focusOverlay{position:fixed;inset:0;background:var(--surface);z-index:900;display:flex;flex-direction:column;padding:16px 20px}
+.focushead{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.focushead .ft{font-family:var(--disp);font-weight:600;font-size:16px}
+.focushead select{font-family:var(--body);font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel)}
+.focushead .fclose{margin-left:auto;border:0;background:var(--ink);color:#fff;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer}
+.focuswrap{flex:1;display:flex;gap:16px;overflow:auto;min-height:0}
+.focuswrap .card{flex:1 1 0;display:flex;flex-direction:column;min-width:0;min-height:0;max-height:100%}
+.focuswrap .card .canwrap{flex:1;min-height:300px}
 .logout{font-family:var(--body);font-size:12px;font-weight:600;padding:5px 12px;border:1px solid #2B4a54;border-radius:6px;background:transparent;color:#9DB4B3;cursor:pointer}
 @media(max-width:900px){.row2,.row3{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
 </style>
@@ -529,6 +539,76 @@ function showOudDetail(period,team){
   document.body.appendChild(overlay);
 }
 
+// ── Focus mode (Power BI style) ─────────────────────────────────────────
+let focusState=null;
+function cardTitle(card){const h=card.querySelector('h2');return h?h.textContent.replace(/\s+/g,' ').trim():'Chart';}
+function focusableCards(){return [...document.querySelectorAll('main .card')].filter(c=>c.querySelector('canvas'));}
+function initFocus(){
+  focusableCards().forEach(card=>{
+    if(card.querySelector('.focusbtn'))return;
+    card.style.position='relative';
+    const b=document.createElement('button');
+    b.className='focusbtn';b.title='Focus mode';b.textContent='⛶';
+    b.onclick=e=>{e.stopPropagation();openFocus(card);};
+    card.appendChild(b);
+  });
+}
+function moveCardToPane(card,pane){
+  const ph=document.createElement('div');ph.style.display='none';
+  card.parentNode.insertBefore(ph,card);
+  const cw=card.querySelector('.canwrap');
+  const oldH=cw?cw.style.height:'';
+  pane.appendChild(card);
+  if(cw)cw.style.height='auto';
+  return{card,ph,oldH};
+}
+function restoreCardFromPane(st){
+  if(!st)return;
+  const cw=st.card.querySelector('.canwrap');
+  if(cw)cw.style.height=st.oldH;
+  st.ph.parentNode.insertBefore(st.card,st.ph);
+  st.ph.remove();
+}
+function resizeAllCharts(){requestAnimationFrame(()=>Object.values(charts).forEach(c=>{try{c.resize();}catch(e){}}));}
+function openFocus(card){
+  if(focusState)closeFocus();
+  const overlay=document.createElement('div');overlay.id='focusOverlay';
+  const head=document.createElement('div');head.className='focushead';
+  const ft=document.createElement('span');ft.className='ft';ft.textContent=cardTitle(card);
+  const lbl=document.createElement('span');lbl.style.cssText='font-size:12px;color:var(--muted)';lbl.textContent='Compare with:';
+  const sel=document.createElement('select');
+  sel.add(new Option('— none —',''));
+  focusableCards().forEach((c,i)=>{if(c!==card)sel.add(new Option(cardTitle(c),String(i)));});
+  const closeB=document.createElement('button');closeB.className='fclose';closeB.textContent='Close';
+  head.appendChild(ft);head.appendChild(lbl);head.appendChild(sel);head.appendChild(closeB);
+  const wrap=document.createElement('div');wrap.className='focuswrap';
+  overlay.appendChild(head);overlay.appendChild(wrap);
+  document.body.appendChild(overlay);
+  const cardsSnapshot=focusableCards().filter(c=>c!==card);
+  focusState={overlay,wrap,primary:moveCardToPane(card,wrap),compare:null,cardsSnapshot};
+  sel.onchange=()=>{
+    if(focusState.compare){restoreCardFromPane(focusState.compare);focusState.compare=null;}
+    if(sel.value!==''){
+      const target=focusState.cardsSnapshot[parseInt(sel.value)];
+      if(target)focusState.compare=moveCardToPane(target,focusState.wrap);
+    }
+    resizeAllCharts();
+  };
+  closeB.onclick=closeFocus;
+  document.addEventListener('keydown',escClose);
+  resizeAllCharts();
+}
+function escClose(e){if(e.key==='Escape')closeFocus();}
+function closeFocus(){
+  if(!focusState)return;
+  restoreCardFromPane(focusState.compare);
+  restoreCardFromPane(focusState.primary);
+  focusState.overlay.remove();
+  focusState=null;
+  document.removeEventListener('keydown',escClose);
+  resizeAllCharts();
+}
+
 function renderKPIs(){
   const c=agg(CUR,TEAMS),p=agg(CMP,TEAMS);
   const d=(cv,pv,goodDown)=>{
@@ -572,6 +652,7 @@ function renderAll(){
         }
       });
     }
+    initFocus();
     applyMode();renderAll();
   }
   function showBlocked(){
