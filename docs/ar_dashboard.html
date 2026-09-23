@@ -207,6 +207,7 @@ function periodKey(p){const[mo,yr]=p.split('-');return parseInt(yr)*100+MONTH_ID
 
 function setupPeriods(){
   const sc=document.getElementById('selCur'),sm=document.getElementById('selCmp');
+  sc.innerHTML='';sm.innerHTML='';
   [...ALL_PERIODS].reverse().forEach(p=>{sc.add(new Option(p,p));sm.add(new Option(p,p));});
   CUR=ALL_PERIODS[ALL_PERIODS.length-1];
   CMP=ALL_PERIODS[ALL_PERIODS.length-2]||ALL_PERIODS[0];
@@ -231,6 +232,7 @@ const cardTeams={};
 function buildFilter(containerId,chartId,cb){
   const el=document.getElementById(containerId);
   if(!el)return;
+  el.innerHTML='';
   cardTeams[chartId]={};
   TEAMS.forEach(t=>cardTeams[chartId][t]=true);
   const lbl=document.createElement('span');lbl.className='clbl';lbl.textContent='Teams:';el.appendChild(lbl);
@@ -465,6 +467,7 @@ function renderC8(){
   kill('c8');const teams=activeTeams('c8');
   // OUD may lag AR — fall back to latest available OUD period
   const oudCur = OUD_BY[CUR] ? CUR : OUD_PERIODS.filter(p=>OUD_BY[p]).slice(-1)[0];
+  if(!oudCur){return;}
   const oudCmp = OUD_BY[CMP] ? CMP : oudCur;
   document.getElementById('c8title').textContent = oudCur + (oudCur!==CUR?' (latest OUD)':'');
   const curD=teams.map(t=>+(oudVal(oudCur,t)/1e6).toFixed(3));
@@ -502,12 +505,19 @@ function renderKPIs(){
   ].map(k=>`<div class="kpi"><p class="k">${k.k}</p><p class="v">${k.v}</p>${k.d}</div>`).join('');
 }
 
-function renderAll(){renderKPIs();renderC1();renderC2();renderC3();renderC4();renderC5();renderC6();renderC7();renderC8();}
+function renderAll(){
+  [renderKPIs,renderC1,renderC2,renderC3,renderC4,renderC5,renderC6,renderC7,renderC8].forEach(fn=>{
+    try{fn();}catch(e){console.error('chart render failed:',fn.name,e);}
+  });
+}
 
 (function(){
+  let BOOTED=false;
   function showDashboard(session){
     document.body.classList.remove('auth-pending');
     document.getElementById('logoutBtn').style.display='block';
+    if(BOOTED){renderAll();return;}
+    BOOTED=true;
     const teamLock=ShakerAuth.getTeams();
     setupPeriods();
     ['c1','c2','c3','c4','c5','c6','c7','c8'].forEach((id,i)=>{
