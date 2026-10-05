@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1791208915"></script>
+<script src="auth.js?v=1791209389"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -357,28 +357,9 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
   <!-- ===== VIEW: TABLE ===== -->
   <div class="view" id="view-table">
 
-  <div class="method">
-    <b>Composite score — two formulas by channel type.</b><br><br>
-    <b>ACS teams</b> (ACS-ER, ACS-WR, ACS-CR) — pure value: <b>30%</b> Quotation · <b>40%</b> Award · <b>30%</b> Invoiced.<br>
-    <b>Project teams</b> (East Projects, West Projects, Direct Channel) — funnel conversion:
-    <b>20%</b> Quotation value · <b>20%</b> Q→Hot Projects hit rate · <b>20%</b> Award value · <b>20%</b> HP→Award hit rate · <b>20%</b> Invoiced value.<br><br>
-    Each component is normalized 0–100 across the peer set and prorated for tenure (2-month headstart for new joiners). HP hit rates are normalized against project-team peers only.
-    <b>Below KSA avg</b> flags a score under the company mean; <b>Below team avg</b> under the SE's own team mean.
-    <br><br><a href="javascript:void(0)" id="toggle-explainer" style="color:var(--blue);font-weight:600;text-decoration:none">▸ How is my score calculated?</a>
-  </div>
+  <div class="method" id="method-box"></div>
   <div id="score-explainer" style="display:none">
-    <div class="method" style="margin-top:0;border-top:0;border-radius:0 0 8px 8px">
-      <b>Step 1 — Cumulative total.</b> For each metric (quotation, award, invoiced), sum all SAR values from the first month of data through the latest available month.<br><br>
-      <b>Step 2 — Adjust for tenure.</b> Divide that total by the number of months the SE has been active, minus a 2-month grace period. This gives a per-month average that doesn't penalise new joiners.<br><br>
-      <b>Step 3 — Normalize against peers.</b> For each metric, find the lowest and highest per-month average across all active SEs. Scale each SE's value to 0–100:<br>
-      <span style="display:block;margin:6px 0 6px 12px;font-family:monospace;font-size:11px">Normalized = (SE average − lowest) ÷ (highest − lowest) × 100</span>
-      The worst SE gets 0, the best gets 100. If all peers are equal, everyone gets 50. HP hit rates are normalized against project-team peers only.<br><br>
-      <b>Step 4 — Weight and sum.</b><br>
-      <span style="display:block;margin:4px 0 2px 12px;font-size:11px"><b>ACS:</b> Score = 30% × Quo + 40% × Award + 30% × Invoiced</span>
-      <span style="display:block;margin:2px 0 6px 12px;font-size:11px"><b>Project:</b> Score = 20% × Quo + 20% × Q→HP rate + 20% × Award + 20% × HP→Awd rate + 20% × Invoiced</span>
-      Maximum possible score is 100 (best at all components). A score of ~50 means roughly middle of the pack.<br><br>
-      <b>What the score does NOT tell you:</b> It does not measure quota attainment (that's shown separately in the target chart). It is relative — the same output can produce different scores month to month as the peer group shifts. One outlier can compress the rest of the pool.
-    </div>
+    <div class="method" style="margin-top:0;border-top:0;border-radius:0 0 8px 8px" id="explainer-detail"></div>
   </div>
 
   <div class="controls">
@@ -463,13 +444,87 @@ var STATE = { year:'all', metric:'quo', teams:[], ses:[], own:true, tenure:'all'
   // Trends page state
   trendTeams:[], trendSEs:[], trendMetric:'quo', trendSort:'score', compare:'off' };
 
-// Score explainer toggle
-document.getElementById('toggle-explainer').addEventListener('click',function(){
-  var el=document.getElementById('score-explainer');
-  var open=el.style.display!=='none';
-  el.style.display=open?'none':'block';
-  this.textContent=open?'▸ How is my score calculated?':'▾ How is my score calculated?';
-});
+// Dynamic score method box — updates when channel filter changes
+function updateMethodBox(){
+  var ch=STATE.channel;
+  var box=document.getElementById('method-box');
+  var det=document.getElementById('explainer-detail');
+  if(ch==='project'){
+    box.innerHTML='<b>Project Scoring — funnel conversion formula</b><br><br>'
+      +'Teams: East Projects, West Projects, Central Projects, Direct Channel<br>'
+      +'<b>20%</b> Quotation value · <b>20%</b> Q→Hot Projects hit rate · <b>20%</b> Award value · <b>20%</b> HP→Award hit rate · <b>20%</b> Invoiced value<br><br>'
+      +'Each component normalized 0–100 against <b>project peers only</b>, prorated for tenure (2-month headstart).'
+      +'<br><br><a href="javascript:void(0)" id="toggle-explainer" style="color:var(--blue);font-weight:600;text-decoration:none">▸ How is the score calculated?</a>';
+    det.innerHTML='<b>Step 1 — Cumulative total.</b> For each value metric (quo, award, invoiced), sum all SAR from the start of data through the latest month.<br><br>'
+      +'<b>Step 2 — Adjust for tenure.</b> Divide by active months minus 2-month grace period → per-month average.<br><br>'
+      +'<b>Step 3 — Normalize against project peers.</b> Min-max scale to 0–100 across project-team SEs only. HP hit rates (Q→HP and HP→Award) are averaged across available months per SE, then normalized the same way.<br><br>'
+      +'<b>Step 4 — Weight equally.</b><br>'
+      +'<span style="display:block;margin:4px 0 6px 12px;font-size:11px">Score = 20% × Quo + 20% × Q→HP rate + 20% × Award + 20% × HP→Awd rate + 20% × Invoiced</span>'
+      +'Maximum 100. Score of ~50 = middle of project peer group.<br><br>'
+      +'<b>Limitations:</b> Relative to peers (shifts as the pool changes). Does not measure quota attainment. Outliers can compress the rest.';
+  } else if(ch==='acs'){
+    box.innerHTML='<b>ACS Scoring — value-weighted formula</b><br><br>'
+      +'Teams: ACS - ER, ACS - WR, ACS - CR<br>'
+      +'<b>30%</b> Quotation value · <b>40%</b> Award value · <b>30%</b> Invoiced value<br><br>'
+      +'Each component normalized 0–100 against <b>ACS peers only</b>, prorated for tenure (2-month headstart).'
+      +'<br><br><a href="javascript:void(0)" id="toggle-explainer" style="color:var(--blue);font-weight:600;text-decoration:none">▸ How is the score calculated?</a>';
+    det.innerHTML='<b>Step 1 — Cumulative total.</b> For each metric (quotation, award, invoiced), sum all SAR from the start of data through the latest month.<br><br>'
+      +'<b>Step 2 — Adjust for tenure.</b> Divide by active months minus 2-month grace period → per-month average.<br><br>'
+      +'<b>Step 3 — Normalize against ACS peers.</b> Min-max scale to 0–100 across ACS-team SEs only.<br><br>'
+      +'<b>Step 4 — Weight and sum.</b><br>'
+      +'<span style="display:block;margin:4px 0 6px 12px;font-size:11px">Score = 30% × Quo + 40% × Award + 30% × Invoiced</span>'
+      +'Maximum 100. Score of ~50 = middle of ACS peer group.<br><br>'
+      +'<b>Limitations:</b> Relative to peers (shifts as the pool changes). Does not measure quota attainment. Outliers can compress the rest.';
+  } else {
+    box.innerHTML='<b>Composite score — two formulas by channel type</b><br><br>'
+      +'<b>Project</b> (East/West/Central Projects, Direct Channel): 20% Quo · 20% Q→HP rate · 20% Award · 20% HP→Awd rate · 20% Invoiced — normalized against project peers<br>'
+      +'<b>ACS</b> (ACS-ER, ACS-WR, ACS-CR): 30% Quo · 40% Award · 30% Invoiced — normalized against ACS peers<br><br>'
+      +'Each SE scored against their own channel\'s peer pool. Prorated for tenure (2-month headstart).'
+      +'<br><br><a href="javascript:void(0)" id="toggle-explainer" style="color:var(--blue);font-weight:600;text-decoration:none">▸ How is the score calculated?</a>';
+    det.innerHTML='<b>Project formula:</b> Score = 20% × Quo + 20% × Q→HP rate + 20% × Award + 20% × HP→Awd rate + 20% × Invoiced<br>'
+      +'<b>ACS formula:</b> Score = 30% × Quo + 40% × Award + 30% × Invoiced<br><br>'
+      +'Both use min-max normalization (0–100) within their own channel peer pool. Per-month averages adjusted for tenure with a 2-month headstart.';
+  }
+  document.getElementById('score-explainer').style.display='none';
+  document.getElementById('toggle-explainer').addEventListener('click',function(){
+    var el=document.getElementById('score-explainer');
+    var open=el.style.display!=='none';
+    el.style.display=open?'none':'block';
+    this.textContent=open?'▸ How is the score calculated?':'▾ How is the score calculated?';
+  });
+}
+
+// Per-SE score breakdown builder — returns HTML showing the full calculation
+function seScoreBreakdown(se, allPeers){
+  var sp=scoreParts(se, allPeers);
+  var f=sp.formula;
+  var rows='';
+  function pctBar(norm,w){
+    var weighted=Math.round(w*norm);
+    return '<div style="display:flex;align-items:center;gap:8px;margin:3px 0">'
+      +'<div style="width:120px;height:14px;background:#eee;border-radius:3px;overflow:hidden">'
+      +'<div style="width:'+Math.max(1,norm)+'%;height:100%;background:var(--blue);border-radius:3px"></div></div>'
+      +'<span style="font-size:11px;color:var(--ink-soft)">norm: '+Math.round(norm)+' → weighted: '+weighted+'</span></div>';
+  }
+  if(f==='project'){
+    rows='<div style="font-size:11px;color:var(--ink);line-height:1.8;margin:8px 0">'
+      +'<b>Formula: Project (5 × 20%)</b><br>'
+      +'<b>Quo value</b> — '+sar(sp.quoPM)+'/mo'+pctBar(sp.quoN,0.20)
+      +'<b>Q → HP hit rate</b> — avg '+(sp.qhpN!=null?Math.round(sp.qhpN)+'%':'no data')+pctBar(sp.qhpN||0,0.20)
+      +'<b>Award value</b> — '+sar(sp.awdPM)+'/mo'+pctBar(sp.awdN,0.20)
+      +'<b>HP → Award hit rate</b> — avg '+(sp.hpaN!=null?Math.round(sp.hpaN)+'%':'no data')+pctBar(sp.hpaN||0,0.20)
+      +'<b>Invoiced value</b> — '+sar(sp.invPM)+'/mo'+pctBar(sp.invN,0.20)
+      +'<div style="margin-top:6px;font-size:12px"><b>Composite score: '+sp.score+'</b></div></div>';
+  } else {
+    rows='<div style="font-size:11px;color:var(--ink);line-height:1.8;margin:8px 0">'
+      +'<b>Formula: ACS (30/40/30)</b><br>'
+      +'<b>Quo value (30%)</b> — '+sar(sp.quoPM)+'/mo'+pctBar(sp.quoN,0.30)
+      +'<b>Award value (40%)</b> — '+sar(sp.awdPM)+'/mo'+pctBar(sp.awdN,0.40)
+      +'<b>Invoiced value (30%)</b> — '+sar(sp.invPM)+'/mo'+pctBar(sp.invN,0.30)
+      +'<div style="margin-top:6px;font-size:12px"><b>Composite score: '+sp.score+'</b></div></div>';
+  }
+  return rows;
+}
 
 function sar(v){
   if(!v&&v!==0)return'--';
@@ -546,7 +601,7 @@ function activeMonths(se,headstart){
 // Channel type: determines which scoring formula to apply.
 // 'project' teams get the 5-component formula (with HP hit rates).
 // All others ('acs') get the 3-component value formula.
-var PROJECT_TEAMS = {'East Projects':1,'West Projects':1,'Direct Channel':1};
+var PROJECT_TEAMS = {'East Projects':1,'West Projects':1,'Central Projects':1,'Direct Channel':1};
 // ACS teams use 30/40/30 value formula: ACS - ER, ACS - WR, ACS - CR
 function isProjectTeam(team){return PROJECT_TEAMS[team]||false;}
 
@@ -694,7 +749,9 @@ function toggleRow(tr){
         return'<td class="'+cls+'">'+pct+'%</td>';
       }).join('')+'</tr>';
   }
-  inner.innerHTML='<table class="mtable">'
+  var allActive=SE_DATA.filter(function(s){return !INACTIVE_SES[s.se_name]||STATE.showInactive;});
+  inner.innerHTML=seScoreBreakdown(se,allActive)
+    +'<table class="mtable">'
     +'<tr class="mhead"><td class="rowlab">Month</td>'+ms.map(function(m){return'<td>'+m.slice(5)+'/'+m.slice(2,4)+'</td>';}).join('')+'</tr>'
     +row('Quotations','cell-q',d.quo)
     +row('Award','cell-a',d.award)
@@ -814,7 +871,7 @@ document.querySelectorAll('#seg-channel button').forEach(function(b){
   b.addEventListener('click',function(){
     document.querySelectorAll('#seg-channel button').forEach(function(x){x.classList.remove('on');});
     b.classList.add('on');STATE.channel=b.getAttribute('data-ch');
-    buildTeamMenu();buildSEMenu();renderAll();
+    updateMethodBox();buildTeamMenu();buildSEMenu();renderAll();
   });
 });
 document.querySelectorAll('#seg-type button').forEach(function(b){
@@ -1439,7 +1496,9 @@ function renderTrendsTable(){
             return'<td class="'+cls+'">'+pct+'%</td>';
           }).join('')+'</tr>';
       }
-      inner.innerHTML='<table class="mtable">'
+      var allActive2=SE_DATA.filter(function(s){return !INACTIVE_SES[s.se_name]||STATE.showInactive;});
+      inner.innerHTML=seScoreBreakdown(se,allActive2)
+        +'<table class="mtable">'
         +'<tr class="mhead"><td class="rowlab">Month</td>'+ms2.map(function(m){return'<td>'+m.slice(5)+'/'+m.slice(2,4)+'</td>';}).join('')+'</tr>'
         +row2('Quotations','cell-q',d2.quo)
         +row2('Award','cell-a',d2.award)
@@ -1534,6 +1593,7 @@ function startReport(session){
     if(ddTeam)ddTeam.style.display='none';
   }
   var _wrap=document.querySelector('.wrap'); if(_wrap)_wrap.style.visibility='visible';
+  updateMethodBox();
   buildTeamMenu();
   updateTeamBtn();
   renderAll();
@@ -1547,6 +1607,7 @@ if(typeof ShakerAuth!=='undefined'){
   });
 } else {
   // Auth unavailable (e.g. opened as local file) — render without gate
+  updateMethodBox();
   renderAll();
 }
 </script>
