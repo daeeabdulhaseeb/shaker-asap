@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1790082878"></script>
+<script src="auth.js?v=1791207901"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -509,8 +509,14 @@ function activeMonths(se,headstart){
   return Math.max(1, active-(headstart||0));
 }
 
+// Channel type: determines which scoring formula to apply.
+// 'project' teams get the 5-component formula (with HP hit rates).
+// All others ('acs') get the 3-component value formula.
+var PROJECT_TEAMS = {'East Projects':1,'West Projects':1,'Direct Channel':1};
+// ACS teams use 30/40/30 value formula: ACS - ER, ACS - WR, ACS - CR
+function isProjectTeam(team){return PROJECT_TEAMS[team]||false;}
+
 function scoreParts(se,peers){
-  // Headstart-adjusted per-month averages: quo/2, award/2, invoiced/2
   var HS={quo:2, awd:2, inv:2};
   function perMo(s,metric){var t=activeMonths(s,HS[metric]);return t>0?total(s,metric)/t:0;}
   var invA=peers.map(function(s){return perMo(s,'inv');});
@@ -519,8 +525,30 @@ function scoreParts(se,peers){
   function norm(a,v){var mn=Math.min.apply(null,a),mx=Math.max.apply(null,a);return mx>mn?(v-mn)/(mx-mn)*100:50;}
   var qi=perMo(se,'quo'), ai=perMo(se,'awd'), ii=perMo(se,'inv');
   var qN=norm(quoA,qi), aN=norm(awdA,ai), iN=norm(invA,ii);
+
+  if(isProjectTeam(se.team)){
+    // Project formula: 20% Q value, 20% Q→HP hit rate, 20% Award value,
+    // 20% HP→Award hit rate, 20% Invoice value
+    // HP ratios: average across available months for this SE
+    var hpR=se.hp_ratio||{}, haR=se.hp_award_ratio||{};
+    function avgRatio(obj){
+      var ks=Object.keys(obj);if(!ks.length)return 0;
+      var s=0;ks.forEach(function(k){s+=obj[k]||0;});return s/ks.length;
+    }
+    var qhpAvg=avgRatio(hpR), hpaAvg=avgRatio(haR);
+    // Normalize HP ratios against project-team peers only
+    var projPeers=peers.filter(function(s){return isProjectTeam(s.team);});
+    var qhpAll=projPeers.map(function(s){return avgRatio(s.hp_ratio||{});});
+    var hpaAll=projPeers.map(function(s){return avgRatio(s.hp_award_ratio||{});});
+    var qhpN=norm(qhpAll,qhpAvg), hpaN=norm(hpaAll,hpaAvg);
+    var score=Math.round(0.20*qN)+Math.round(0.20*qhpN)+Math.round(0.20*aN)+Math.round(0.20*hpaN)+Math.round(0.20*iN);
+    return {quoPM:qi, awdPM:ai, invPM:ii, quoN:qN, awdN:aN, invN:iN,
+            qhpN:qhpN, hpaN:hpaN, formula:'project', score:score};
+  }
+
+  // ACS formula: 30% Q value, 40% Award value, 30% Invoice value
   return {quoPM:qi, awdPM:ai, invPM:ii, quoN:qN, awdN:aN, invN:iN,
-          score:Math.round(0.40*iN+0.40*aN+0.20*qN)};
+          formula:'acs', score:Math.round(0.30*qN+0.40*aN+0.30*iN)};
 }
 function composite(se,peers){ return scoreParts(se,peers).score; }
 
@@ -1161,7 +1189,15 @@ function renderSEChartsFor(se,p,ms,idScore,idTgt,idPipe,idAcc,idMix){
       function nrm(a,v){var mn=Math.min.apply(null,a),mx=Math.max.apply(null,a);return mx>mn?(v-mn)/(mx-mn)*100:50;}
       function composeScore(s){
         var qn=nrm(qA,pmS(s,'quo')),an=nrm(aA,pmS(s,'awd')),in_=nrm(iA,pmS(s,'inv'));
-        return Math.round(0.20*qn)+Math.round(0.40*an)+Math.round(0.40*in_);
+        if(isProjectTeam(s.team)){
+          function avgR(obj){var ks=Object.keys(obj||{});if(!ks.length)return 0;var sm=0;ks.forEach(function(k){sm+=obj[k]||0;});return sm/ks.length;}
+          var pp=p.filter(function(x){return isProjectTeam(x.team);});
+          var qhAll=pp.map(function(x){return avgR(x.hp_ratio);});
+          var haAll=pp.map(function(x){return avgR(x.hp_award_ratio);});
+          var qhN=nrm(qhAll,avgR(s.hp_ratio)),haN=nrm(haAll,avgR(s.hp_award_ratio));
+          return Math.round(0.20*qn)+Math.round(0.20*qhN)+Math.round(0.20*an)+Math.round(0.20*haN)+Math.round(0.20*in_);
+        }
+        return Math.round(0.30*qn)+Math.round(0.40*an)+Math.round(0.30*in_);
       }
       seLine.push(composeScore(se));
       // KSA avg
