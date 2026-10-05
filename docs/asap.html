@@ -907,7 +907,7 @@ function obLive(a){
   };
 }
 var OB_CLAIMS={};
-var ACCOUNTS=[], SE_DATA=[], TEAM_DATA=[], PIPE_DATA=[], PROD_DATA={};
+var ACCOUNTS=[], SE_DATA=[], TEAM_DATA=[], PIPE_DATA=[], PROD_DATA={}, BL_DATA={};
 var ACC_INDEX={};
 var SEL_TEAM=null, SEL_SE=null, SEL_MONTH=null;
 var ACC_FILTERED=[];
@@ -985,9 +985,13 @@ var PAL={
   status:{'New':'#7fc39a','Active':'#2e7d52','Inactive':'#cbd1d6','OB Claimed':'#b3903a'},
   group:{'CAC Ducted':'#2e7d52','CAC Non-Ducted':'#7fc39a','RAC':'#bfe0ca','Applied':'#b3903a'},
   size:{'A+':'#1d5c3b','A':'#2e7d52','B':'#7fc39a','C':'#bfe0ca','D':'#cbd1d6'},
-  qai:{'Quotation':'#bfe0ca','Award':'#b3903a','Invoice':'#2e7d52'}
+  qai:{'Quotation':'#bfe0ca','Award':'#b3903a','Invoice':'#2e7d52'},
+  bl:{'Single':'#2e7d52','Applied':'#b3903a'}
 };
+var BL_DATA_ENGINE={};  /* set by init */
 var DEFS=[
+  {id:'award', t:'Awarded value',             st:'Monthly award by expected award date, SAR'},
+  {id:'bl',    t:'Backlog',                   st:'Month-end backlog: Single (DX) + Applied, SAR'},
   {id:'sales', t:'Invoiced sales',            st:'Monthly invoiced value, SAR'},
   {id:'newacc',t:'New accounts',              st:'Accounts opened per month'},
   {id:'status',t:'Account status',            st:'Month-end classification, 6-month activity window'},
@@ -1010,12 +1014,30 @@ function fmtFull(v){v=num(v);return v.toLocaleString('en-US',{maximumFractionDig
 function pct(v){if(v==null||!isFinite(v))return'';return (v>=0?'+':'')+v.toFixed(1)+'%';}
 function st(id){return STATE[id]||(STATE[id]={mode:'yoy',teams:null});}
 function selTeams(id){var s=st(id);return s.teams?TEAMS.filter(function(t){return s.teams.indexOf(t.team)>=0;}):TEAMS;}
+/* Map the chart's selected dashboard teams to BL-dataset team keys.
+   BL keys: 'Central Projects','West Projects','East Projects','Direct Channel','ACS - CR/ER/WR',
+   plus combined 'ACS' for pre-split (through ~Aug 2025) months. Include 'ACS' whenever any ACS
+   sub-team is in scope so those early months aren't dropped. */
+function blTeamsFor(teams){
+  var names=teams.map(function(t){return t.team;});
+  var keys=[];
+  names.forEach(function(nm){if(BL_DATA_ENGINE[nm])keys.push(nm);});
+  var anyAcs=names.some(function(nm){return nm.indexOf('ACS')>=0;});
+  if(anyAcs && BL_DATA_ENGINE['ACS'] && keys.indexOf('ACS')<0)keys.push('ACS');
+  return keys;
+}
 function latestMonth(teams){var l=0;for(var i=0;i<teams.length;i++){var ms=(teams[i].monthly_sales||{})[String(YRS[1])]||{};for(var m=12;m>=1;m--){if(num(ms[m])>0){if(m>l)l=m;break;}}}return l||1;}
 
 /* aggregate a {yr:{m:val}} field across teams → {m:val} */
 function aggM(teams,fld,yr){var r={};for(var m=1;m<=12;m++)r[m]=0;for(var i=0;i<teams.length;i++){var ms=(teams[i][fld]||{})[String(yr)]||{};for(var m=1;m<=12;m++)r[m]+=num(ms[m]);}return r;}
 /* aggregate a {yr:{m:{key:val}}} field → {m:{key:val}} */
 function aggK(teams,fld,yr){var r={};for(var m=1;m<=12;m++)r[m]={};for(var i=0;i<teams.length;i++){var ms=(teams[i][fld]||{})[String(yr)]||{};for(var m=1;m<=12;m++){var b=ms[m]||{};for(var k in b)if(b.hasOwnProperty(k))r[m][k]=(r[m][k]||0)+num(b[k]);}}return r;}
+/* installation-only monthly total across teams */
+function aggInstall(teams,yr){var r={};for(var m=1;m<=12;m++)r[m]=0;for(var i=0;i<teams.length;i++){var ms=(teams[i].monthly_install||{})[String(yr)]||{};for(var m=1;m<=12;m++)r[m]+=num(ms[m]);}return r;}
+/* subtract installation month-by-month from a {m:val} series, floored at 0 */
+function netInstall(series,inst){var r={};for(var m=1;m<=12;m++)r[m]=Math.max(0,num(series[m])-num(inst[m]));return r;}
+/* subtract a per-team installation share from a per-team-keyed {m:{team:val}} structure */
+function netInstallTeam(k,teams,yr){var out={};for(var m=1;m<=12;m++){out[m]={};var im={};for(var i=0;i<teams.length;i++){var inst=(teams[i].monthly_install||{})[String(yr)]||{};im[teams[i].team]=num(inst[m]);}for(var key in k[m])if(k[m].hasOwnProperty(key))out[m][key]=Math.max(0,num(k[m][key])-(im[key]||0));}return out;}
 /* aggregate a flat {"YYYY-MM":val} field → {m:val} */
 function aggYM(teams,fld,yr){var r={};for(var m=1;m<=12;m++)r[m]=0;for(var i=0;i<teams.length;i++){var d=teams[i][fld]||{};for(var k in d){if(!d.hasOwnProperty(k))continue;var p=k.split('-');if(+p[0]===yr){var m=+p[1];if(m>=1&&m<=12)r[m]+=num(d[k]);}}}return r;}
 function sumM(d,ms){var t=0;for(var i=0;i<ms.length;i++)t+=(d[ms[i]]||0);return t;}
@@ -1033,7 +1055,7 @@ function buckets(mode,lat){
    Each returns {groups:[{label, bars:[{yr, segs:[{k,v,c}]}]}], legend:[{l,c}]}
    A "group" is one x position. In yoy mode a group has 2 bars (prev, curr). Otherwise 1 bar.
 */
-function build(id,teams,mode,lat){
+function build(id,teams,mode,lat,noInstall){
   var y0=YRS[0],y1=YRS[1];
   var isYoy=mode==='yoy';
   var bk=buckets(mode,lat);
@@ -1060,20 +1082,41 @@ function build(id,teams,mode,lat){
     }
   }
 
-  if(id==='sales'){pushSimple(aggM(teams,'monthly_sales',y0),aggM(teams,'monthly_sales',y1),C_PREV,C_CURR,'2025','2026');}
+  if(id==='award'){pushSimple(aggYM(teams,'monthly_award',y0),aggYM(teams,'monthly_award',y1),C_PREV,C_CURR,'2025','2026');}
+  else if(id==='bl'){
+    /* Backlog from BL_DATA_ENGINE (separate dataset, keyed by BL-team incl. combined ACS).
+       Which BL-teams to include is driven by the chart's own team selection. */
+    var blTeams=blTeamsFor(teams);
+    function blAgg(yr){var r={};for(var m=1;m<=12;m++)r[m]={Single:0,Applied:0};
+      blTeams.forEach(function(bt){var md=BL_DATA_ENGINE[bt]||{};for(var m=1;m<=12;m++){var key=yr+'-'+(m<10?'0'+m:m);var b=md[key];if(b){r[m].Single+=num(b.Single);r[m].Applied+=num(b.Applied);}}});
+      return r;}
+    pushStacked(blAgg(y0),blAgg(y1),['Single','Applied'],PAL.bl);
+  }
+  else if(id==='sales'){var s0=aggM(teams,'monthly_sales',y0),s1=aggM(teams,'monthly_sales',y1);if(noInstall){s0=netInstall(s0,aggInstall(teams,y0));s1=netInstall(s1,aggInstall(teams,y1));}pushSimple(s0,s1,C_PREV,C_CURR,'2025','2026');}
   else if(id==='newacc'){pushSimple(aggM(teams,'new_accs_monthly',y0),aggM(teams,'new_accs_monthly',y1),C_PREV,C_CURR,'2025','2026');}
   else if(id==='status'){pushStacked(aggK(teams,'monthly_status',y0),aggK(teams,'monthly_status',y1),['New','Active','Inactive','OB Claimed'],PAL.status,avgK);}
   else if(id==='group'){pushStacked(aggK(teams,'monthly_sales_by_group',y0),aggK(teams,'monthly_sales_by_group',y1),['CAC Ducted','CAC Non-Ducted','RAC','Applied'],PAL.group);}
-  else if(id==='size'){pushStacked(aggK(teams,'monthly_sales_by_size',y0),aggK(teams,'monthly_sales_by_size',y1),['A+','A','B','C','D'],PAL.size);}
+  else if(id==='size'){
+    var z0=aggK(teams,'monthly_sales_by_size',y0),z1=aggK(teams,'monthly_sales_by_size',y1);
+    if(noInstall){
+      /* install isn't split by tier, so remove it proportionally from each tier per month */
+      var i0=aggInstall(teams,y0),i1=aggInstall(teams,y1);
+      function prop(zz,inst){var out={};for(var m=1;m<=12;m++){out[m]={};var tot=0;for(var k in zz[m])tot+=num(zz[m][k]);var fac=tot>0?Math.max(0,(tot-num(inst[m]))/tot):1;for(var k in zz[m])out[m][k]=num(zz[m][k])*fac;}return out;}
+      z0=prop(z0,i0);z1=prop(z1,i1);
+    }
+    pushStacked(z0,z1,['A+','A','B','C','D'],PAL.size);
+  }
   else if(id==='team'){
     /* synthesize a keyed structure from per-team monthly_sales */
     var k0={},k1={};for(var m=1;m<=12;m++){k0[m]={};k1[m]={};}
     var pal={};
     teams.forEach(function(t,i){pal[t.team]=TCOLS[i%TCOLS.length];var a=(t.monthly_sales||{})[String(y0)]||{},b=(t.monthly_sales||{})[String(y1)]||{};for(var m=1;m<=12;m++){k0[m][t.team]=num(a[m]);k1[m][t.team]=num(b[m]);}});
+    if(noInstall){k0=netInstallTeam(k0,teams,y0);k1=netInstallTeam(k1,teams,y1);}
     pushStacked(k0,k1,teams.map(function(t){return t.team;}),pal);
   }
   else if(id==='qai'){
     var q0=aggYM(teams,'monthly_quo',y0),q1=aggYM(teams,'monthly_quo',y1),a0=aggYM(teams,'monthly_award',y0),a1=aggYM(teams,'monthly_award',y1),i0=aggM(teams,'monthly_sales',y0),i1=aggM(teams,'monthly_sales',y1);
+    if(noInstall){i0=netInstall(i0,aggInstall(teams,y0));i1=netInstall(i1,aggInstall(teams,y1));}
     var k0={},k1={};for(var m=1;m<=12;m++){k0[m]={'Quotation':q0[m],'Award':a0[m],'Invoice':i0[m]};k1[m]={'Quotation':q1[m],'Award':a1[m],'Invoice':i1[m]};}
     pushStacked(k0,k1,['Quotation','Award','Invoice'],PAL.qai);
   }
@@ -1130,10 +1173,12 @@ function renderSVG(model,opts){
 }
 
 /* ---------- controls ---------- */
+var INSTALL_CHARTS={sales:1,team:1,qai:1,size:1};
 function ctlHTML(id){
   var s=st(id);
   var modes=[['yoy','YoY'],['qtr','Qtr'],['year','Year'],['ytd','YTD']];
   var h='<div class="seg" role="tablist">'+modes.map(function(m){return'<button type="button" class="seg-b'+(s.mode===m[0]?' on':'')+'" data-chart="'+id+'" data-mode="'+m[0]+'">'+m[1]+'</button>';}).join('')+'</div>';
+  if(INSTALL_CHARTS[id]){h+='<button type="button" class="seg-b'+(s.noInstall?' on':'')+'" style="border:1px solid var(--line);border-radius:4px;margin-left:2px" data-chart="'+id+'" data-act="toggle-install" title="Exclude installation revenue">Excl. install</button>';}
   h+='<div class="tdd"><button type="button" class="tbtn" data-chart="'+id+'" data-act="toggle-teams">Teams <span class="chev">&#9662;</span></button><div class="tpop" id="tp-'+id+'">';
   h+='<label><input type="checkbox" data-chart="'+id+'" data-act="team-all" '+(s.teams?'':'checked')+'> <b>All teams</b></label>';
   TEAMS.forEach(function(t){h+='<label><input type="checkbox" class="tcb" data-chart="'+id+'" value="'+esc(t.team)+'" '+((!s.teams||s.teams.indexOf(t.team)>=0)?'checked':'')+'> '+esc(t.team)+'</label>';});
@@ -1147,7 +1192,7 @@ function renderChart(id){
   var lat=latestMonth(teams);
   var w=el.clientWidth||560;
   try{
-    var model=build(id,teams,st(id).mode,lat);
+    var model=build(id,teams,st(id).mode,lat,st(id).noInstall);
     var legend='<div class="lgd">'+model.legend.map(function(l){return'<span><i style="background:'+l.c+'"></i>'+esc(l.l)+'</span>';}).join('')+'</div>';
     el.innerHTML=renderSVG(model,{width:w})+legend;
   }catch(e){
@@ -1182,6 +1227,8 @@ function mount(){
   g.addEventListener('click',function(e){
     var b=e.target.closest('.seg-b');
     if(b){var id=b.getAttribute('data-chart');st(id).mode=b.getAttribute('data-mode');b.parentNode.querySelectorAll('.seg-b').forEach(function(x){x.classList.remove('on');});b.classList.add('on');renderChart(id);return;}
+    var ib=e.target.closest('[data-act="toggle-install"]');
+    if(ib){var id=ib.getAttribute('data-chart');st(id).noInstall=!st(id).noInstall;ib.classList.toggle('on');renderChart(id);return;}
     var tb=e.target.closest('[data-act="toggle-teams"]');
     if(tb){var p=document.getElementById('tp-'+tb.getAttribute('data-chart'));var open=p.classList.contains('open');document.querySelectorAll('.tpop.open').forEach(function(x){x.classList.remove('open');});if(!open)p.classList.add('open');e.stopPropagation();return;}
   });
@@ -1201,8 +1248,9 @@ function mount(){
   var rt=null;if(global.addEventListener)global.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){DEFS.forEach(function(d){renderChart(d.id);});},120);});
 }
 
-function init(teams,meta){
+function init(teams,meta,blData){
   TEAMS=(teams||[]).filter(function(t){return t&&t.team;});
+  BL_DATA_ENGINE=blData||{};
   var sub=document.getElementById('home-sub');
   if(sub&&meta)sub.textContent=meta;
   var lu=document.getElementById('last-updated');
@@ -3872,9 +3920,10 @@ function loadAll(session){
   Promise.all([
     fetch(base+'asap_teams.json'+cb).then(function(r){return r.json();}),
     fetch(base+'asap_se.json'+cb).then(function(r){return r.json();}).catch(function(){return[];}),
-    fetch(base+'asap_products.json'+cb).then(function(r){return r.json();}).catch(function(){return{};})
+    fetch(base+'asap_products.json'+cb).then(function(r){return r.json();}).catch(function(){return{};}),
+    fetch(base+'asap_bl.json'+cb).then(function(r){return r.json();}).catch(function(){return{};})
   ]).then(function(res){
-    TEAM_DATA=res[0]||[];SE_DATA=res[1]||[];PROD_DATA=res[2]||{};
+    TEAM_DATA=res[0]||[];SE_DATA=res[1]||[];PROD_DATA=res[2]||{};BL_DATA=res[3]||{};
     var myTeams = session ? (typeof ShakerAuth.getTeams==='function' ? ShakerAuth.getTeams() : null) : null;
     if (!myTeams && session) { var t=ShakerAuth.getTeam(); if(t) myTeams=[t]; }
     var isSE = session && ShakerAuth.getRole()==='se';
@@ -3883,8 +3932,9 @@ function loadAll(session){
       TEAM_DATA = TEAM_DATA.filter(function(t){return window.__MY_TEAMS.indexOf(t.team)>=0;});
       SE_DATA   = SE_DATA.filter(function(s){return window.__MY_TEAMS.indexOf(s.team)>=0;});
     }
+    window.__BL_DATA = BL_DATA;
     var totalAcc=TEAM_DATA.reduce(function(a,t){return a+(t.account_count||0);},0);
-    ASAPHome.init(TEAM_DATA, totalAcc+' accounts across '+TEAM_DATA.length+' team'+(TEAM_DATA.length===1?'':'s'));
+    ASAPHome.init(TEAM_DATA, totalAcc+' accounts across '+TEAM_DATA.length+' team'+(TEAM_DATA.length===1?'':'s'), BL_DATA);
     ShakerAuth.loadClaims(function(claims){ OB_CLAIMS=claims; initOBPage(); });
     // If the URL deep-links to a page that needs accounts, load them now.
     var h=(location.hash||'').replace('#','');
