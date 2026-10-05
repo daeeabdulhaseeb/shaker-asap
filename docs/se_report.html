@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1791209389"></script>
+<script src="auth.js?v=1791209963"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -494,36 +494,64 @@ function updateMethodBox(){
   });
 }
 
-// Per-SE score breakdown builder — returns HTML showing the full calculation
+// Per-SE score breakdown — plain English, step by step
 function seScoreBreakdown(se, allPeers){
   var sp=scoreParts(se, allPeers);
   var f=sp.formula;
-  var rows='';
-  function pctBar(norm,w){
-    var weighted=Math.round(w*norm);
-    return '<div style="display:flex;align-items:center;gap:8px;margin:3px 0">'
-      +'<div style="width:120px;height:14px;background:#eee;border-radius:3px;overflow:hidden">'
-      +'<div style="width:'+Math.max(1,norm)+'%;height:100%;background:var(--blue);border-radius:3px"></div></div>'
-      +'<span style="font-size:11px;color:var(--ink-soft)">norm: '+Math.round(norm)+' → weighted: '+weighted+'</span></div>';
+  var pc=sp.peerCount||1;
+  var S='style="font-size:11.5px;color:var(--ink);line-height:1.9;margin:8px 0 12px"';
+  var R='style="display:flex;align-items:center;gap:8px;margin:2px 0 8px"';
+  var B1='style="width:140px;height:12px;background:#eee;border-radius:3px;overflow:hidden"';
+  var B2='style="height:100%;border-radius:3px;background:var(--blue)"';
+
+  function bar(n100){ return '<div '+R+'><div '+B1+'><div '+B2+';width:'+Math.max(2,Math.round(n100))+'%"></div></div></div>'; }
+
+  function componentRow(num, label, rawLabel, rank100, weight, pts){
+    return '<div style="margin:0 0 10px;padding:8px 10px;background:var(--bg);border-radius:6px">'
+      +'<div style="font-size:12px;font-weight:600;margin-bottom:2px">'+num+'. '+label+' <span style="font-weight:400;color:var(--ink-soft)">('+Math.round(weight*100)+'% of score)</span></div>'
+      +'<div style="font-size:11px;color:var(--ink-soft)">Your average: <b style="color:var(--ink)">'+rawLabel+'</b></div>'
+      +'<div style="font-size:11px;color:var(--ink-soft)">Rank among '+pc+' peers: <b style="color:var(--ink)">'+Math.round(rank100)+' out of 100</b>'
+      +' <span style="color:var(--ink-faint)">(100 = best, 0 = lowest)</span></div>'
+      +bar(rank100)
+      +'<div style="font-size:11px;color:var(--ink-soft)">Points earned: '+Math.round(rank100)+' × '+Math.round(weight*100)+'% = <b style="color:var(--ink)">'+pts+' pts</b></div>'
+      +'</div>';
   }
+
+  var html='<div '+S+'>';
+
   if(f==='project'){
-    rows='<div style="font-size:11px;color:var(--ink);line-height:1.8;margin:8px 0">'
-      +'<b>Formula: Project (5 × 20%)</b><br>'
-      +'<b>Quo value</b> — '+sar(sp.quoPM)+'/mo'+pctBar(sp.quoN,0.20)
-      +'<b>Q → HP hit rate</b> — avg '+(sp.qhpN!=null?Math.round(sp.qhpN)+'%':'no data')+pctBar(sp.qhpN||0,0.20)
-      +'<b>Award value</b> — '+sar(sp.awdPM)+'/mo'+pctBar(sp.awdN,0.20)
-      +'<b>HP → Award hit rate</b> — avg '+(sp.hpaN!=null?Math.round(sp.hpaN)+'%':'no data')+pctBar(sp.hpaN||0,0.20)
-      +'<b>Invoiced value</b> — '+sar(sp.invPM)+'/mo'+pctBar(sp.invN,0.20)
-      +'<div style="margin-top:6px;font-size:12px"><b>Composite score: '+sp.score+'</b></div></div>';
+    var q_pts=Math.round(0.20*sp.quoN), qhp_pts=Math.round(0.20*sp.qhpN);
+    var a_pts=Math.round(0.20*sp.awdN), hpa_pts=Math.round(0.20*sp.hpaN);
+    var i_pts=Math.round(0.20*sp.invN);
+
+    html+='<div style="font-size:13px;font-weight:700;margin-bottom:8px">Score breakdown — Project formula (5 components × 20% each)</div>';
+    html+=componentRow('1','Quotation value', sar(sp.quoPM)+' SAR/month', sp.quoN, 0.20, q_pts);
+    html+=componentRow('2','Q → Hot Projects conversion',
+      sp.hasHP ? (sp.qhpRaw*100).toFixed(1)+'% of quotes become hot' : 'No HP data available — defaults to mid-rank',
+      sp.qhpN, 0.20, qhp_pts);
+    html+=componentRow('3','Award value', sar(sp.awdPM)+' SAR/month', sp.awdN, 0.20, a_pts);
+    html+=componentRow('4','Hot Projects → Award conversion',
+      sp.hasHPA ? (sp.hpaRaw*100).toFixed(1)+'% of hot projects convert to award' : 'No HP data available — defaults to mid-rank',
+      sp.hpaN, 0.20, hpa_pts);
+    html+=componentRow('5','Invoiced value', sar(sp.invPM)+' SAR/month', sp.invN, 0.20, i_pts);
+
+    html+='<div style="padding:10px;background:var(--paper);border:1px solid var(--line);border-radius:6px;font-size:13px">'
+      +'<b>Total score = '+q_pts+' + '+qhp_pts+' + '+a_pts+' + '+hpa_pts+' + '+i_pts+' = '+sp.score+'</b>'
+      +'</div>';
   } else {
-    rows='<div style="font-size:11px;color:var(--ink);line-height:1.8;margin:8px 0">'
-      +'<b>Formula: ACS (30/40/30)</b><br>'
-      +'<b>Quo value (30%)</b> — '+sar(sp.quoPM)+'/mo'+pctBar(sp.quoN,0.30)
-      +'<b>Award value (40%)</b> — '+sar(sp.awdPM)+'/mo'+pctBar(sp.awdN,0.40)
-      +'<b>Invoiced value (30%)</b> — '+sar(sp.invPM)+'/mo'+pctBar(sp.invN,0.30)
-      +'<div style="margin-top:6px;font-size:12px"><b>Composite score: '+sp.score+'</b></div></div>';
+    var q_pts=Math.round(0.30*sp.quoN), a_pts=Math.round(0.40*sp.awdN), i_pts=Math.round(0.30*sp.invN);
+
+    html+='<div style="font-size:13px;font-weight:700;margin-bottom:8px">Score breakdown — ACS formula (30% / 40% / 30%)</div>';
+    html+=componentRow('1','Quotation value', sar(sp.quoPM)+' SAR/month', sp.quoN, 0.30, q_pts);
+    html+=componentRow('2','Award value', sar(sp.awdPM)+' SAR/month', sp.awdN, 0.40, a_pts);
+    html+=componentRow('3','Invoiced value', sar(sp.invPM)+' SAR/month', sp.invN, 0.30, i_pts);
+
+    html+='<div style="padding:10px;background:var(--paper);border:1px solid var(--line);border-radius:6px;font-size:13px">'
+      +'<b>Total score = '+q_pts+' + '+a_pts+' + '+i_pts+' = '+sp.score+'</b>'
+      +'</div>';
   }
-  return rows;
+  html+='</div>';
+  return html;
 }
 
 function sar(v){
@@ -635,14 +663,16 @@ function scoreParts(se,allPeers){
     var qhpAll=cp.map(function(s){return avgRatio(s.hp_ratio||{});});
     var hpaAll=cp.map(function(s){return avgRatio(s.hp_award_ratio||{});});
     var qhpN=norm(qhpAll,qhpAvg), hpaN=norm(hpaAll,hpaAvg);
+    var hasHP=Object.keys(hpR).length>0, hasHPA=Object.keys(haR).length>0;
     var score=Math.round(0.20*qN)+Math.round(0.20*qhpN)+Math.round(0.20*aN)+Math.round(0.20*hpaN)+Math.round(0.20*iN);
     return {quoPM:qi, awdPM:ai, invPM:ii, quoN:qN, awdN:aN, invN:iN,
-            qhpN:qhpN, hpaN:hpaN, formula:'project', score:score};
+            qhpRaw:qhpAvg, hpaRaw:hpaAvg, hasHP:hasHP, hasHPA:hasHPA,
+            qhpN:qhpN, hpaN:hpaN, peerCount:cp.length, formula:'project', score:score};
   }
 
   // ACS formula: 30/40/30
   return {quoPM:qi, awdPM:ai, invPM:ii, quoN:qN, awdN:aN, invN:iN,
-          formula:'acs', score:Math.round(0.30*qN+0.40*aN+0.30*iN)};
+          peerCount:cp.length, formula:'acs', score:Math.round(0.30*qN+0.40*aN+0.30*iN)};
 }
 function composite(se,peers){ return scoreParts(se,peers).score; }
 
