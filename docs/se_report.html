@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1791352920"></script>
+<script src="auth.js?v=1791353523"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -186,7 +186,7 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
 .trend-controls label{font-size:12px;color:var(--ink-soft);font-weight:600}
 .trend-controls select{font-family:inherit;font-size:12px;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-weight:500;min-width:180px}
 .cmp-vs{font-size:12px;font-weight:700;color:var(--ink-faint)}
-.score-info{opacity:0.5;transition:opacity 0.15s}.score-info:hover{opacity:1}
+.score-info{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;font-style:normal;text-decoration:none;cursor:pointer;vertical-align:middle;margin-left:4px;opacity:0.7;transition:opacity 0.15s}.score-info:hover{opacity:1}
 .score-breakdown td{background:var(--bg);border-bottom:1px solid var(--line)}
 #seg-compare button{min-width:76px}
 .cmp-header{display:flex;align-items:center;gap:6px;margin-bottom:2px}
@@ -734,7 +734,7 @@ function renderTable(){
       +'<td class="num val-inv">'+sar(r.inv)+'</td>'
       +'<td><div class="spark">'+spark+'</div></td>'
       +'<td class="num"><span class="score '+sc+'">'+r.score+'</span>'
-      +' <a href="javascript:void(0)" class="score-info" data-sname="'+escAttr(se.se_name)+'" title="Score breakdown" style="font-size:11px;color:var(--blue);text-decoration:none;cursor:pointer;vertical-align:super">ℹ</a></td>'
+      +' <a href="javascript:void(0)" class="score-info" data-sname="'+escAttr(se.se_name)+'" title="Score breakdown">?</a></td>'
       +'<td><span class="chev">&#9660;</span></td>'
       +'</tr>'
       +'<tr class="score-breakdown" data-sbk="'+idx+'" style="display:none"><td colspan="8"><div class="detail-inner" data-sbk-name="'+escAttr(se.se_name)+'"></div></td></tr>'
@@ -1034,27 +1034,41 @@ document.getElementById('btn-export').addEventListener('click',exportExcel);
 
 // Composite-score export — one row per SE with score + components, respects filters
 function exportScores(){
+  var allActive=SE_DATA.filter(function(s){return !INACTIVE_SES[s.se_name]||STATE.showInactive;});
   var p=peers();
   var rows=p.map(function(se){
-    return {se:se, sp:scoreParts(se,p), quo:total(se,'quo'), awd:total(se,'awd'), inv:total(se,'inv')};
+    return {se:se, sp:scoreParts(se,allActive), quo:total(se,'quo'), awd:total(se,'awd'), inv:total(se,'inv')};
   });
   rows.sort(function(a,b){return b.sp.score-a.sp.score;});
-  function toM(v){return v?Math.round(v/1000)/1000:0;}   // millions, 3dp
-  function r1(v){return Math.round(v*10)/10;}            // 1dp
-  var aoa=[['Rank','Sales Engineer','Team','Type','Composite score',
-            'Quo /mo (M)','Award /mo (M)','Inv /mo (M)',
-            'Quo norm','Award norm','Inv norm',
-            'Total quo (M)','Total award (M)','Total inv (M)','Tenure']];
+  function toM(v){return v?Math.round(v/1000)/1000:0;}
+  function r1(v){return v!=null?Math.round(v*10)/10:'';}
+  function pct(v){return v!=null?(v*100).toFixed(1)+'%':'';}
+  function avgR(obj){var ks=Object.keys(obj||{});if(!ks.length)return null;var s=0;ks.forEach(function(k){s+=obj[k]||0;});return s/ks.length;}
+
+  var aoa=[['Rank','Sales Engineer','Team','Formula','Score',
+            'Quo /mo (M)','Quo rank (0-100)','Quo weight','Quo pts',
+            'Q→HP avg rate','Q→HP rank (0-100)','Q→HP weight','Q→HP pts',
+            'Award /mo (M)','Award rank (0-100)','Award weight','Award pts',
+            'HP→Awd avg rate','HP→Awd rank (0-100)','HP→Awd weight','HP→Awd pts',
+            'Inv /mo (M)','Inv rank (0-100)','Inv weight','Inv pts',
+            'Total quo (M)','Total award (M)','Total inv (M)','Tenure','Peers']];
   rows.forEach(function(r,i){
-    var se=r.se, sp=r.sp;
-    aoa.push([i+1, se.se_name, se.team||'', se.se_type||'', sp.score,
-      toM(sp.quoPM), toM(sp.awdPM), toM(sp.invPM),
-      r1(sp.quoN), r1(sp.awdN), r1(sp.invN),
+    var se=r.se, sp=r.sp, f=sp.formula;
+    var isPrj=f==='project';
+    var qW=isPrj?0.20:0.30, aW=isPrj?0.20:0.40, iW=isPrj?0.20:0.30;
+    aoa.push([
+      i+1, se.se_name, se.team||'', isPrj?'Project (5×20%)':'ACS (30/40/30)', sp.score,
+      toM(sp.quoPM), r1(sp.quoN), Math.round(qW*100)+'%', Math.round(qW*sp.quoN),
+      isPrj?pct(avgR(se.hp_ratio)):'n/a', isPrj?r1(sp.qhpN):'n/a', isPrj?'20%':'n/a', isPrj?Math.round(0.20*sp.qhpN):'n/a',
+      toM(sp.awdPM), r1(sp.awdN), Math.round(aW*100)+'%', Math.round(aW*sp.awdN),
+      isPrj?pct(avgR(se.hp_award_ratio)):'n/a', isPrj?r1(sp.hpaN):'n/a', isPrj?'20%':'n/a', isPrj?Math.round(0.20*sp.hpaN):'n/a',
+      toM(sp.invPM), r1(sp.invN), Math.round(iW*100)+'%', Math.round(iW*sp.invN),
       toM(r.quo), toM(r.awd), toM(r.inv),
-      se.join_date?'New':'Old']);
+      se.join_date||'', sp.peerCount||''
+    ]);
   });
   var ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[5,30,14,11,14,11,12,11,9,10,9,13,14,13,7].map(function(w){return{wch:w};});
+  ws['!cols']=[5,28,16,18,7, 12,12,9,7, 12,12,9,7, 12,12,9,7, 12,12,9,7, 12,12,9,7, 13,13,13,10,6].map(function(w){return{wch:w};});
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Composite Scores');
   XLSX.writeFile(wb, 'SE_Composite_Scores_'+new Date().toISOString().slice(0,10)+'.xlsx');
