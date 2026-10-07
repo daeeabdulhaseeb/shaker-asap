@@ -252,6 +252,38 @@ tr.clickable:hover td{background:var(--surface2)}
 @media (max-width:920px){.kband{grid-template-columns:repeat(3,1fr)}.kp:nth-child(4){border-left:0}.kp:nth-child(-n+3){border-bottom:1px solid var(--line)}.cgrid{grid-template-columns:1fr}.cc.full{grid-column:auto}}
 @media (max-width:600px){.nav{padding:0 14px;gap:14px}.page{padding:16px 14px 32px}.kband{grid-template-columns:repeat(2,1fr)}.kp:nth-child(odd){border-left:0}.kp:nth-child(-n+4){border-bottom:1px solid var(--line)}.kp:nth-child(-n+3){border-bottom:1px solid var(--line)}.cc-h{flex-direction:column}.cc-ctl{flex-wrap:wrap}}
 @media (prefers-reduced-motion:no-preference){.tpop.open{animation:pop .12s ease-out}@keyframes pop{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}}
+/* -- Analytics tab -- */
+#page-analytics .seg{display:inline-flex;border:1px solid var(--border2);border-radius:5px;overflow:hidden;background:var(--surface);flex-wrap:wrap}
+#page-analytics .seg button{font-size:11px;padding:5px 12px;border:0;background:transparent;color:var(--text2);cursor:pointer;border-right:1px solid var(--border2)}
+#page-analytics .seg button:last-child{border-right:0}
+#page-analytics .seg button.on{background:#0E7C7B;color:#fff;font-weight:600}
+#page-analytics .kbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+#page-analytics .kp{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 15px;flex:1;min-width:140px}
+#page-analytics .kp.hi{border-left:4px solid #0E7C7B}
+#page-analytics .kp .kl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+#page-analytics .kp .kv{font-size:19px;font-weight:600;margin-top:2px}
+#page-analytics .kp .ks{font-size:10px;color:var(--text3);margin-top:1px}
+#page-analytics .an-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:15px 17px;margin-bottom:14px}
+#page-analytics .an-card h3{font-size:13px;font-weight:600}
+#page-analytics .an-card .cs{font-size:10.5px;color:var(--text3);margin-top:1px;margin-bottom:12px}
+#page-analytics .chw{position:relative;height:300px}
+#page-analytics .chw.sm{height:230px}
+#page-analytics .chw canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+#page-analytics .an-row2{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-bottom:14px}
+#page-analytics .lgd{display:flex;gap:14px;margin-top:10px;font-size:10.5px;color:var(--text2);flex-wrap:wrap}
+#page-analytics .lgd i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+#page-analytics .lgd i.line{height:3px}
+#page-analytics .obs{margin-top:10px;padding:9px 12px;background:#eef2ef;border-left:3px solid #2e7d52;border-radius:0 6px 6px 0;font-size:11px;color:#2c3a30;line-height:1.5}
+#page-analytics .obs b{font-weight:600}
+#page-analytics .alarms{display:flex;flex-direction:column;gap:7px}
+#page-analytics .al{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border-radius:7px;font-size:11px}
+#page-analytics .al.alarm{background:#f7e9e8;border:1px solid #e3c4c1}
+#page-analytics .al.warn{background:#f6efe0;border:1px solid #e3d4b0}
+#page-analytics .al.ok{background:#e8efe9;border:1px solid #c4ddc9}
+#page-analytics .al .ic{font-weight:700;font-size:13px;line-height:1.1}
+#page-analytics .al .tt{font-weight:600}
+#page-analytics .al .mm{color:var(--text2)}
+#page-analytics .an-foot{font-size:10px;color:var(--text3);margin-top:4px;padding-top:10px;border-top:1px solid var(--border)}
 </style>
 </head>
 <body>
@@ -261,10 +293,46 @@ tr.clickable:hover td{background:var(--surface2)}
   <span class="nav-link" onclick="showPage('accounts',this)">Account explorer</span>
   <span class="nav-link" onclick="showPage('accanalysis',this)">Account analysis</span>
   <span class="nav-link" onclick="showPage('openbox',this)">Open box</span>
+  <span class="nav-link" id="nav-analytics" onclick="showPage('analytics',this)">Analytics</span>
   <span class="nav-updated" id="last-updated"></span>
   <span id="nav-user" style="font-size:11px;color:var(--text2);margin-left:8px;white-space:nowrap;padding:0 4px;background:var(--accent-light);border-radius:4px"></span>
   <button onclick="ShakerAuth.logout()" style="font-size:11px;padding:4px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text2);cursor:pointer;margin-left:6px;white-space:nowrap">Sign out</button>
 </nav>
+
+<!-- ANALYTICS -->
+<div id="page-analytics" class="page">
+  <div class="hd"><div><h1 style="font-size:16px;font-weight:600">Pipeline Conversion Analysis</h1><p style="font-size:11px;color:var(--text3)">How backlog converts to revenue · Award → Backlog → Invoice (installation excluded) · 2025–2026</p></div></div>
+  <div class="seg" id="an-grpseg" style="margin:10px 0 14px"></div>
+  <div class="kbar" id="an-kbar"></div>
+  <div class="card an-card">
+    <h3>Backlog → next-month invoice, with conversion rate</h3>
+    <div class="cs">Each month's closing backlog (pale) paired with the invoice it produced the <b>next</b> month (dark). Line = invoice ÷ prior backlog — the monthly drain rate.</div>
+    <div class="chw"><canvas id="an-c1"></canvas></div>
+    <div class="lgd"><span><i style="background:#bfe0ca"></i>Month-end backlog</span><span><i style="background:#2e7d52"></i>Next-month invoice ex-install</span><span><i class="line" style="background:#0E7C7B"></i>Conversion % (right axis)</span></div>
+    <div class="obs" id="an-obs1"></div>
+  </div>
+  <div class="an-row2">
+    <div class="card an-card" style="margin-bottom:0">
+      <h3>Drain-rate trend — throughput health</h3>
+      <div class="cs">3-month smoothed conversion rate. Flat = healthy · falling = backlog clogging · rising = burning down.</div>
+      <div class="chw sm"><canvas id="an-c2"></canvas></div>
+      <div class="obs" id="an-obs2"></div>
+    </div>
+    <div class="card an-card" style="margin-bottom:0">
+      <h3>Alarm panel — <span id="an-alteam"></span></h3>
+      <div class="cs" id="an-alsub"></div>
+      <div class="alarms" id="an-alarms"></div>
+    </div>
+  </div>
+  <div class="card an-card">
+    <h3>Award &amp; Backlog vs Invoice — YoY pairs</h3>
+    <div class="cs">Award and backlog as bars, invoice as line. Each month shows 2025 then 2026 side by side.</div>
+    <div class="chw"><canvas id="an-c3"></canvas></div>
+    <div class="lgd"><span><i style="background:#b3903a"></i>Award</span><span><i style="background:#bfe0ca"></i>Backlog</span><span><i class="line" style="background:#2e7d52"></i>Invoice ex-install</span></div>
+    <div class="obs" id="an-obs3"></div>
+  </div>
+  <div class="an-foot">Read with care: ~20 months of data — directional, not statistically conclusive. Conversion = invoice ÷ backlog; core finding is invoice ≈ 10% of prior-month backlog. Backlog is Single (DX) + Applied, installation-free; invoice excludes installation to match. ACS combines CR/ER/WR (backlog uses the combined ACS row where present pre-split, sub-teams after).</div>
+</div>
 
 <!-- HOME -->
 <div id="page-home" class="page active">
@@ -957,6 +1025,7 @@ function showPage(id,el){
     if(id==='accanalysis' && !window._aaInit) window._aaPending=true;
     ensureAccounts();
   }
+  if(id==='analytics' && typeof ASAPAnalytics!=='undefined'){ try{ASAPAnalytics.init();}catch(e){console.error('analytics',e);} }
 }
 function populateFilter(selId,values){
   var sel=document.getElementById(selId);
@@ -3971,6 +4040,188 @@ function ensureAccounts(){
   });
   return __ACC_PROMISE;
 }
+/* === ANALYTICS ENGINE === */
+/* ASAP Analytics — Pipeline Conversion. Depends on TEAM_DATA + BL_DATA (both loaded phase-1). */
+(function(global){
+'use strict';
+var MONTHS_FULL=[], MLBL=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var PROJECT=['Central Projects','West Projects','East Projects','Direct Channel'];
+var ACS_SUB=['ACS - CR','ACS - ER','ACS - WR'];
+var AX={};            // chart instances
+var CUR='All Project';
+var TEAMS_SCOPE=[];   // which group buttons to show (role-aware)
+
+function num(v){v=parseFloat(v);return isFinite(v)?v:0;}
+function sum(a){return a.reduce(function(s,x){return s+(x||0);},0);}
+function mean(a){return a.length?sum(a)/a.length:0;}
+function ML(m){var p=m.split('-');return MLBL[+p[1]-1]+" '"+p[0].slice(2);}
+function tmapGet(team){for(var i=0;i<TEAM_DATA.length;i++)if(TEAM_DATA[i].team===team)return TEAM_DATA[i];return null;}
+
+// month list = union across teams of 2025-01..latest; cap at last month any team has sales
+function buildMonths(){
+  MONTHS_FULL=[];
+  for(var y=2025;y<=2026;y++)for(var m=1;m<=12;m++){
+    var key=y+'-'+(m<10?'0'+m:m);
+    MONTHS_FULL.push(key);
+  }
+  // trim trailing months with no sales anywhere
+  while(MONTHS_FULL.length){
+    var k=MONTHS_FULL[MONTHS_FULL.length-1];var yr=k.slice(0,4),mm=String(+k.slice(5));
+    var any=TEAM_DATA.some(function(t){return num((t.monthly_sales&&t.monthly_sales[yr]||{})[mm])>0;});
+    if(any)break; MONTHS_FULL.pop();
+  }
+}
+function awardM(t,key){return num((t.monthly_award||{})[key]);}
+function salesM(t,key){var yr=key.slice(0,4),mm=String(+key.slice(5));return num((t.monthly_sales&&t.monthly_sales[yr]||{})[mm]);}
+function instM(t,key){var yr=key.slice(0,4),mm=String(+key.slice(5));return num((t.monthly_install&&t.monthly_install[yr]||{})[mm]);}
+function invexM(t,key){return salesM(t,key)-instM(t,key);}
+function blTeamM(team,key){var d=(BL_DATA[team]||{})[key];return d?num(d.Single)+num(d.Applied):0;}
+function blACSM(key){var c=BL_DATA['ACS']||{};if(c[key])return num(c[key].Single)+num(c[key].Applied);return ACS_SUB.reduce(function(s,x){return s+blTeamM(x,key);},0);}
+
+function groupTeams(name){
+  if(name==='All Project')return PROJECT;
+  if(name==='ACS')return ACS_SUB;
+  return [name];
+}
+function seriesFor(name){
+  var teams=groupTeams(name);
+  var award=[],invex=[],bl=[],install=[],invoice=[];
+  MONTHS_FULL.forEach(function(key){
+    var a=0,ie=0,b=0,ins=0,iv=0;
+    teams.forEach(function(tn){var t=tmapGet(tn);if(!t)return;a+=awardM(t,key);ie+=invexM(t,key);ins+=instM(t,key);iv+=salesM(t,key);});
+    if(name==='ACS')b=blACSM(key); else teams.forEach(function(tn){b+=blTeamM(tn,key);});
+    award.push(+(a/1e6).toFixed(2));invex.push(+(ie/1e6).toFixed(2));bl.push(+(b/1e6).toFixed(2));install.push(+(ins/1e6).toFixed(2));invoice.push(+(iv/1e6).toFixed(2));
+  });
+  return {award:award,invex:invex,bl:bl,install:install,invoice:invoice};
+}
+
+function destroy(k){if(AX[k]){AX[k].destroy();delete AX[k];}}
+
+function chart1(g){
+  var labels=[],blv=[],inv=[],conv=[];
+  for(var i=0;i<MONTHS_FULL.length-1;i++){
+    labels.push([ML(MONTHS_FULL[i])+' BL',ML(MONTHS_FULL[i+1])+' Inv']);
+    blv.push(g.bl[i]);inv.push(g.invex[i+1]);
+    conv.push(g.bl[i]>0?+(g.invex[i+1]/g.bl[i]*100).toFixed(1):null);
+  }
+  destroy('c1');
+  AX.c1=new Chart(document.getElementById('an-c1'),{data:{labels:labels,datasets:[
+    {type:'bar',data:blv,backgroundColor:'rgba(191,224,202,.85)',yAxisID:'y',order:2,datalabels:{display:false}},
+    {type:'bar',data:inv,backgroundColor:'#2e7d52',yAxisID:'y',order:3,datalabels:{display:true,anchor:'end',align:'top',font:{size:7.5,weight:'600'},color:'#1a4a30',formatter:function(v){return v?v.toFixed(0):null;}}},
+    {type:'line',data:conv,borderColor:'#0E7C7B',yAxisID:'y1',order:1,tension:.25,pointRadius:2.5,pointBackgroundColor:'#0E7C7B',borderWidth:2.5,datalabels:{display:true,align:'top',offset:4,font:{size:8,weight:'700'},color:'#0E7C7B',formatter:function(v){return v!=null?v.toFixed(0)+'%':null;}}}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{},tooltip:{callbacks:{title:function(i){return i[0].label.join(' → ');},label:function(c){if(c.datasetIndex===2)return 'Converted '+c.raw+'% of backlog';return (c.datasetIndex===0?'Backlog ':'Invoice ')+c.raw+'M';}}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:7},autoSkip:false,maxRotation:90,minRotation:90}},
+      y:{position:'left',title:{display:true,text:'SAR millions',font:{size:9},color:'#8b9199'},ticks:{font:{size:9},callback:function(v){return v+'M';}},grid:{color:'#e3e6e9'}},
+      y1:{position:'right',min:0,max:16,title:{display:true,text:'Conversion %',font:{size:9},color:'#0E7C7B'},ticks:{font:{size:9},color:'#0E7C7B',callback:function(v){return v+'%';}},grid:{display:false}}}}});
+}
+function chart2(g){
+  var labels=[],r=[];
+  for(var i=2;i<g.invex.length;i++){var inv3=(g.invex[i]+g.invex[i-1]+g.invex[i-2])/3;r.push(g.bl[i]>0?+(inv3/g.bl[i]*100).toFixed(1):null);labels.push(ML(MONTHS_FULL[i]));}
+  destroy('c2');
+  AX.c2=new Chart(document.getElementById('an-c2'),{type:'line',data:{labels:labels,datasets:[{data:r,borderColor:'#0E7C7B',backgroundColor:'rgba(14,124,123,.09)',fill:true,tension:.3,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:false},tooltip:{callbacks:{label:function(c){return 'Drain rate '+c.raw+'%';}}}},scales:{x:{grid:{display:false},ticks:{font:{size:8},maxRotation:60,minRotation:60}},y:{ticks:{font:{size:9},callback:function(v){return v+'%';}},grid:{color:'#e3e6e9'}}}}});
+}
+function chart3(g){
+  function val(arr,yr,m){var key=yr+'-'+(m<10?'0'+m:m);var idx=MONTHS_FULL.indexOf(key);return idx>=0?arr[idx]:null;}
+  var labels=[],aw=[],blb=[],inv=[];
+  for(var m=1;m<=12;m++){
+    labels.push(MLBL[m-1]+" '25");aw.push(val(g.award,'2025',m));blb.push(val(g.bl,'2025',m));inv.push(val(g.invex,'2025',m));
+    labels.push(MLBL[m-1]+" '26");aw.push(val(g.award,'2026',m));blb.push(val(g.bl,'2026',m));inv.push(val(g.invex,'2026',m));
+  }
+  destroy('c3');
+  AX.c3=new Chart(document.getElementById('an-c3'),{data:{labels:labels,datasets:[
+    {type:'bar',label:'Backlog',data:blb,backgroundColor:'rgba(191,224,202,.7)',yAxisID:'y1',order:3,datalabels:{display:false}},
+    {type:'bar',label:'Award',data:aw,backgroundColor:'#b3903a',yAxisID:'y',order:2,datalabels:{display:false}},
+    {type:'line',label:'Invoice',data:inv,borderColor:'#2e7d52',yAxisID:'y',order:1,tension:.25,pointRadius:2,borderWidth:2.5,spanGaps:true,datalabels:{display:false}}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return c.raw==null?null:c.dataset.label+': '+c.raw+'M';}}}},
+    scales:{x:{grid:{color:function(c){return c.index%2===0&&c.index>0?'rgba(15,36,48,.18)':'rgba(15,36,48,.04)';},lineWidth:function(c){return c.index%2===0&&c.index>0?1.3:0.4;}},ticks:{font:{size:7.5},autoSkip:false,maxRotation:90,minRotation:90}},
+      y:{position:'left',title:{display:true,text:'Award / Invoice (flow)',font:{size:9},color:'#8b9199'},ticks:{font:{size:9},callback:function(v){return v+'M';}},grid:{color:'#e3e6e9'}},
+      y1:{position:'right',title:{display:true,text:'Backlog (stock)',font:{size:9},color:'#8b9199'},ticks:{font:{size:9},callback:function(v){return v+'M';}},grid:{display:false}}}}});
+}
+
+function alarmsFor(g){
+  var A=g.award,I=g.invex,B=g.bl,INV=g.invoice,INST=g.install,out=[];
+  var bltrend=B[0]>0?(B[B.length-1]-B[0])/B[0]*100:0;
+  var diff=[];for(var i=Math.max(0,B.length-6);i<B.length;i++)diff.push(A[i]-I[i]);
+  if(bltrend>15&&diff.filter(function(x){return x>0;}).length>=3)out.push(['alarm','!','Backlog building','Winning faster than delivering — backlog '+(bltrend>0?'+':'')+bltrend.toFixed(0)+'%. Cash tied up in undelivered work.']);
+  if(bltrend<-15&&diff.filter(function(x){return x<0;}).length>=3)out.push(['warn','↓','Backlog starving','Billing down old wins — backlog '+bltrend.toFixed(0)+'%. Revenue cliff if awards don’t recover.']);
+  function cv(a,i){var s=sum(a);return s>0?sum(i)/s*100:0;}
+  var cl=cv(A.slice(-3),I.slice(-3)),cp=cv(A.slice(-6,-3),I.slice(-6,-3));
+  if(cp>0&&(cl-cp)/cp<-0.20)out.push(['alarm','↘','Conversion drop','Last quarter '+cp.toFixed(0)+'% to '+cl.toFixed(0)+'%. Delivery or award quality slipped.']);
+  if(A.length>=8){var base=sum(A.slice(-8,-2))/6;if(base>0&&A.slice(-2).every(function(x){return x<0.6*base;}))out.push(['warn','▼','Award drought','Last 2mo awards '+(sum(A.slice(-2))/2).toFixed(0)+'M vs '+base.toFixed(0)+'M avg. Future backlog at risk.']);}
+  var instPct=sum(INV)>0?sum(INST)/sum(INV)*100:0;
+  if(instPct>20)out.push(['warn','◆','Install-inflated',instPct.toFixed(0)+'% of invoice is installation — core contracting revenue is lower than headline.']);
+  if(!out.length)out.push(['ok','✓','No alarms','Conversion, backlog and award intake all within normal range.']);
+  return out;
+}
+
+function obsFor(name,g){
+  var conv=[];for(var i=0;i<MONTHS_FULL.length-1;i++)if(g.bl[i]>0)conv.push(g.invex[i+1]/g.bl[i]*100);
+  var mc=mean(conv),curBL=g.bl[g.bl.length-1];
+  var r3=[];for(var i=2;i<g.invex.length;i++)if(g.bl[i]>0)r3.push((g.invex[i]+g.invex[i-1]+g.invex[i-2])/3/g.bl[i]*100);
+  var early=mean(r3.slice(0,5)),late=mean(r3.slice(-5));
+  var bltrend=g.bl[0]>0?(g.bl[g.bl.length-1]-g.bl[0])/g.bl[0]*100:0;
+  var cum=sum(g.award)>0?sum(g.invex)/sum(g.award)*100:0;
+  var dirn=late<early-0.5?'slowing':late>early+0.5?'rising':'holding steady';
+  var mn=conv.length?Math.min.apply(null,conv):0,mx=conv.length?Math.max.apply(null,conv):0;
+  return {
+    c1:name+' converts a steady '+mc.toFixed(0)+'% of backlog to invoice each month (range '+mn.toFixed(0)+'–'+mx.toFixed(0)+'%). Current backlog '+curBL.toFixed(0)+'M → next month should bill ~'+(curBL*mc/100).toFixed(0)+'M.',
+    c2:'Throughput is '+dirn+': drain rate moved from ~'+early.toFixed(0)+'% early in the window to ~'+late.toFixed(0)+'% recently. '+(dirn==='slowing'?'Backlog is converting more slowly — watch delivery pace.':dirn==='rising'?'Backlog is being worked down faster.':'Delivery pace is stable.'),
+    c3:'Over the window '+name+' won '+sum(g.award).toFixed(0)+'M and invoiced '+sum(g.invex).toFixed(0)+'M ex-install ('+cum.toFixed(0)+'% converted), with backlog '+(bltrend>=0?'+':'')+bltrend.toFixed(0)+'%. '+(cum<90&&bltrend>10?'Winning faster than billing — backlog building.':cum>110?'Billing down backlog faster than refilling.':'Intake and delivery roughly in balance.')
+  };
+}
+
+function render(){
+  var g=seriesFor(CUR);
+  chart1(g);chart2(g);chart3(g);
+  var conv=[];for(var i=0;i<MONTHS_FULL.length-1;i++)if(g.bl[i]>0)conv.push(g.invex[i+1]/g.bl[i]*100);
+  var mc=mean(conv),A=sum(g.award),I=sum(g.invex),curBL=g.bl[g.bl.length-1];
+  var bltrend=g.bl[0]>0?(g.bl[g.bl.length-1]-g.bl[0])/g.bl[0]*100:0;
+  document.getElementById('an-kbar').innerHTML=
+    '<div class="kp hi"><div class="kl">Conversion rate</div><div class="kv">'+mc.toFixed(1)+'%</div><div class="ks">of backlog invoices each month</div></div>'
+    +'<div class="kp"><div class="kl">Current backlog</div><div class="kv">'+curBL.toFixed(0)+'M</div><div class="ks">→ expect ~'+(curBL*mc/100).toFixed(0)+'M next month</div></div>'
+    +'<div class="kp"><div class="kl">Backlog trend</div><div class="kv" style="color:'+(bltrend>15?'#AF291D':bltrend<-15?'#9C5B00':'var(--text)')+'">'+(bltrend>0?'+':'')+bltrend.toFixed(0)+'%</div><div class="ks">over the window</div></div>'
+    +'<div class="kp"><div class="kl">Cumulative conversion</div><div class="kv">'+(A>0?(I/A*100).toFixed(0):'--')+'%</div><div class="ks">invoice / award over window</div></div>';
+  var o=obsFor(CUR,g);
+  document.getElementById('an-obs1').innerHTML='<b>Observation:</b> '+o.c1;
+  document.getElementById('an-obs2').innerHTML='<b>Observation:</b> '+o.c2;
+  document.getElementById('an-obs3').innerHTML='<b>Observation:</b> '+o.c3;
+  var al=alarmsFor(g);
+  document.getElementById('an-alteam').textContent=CUR;
+  document.getElementById('an-alsub').textContent=al.filter(function(a){return a[0]!=='ok';}).length+' indicator(s) firing';
+  document.getElementById('an-alarms').innerHTML=al.map(function(a){return '<div class="al '+a[0]+'"><span class="ic">'+a[1]+'</span><div><span class="tt">'+a[2]+'</span> — <span class="mm">'+a[3]+'</span></div></div>';}).join('');
+}
+
+function buildScope(){
+  // role-aware group buttons. Managers (__MY_TEAMS set) see only their teams; EVP sees all.
+  var my=global.__MY_TEAMS;
+  if(my&&my.length){
+    TEAMS_SCOPE=[];
+    my.forEach(function(tn){ if(PROJECT.indexOf(tn)>=0||ACS_SUB.indexOf(tn)>=0) TEAMS_SCOPE.push(tn); });
+    // if manager owns ACS sub-teams, offer ACS combined too
+    if(my.some(function(tn){return ACS_SUB.indexOf(tn)>=0;}))TEAMS_SCOPE.push('ACS');
+    CUR=TEAMS_SCOPE[0]||'All Project';
+  } else {
+    TEAMS_SCOPE=['All Project'].concat(PROJECT).concat(['ACS']);
+    CUR='All Project';
+  }
+  var seg=document.getElementById('an-grpseg');
+  seg.innerHTML=TEAMS_SCOPE.map(function(g,i){return '<button class="'+(g===CUR?'on':'')+'" data-g="'+g+'">'+g+'</button>';}).join('');
+}
+
+var INIT=false;
+function init(){
+  if(INIT){render();return;}
+  if(typeof Chart==='undefined'||!TEAM_DATA||!TEAM_DATA.length)return;
+  Chart.register(ChartDataLabels);
+  buildMonths();buildScope();
+  var seg=document.getElementById('an-grpseg');
+  seg.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;CUR=b.getAttribute('data-g');this.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');render();});
+  INIT=true;render();
+}
+global.ASAPAnalytics={init:init};
+})(typeof window!=='undefined'?window:globalThis);
+
+/* === END ANALYTICS ENGINE === */
 ShakerAuth.init({
   onLogin: function(session) {
     // Show user info in nav
@@ -3987,6 +4238,10 @@ ShakerAuth.init({
       });
       showPage('openbox', document.querySelector('.nav-link'));
     }
+
+    // Analytics nav: EVP + admin + managers only (not plain SE)
+    var anNav=document.getElementById('nav-analytics');
+    if(anNav){ var canAn=(role==='evp'||role==='admin'||role.indexOf('manager')>=0); anNav.style.display=canAn?'':'none'; }
 
     // Restrict OB tabs based on role
     var rlTab = document.getElementById('ob-tab-redlist');
