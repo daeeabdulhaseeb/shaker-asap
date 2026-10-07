@@ -231,6 +231,8 @@ tr.clickable:hover td{background:var(--surface2)}
 .seg-b:last-child{border-right:0}
 .seg-b:hover{color:var(--text2)}
 .seg-b.on{background:var(--surface);color:var(--text);font-weight:600}
+.inst-b:hover{color:var(--text2)}
+.inst-b.on{background:var(--teal);color:#fff;border-color:var(--teal);font-weight:600}
 .tdd{position:relative}
 .tbtn{font-size:10.5px;padding:3px 9px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--text3);cursor:pointer}
 .tbtn:hover{color:var(--text2)}
@@ -1178,7 +1180,7 @@ function ctlHTML(id){
   var s=st(id);
   var modes=[['yoy','YoY'],['qtr','Qtr'],['year','Year'],['ytd','YTD']];
   var h='<div class="seg" role="tablist">'+modes.map(function(m){return'<button type="button" class="seg-b'+(s.mode===m[0]?' on':'')+'" data-chart="'+id+'" data-mode="'+m[0]+'">'+m[1]+'</button>';}).join('')+'</div>';
-  if(INSTALL_CHARTS[id]){h+='<button type="button" class="seg-b'+(s.noInstall?' on':'')+'" style="border:1px solid var(--line);border-radius:4px;margin-left:2px" data-chart="'+id+'" data-act="toggle-install" title="Exclude installation revenue">Excl. install</button>';}
+  if(INSTALL_CHARTS[id]){h+='<button type="button" class="inst-b'+(s.noInstall?' on':'')+'" style="font-size:10.5px;padding:3px 9px;border:1px solid var(--line);border-radius:4px;margin-left:4px;background:transparent;color:var(--text3);cursor:pointer" data-chart="'+id+'" data-act="toggle-install" title="Exclude installation revenue">Excl. install</button>';}
   h+='<div class="tdd"><button type="button" class="tbtn" data-chart="'+id+'" data-act="toggle-teams">Teams <span class="chev">&#9662;</span></button><div class="tpop" id="tp-'+id+'">';
   h+='<label><input type="checkbox" data-chart="'+id+'" data-act="team-all" '+(s.teams?'':'checked')+'> <b>All teams</b></label>';
   TEAMS.forEach(function(t){h+='<label><input type="checkbox" class="tcb" data-chart="'+id+'" value="'+esc(t.team)+'" '+((!s.teams||s.teams.indexOf(t.team)>=0)?'checked':'')+'> '+esc(t.team)+'</label>';});
@@ -1225,10 +1227,10 @@ function mount(){
   DEFS.forEach(function(d){document.getElementById('ctl-'+d.id).innerHTML=ctlHTML(d.id);});
   /* one delegated listener for everything */
   g.addEventListener('click',function(e){
-    var b=e.target.closest('.seg-b');
-    if(b){var id=b.getAttribute('data-chart');st(id).mode=b.getAttribute('data-mode');b.parentNode.querySelectorAll('.seg-b').forEach(function(x){x.classList.remove('on');});b.classList.add('on');renderChart(id);return;}
     var ib=e.target.closest('[data-act="toggle-install"]');
     if(ib){var id=ib.getAttribute('data-chart');st(id).noInstall=!st(id).noInstall;ib.classList.toggle('on');renderChart(id);return;}
+    var b=e.target.closest('.seg-b');
+    if(b&&b.getAttribute('data-mode')){var id=b.getAttribute('data-chart');st(id).mode=b.getAttribute('data-mode');b.parentNode.querySelectorAll('.seg-b').forEach(function(x){x.classList.remove('on');});b.classList.add('on');renderChart(id);return;}
     var tb=e.target.closest('[data-act="toggle-teams"]');
     if(tb){var p=document.getElementById('tp-'+tb.getAttribute('data-chart'));var open=p.classList.contains('open');document.querySelectorAll('.tpop.open').forEach(function(x){x.classList.remove('open');});if(!open)p.classList.add('open');e.stopPropagation();return;}
   });
