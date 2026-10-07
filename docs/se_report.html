@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1791210261"></script>
+<script src="auth.js?v=1791352549"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -186,6 +186,8 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
 .trend-controls label{font-size:12px;color:var(--ink-soft);font-weight:600}
 .trend-controls select{font-family:inherit;font-size:12px;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer;font-weight:500;min-width:180px}
 .cmp-vs{font-size:12px;font-weight:700;color:var(--ink-faint)}
+.score-info{opacity:0.5;transition:opacity 0.15s}.score-info:hover{opacity:1}
+.score-breakdown td{background:var(--bg);border-bottom:1px solid var(--line)}
 #seg-compare button{min-width:76px}
 .cmp-header{display:flex;align-items:center;gap:6px;margin-bottom:2px}
 .cmp-header .cmp-badge{font-size:10px;font-weight:700;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
@@ -731,16 +733,40 @@ function renderTable(){
       +'<td class="num val-award">'+sar(r.awd)+'</td>'
       +'<td class="num val-inv">'+sar(r.inv)+'</td>'
       +'<td><div class="spark">'+spark+'</div></td>'
-      +'<td class="num"><span class="score '+sc+'">'+r.score+'</span></td>'
+      +'<td class="num"><span class="score '+sc+'">'+r.score+'</span>'
+      +' <a href="javascript:void(0)" class="score-info" data-sname="'+escAttr(se.se_name)+'" title="Score breakdown" style="font-size:11px;color:var(--blue);text-decoration:none;cursor:pointer;vertical-align:super">ℹ</a></td>'
       +'<td><span class="chev">&#9660;</span></td>'
       +'</tr>'
+      +'<tr class="score-breakdown" data-sbk="'+idx+'" style="display:none"><td colspan="8"><div class="detail-inner" data-sbk-name="'+escAttr(se.se_name)+'"></div></td></tr>'
       +'<tr class="detail" data-detail="'+idx+'" style="display:none"><td colspan="8"><div class="detail-inner" data-name="'+escAttr(se.se_name)+'"></div></td></tr>';
   });
   document.getElementById('tbody').innerHTML=html;
   document.getElementById('row-count').textContent=rows.length+' engineers · ranked by '+(sk==='score'?'composite score':sk);
 
   document.querySelectorAll('.se-row').forEach(function(tr){
-    tr.addEventListener('click',function(){ toggleRow(tr); });
+    tr.addEventListener('click',function(e){
+      if(e.target.closest('.score-info'))return; // don't toggle detail on info click
+      toggleRow(tr);
+    });
+  });
+  // Wire score ℹ buttons
+  document.querySelectorAll('.score-info').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      var name=btn.getAttribute('data-sname');
+      var row=btn.closest('tr');
+      var idx=row.getAttribute('data-idx');
+      var sbk=document.querySelector('[data-sbk="'+idx+'"]');
+      if(!sbk)return;
+      var open=sbk.style.display!=='none';
+      if(open){sbk.style.display='none';return;}
+      sbk.style.display='table-row';
+      var inner=sbk.querySelector('[data-sbk-name]');
+      var se=SE_DATA.find(function(s){return s.se_name===name;});
+      if(!se){inner.innerHTML='';return;}
+      var allActive=SE_DATA.filter(function(s){return !INACTIVE_SES[s.se_name]||STATE.showInactive;});
+      inner.innerHTML=seScoreBreakdown(se,allActive);
+    });
   });
 }
 
@@ -761,8 +787,6 @@ function toggleRow(tr){
     return'<tr><td class="rowlab" style="color:inherit">'+label+'</td>'
       +ms.map(function(m){var v=map[m]||0;return'<td class="'+(v>0?cls:'cell-0')+'">'+(v>0?sar(v):'–')+'</td>';}).join('')+'</tr>';
   }
-  // Quarter-end pace %: cumulative YTD actual / prorated annual target
-  // (Q1=25%, Q2=50%, Q3=75%, Q4=100%). Blank except at Mar/Jun/Sep/Dec.
   function hasTgt(o){return o&&Object.keys(o).some(function(y){return o[y]>0;});}
   function tgtRow(label,tgtByYear,map){
     if(!hasTgt(tgtByYear))return'';
@@ -779,9 +803,7 @@ function toggleRow(tr){
         return'<td class="'+cls+'">'+pct+'%</td>';
       }).join('')+'</tr>';
   }
-  var allActive=SE_DATA.filter(function(s){return !INACTIVE_SES[s.se_name]||STATE.showInactive;});
-  inner.innerHTML=seScoreBreakdown(se,allActive)
-    +'<table class="mtable">'
+  inner.innerHTML='<table class="mtable">'
     +'<tr class="mhead"><td class="rowlab">Month</td>'+ms.map(function(m){return'<td>'+m.slice(5)+'/'+m.slice(2,4)+'</td>';}).join('')+'</tr>'
     +row('Quotations','cell-q',d.quo)
     +row('Award','cell-a',d.award)
@@ -1526,9 +1548,7 @@ function renderTrendsTable(){
             return'<td class="'+cls+'">'+pct+'%</td>';
           }).join('')+'</tr>';
       }
-      var allActive2=SE_DATA.filter(function(s){return !INACTIVE_SES[s.se_name]||STATE.showInactive;});
-      inner.innerHTML=seScoreBreakdown(se,allActive2)
-        +'<table class="mtable">'
+      inner.innerHTML='<table class="mtable">'
         +'<tr class="mhead"><td class="rowlab">Month</td>'+ms2.map(function(m){return'<td>'+m.slice(5)+'/'+m.slice(2,4)+'</td>';}).join('')+'</tr>'
         +row2('Quotations','cell-q',d2.quo)
         +row2('Award','cell-a',d2.award)
