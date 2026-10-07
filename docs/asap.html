@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ASAP Sales Dashboard - Shaker Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="auth.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -4203,7 +4201,7 @@ function buildScope(){
     if(my.some(function(tn){return ACS_SUB.indexOf(tn)>=0;}))TEAMS_SCOPE.push('ACS');
     CUR=TEAMS_SCOPE[0]||'All Project';
   } else {
-    TEAMS_SCOPE=['All Project'].concat(PROJECT).concat(['ACS']);
+    TEAMS_SCOPE=['All Project'].concat(PROJECT).concat(['ACS']).concat(ACS_SUB);
     CUR='All Project';
   }
   var seg=document.getElementById('an-grpseg');
@@ -4211,21 +4209,14 @@ function buildScope(){
 }
 
 var INIT=false;
-var _initTries=0;
 function init(){
   if(INIT){render();return;}
-  // Chart.js or data may not be ready the instant the tab is first opened — retry a few times.
-  if(typeof Chart==='undefined'||typeof ChartDataLabels==='undefined'||!TEAM_DATA||!TEAM_DATA.length){
-    if(_initTries++<40){setTimeout(init,150);} 
-    else{var k=document.getElementById('an-kbar');if(k)k.innerHTML='<div style="padding:16px;color:#AF291D;font-size:12px">Charts could not load (Chart.js unavailable or no data). Reload the page; if it persists, check the network tab for a blocked CDN.</div>';}
-    return;
-  }
-  try{ if(!Chart.registry||!Chart.registry.plugins.get('datalabels')) Chart.register(ChartDataLabels); }catch(e){}
+  if(typeof Chart==='undefined'||!TEAM_DATA||!TEAM_DATA.length)return;
+  Chart.register(ChartDataLabels);
   buildMonths();buildScope();
   var seg=document.getElementById('an-grpseg');
-  if(seg) seg.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;CUR=b.getAttribute('data-g');this.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');render();});
-  INIT=true;
-  try{ render(); }catch(e){ console.error('analytics render failed:',e); INIT=false; var k=document.getElementById('an-kbar'); if(k)k.innerHTML='<div style="padding:16px;color:#AF291D;font-size:12px">Analytics render error: '+e.message+'</div>'; }
+  seg.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;CUR=b.getAttribute('data-g');this.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');render();});
+  INIT=true;render();
 }
 global.ASAPAnalytics={init:init};
 })(typeof window!=='undefined'?window:globalThis);
