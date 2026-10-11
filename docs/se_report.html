@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1791707712"></script>
+<script src="auth.js?v=1791707854"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -607,21 +607,21 @@ function months(){
 }
 
 function seData(se){
-  var own=STATE.own, jd=se.join_date?new Date(se.join_date):null;
+  var own=STATE.own, jdm=se.join_date?se.join_date.slice(0,7):null; // 'YYYY-MM' for month comparison
   var quo={}, award={}, inv={};
   if(se.monthly_quo)Object.keys(se.monthly_quo).forEach(function(k){
-    if(own&&jd&&new Date(k+'-01')<jd)return;
+    if(own&&jdm&&k<jdm)return;  // exclude months BEFORE join month; join month included
     quo[k]=se.monthly_quo[k]||0;
   });
   if(se.monthly_award)Object.keys(se.monthly_award).forEach(function(k){
-    if(own&&jd&&new Date(k+'-01')<jd)return;
+    if(own&&jdm&&k<jdm)return;
     award[k]=se.monthly_award[k]||0;
   });
   if(se.monthly_sales)Object.keys(se.monthly_sales).forEach(function(yr){
     var mo=se.monthly_sales[yr];
     if(mo&&typeof mo==='object')Object.keys(mo).forEach(function(m){
       var key=yr+'-'+(parseInt(m)<10?'0':'')+m;
-      if(own&&jd&&new Date(key+'-01')<jd)return;
+      if(own&&jdm&&key<jdm)return;
       inv[key]=mo[m]||0;
     });
   });
