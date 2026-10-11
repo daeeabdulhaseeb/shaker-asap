@@ -316,13 +316,13 @@ tr.clickable:hover td{background:var(--surface2)}
   <div class="an-row2">
     <div class="card an-card" style="margin-bottom:0">
       <h3>Drain-rate trend — throughput health</h3>
-      <div class="cs">3-month smoothed conversion rate. Flat = healthy · falling = backlog clogging · rising = burning down.</div>
+      <div class="cs"><b>Drain rate = what % of the backlog you invoice each month</b> (3-month average of invoice ÷ backlog). Historically ~10%. <b>Flat</b> = steady delivery · <b>falling</b> = backlog converting slower (clogging, delivery slowing) · <b>rising</b> = burning the backlog down faster than refilling it.</div>
       <div class="chw sm"><canvas id="an-c2"></canvas></div>
       <div class="obs" id="an-obs2"></div>
     </div>
     <div class="card an-card" style="margin-bottom:0">
-      <h3>Alarm panel — <span id="an-alteam"></span></h3>
-      <div class="cs" id="an-alsub"></div>
+      <h3>Team balance — <span id="an-alteam"></span></h3>
+      <div class="cs">Each team's backlog inflow (award) vs outflow (invoice/drain). <b>Balanced</b> = winning ≈ delivering, backlog stable · <b>Building</b> = winning faster than delivering (backlog piling up) · <b>Draining</b> = billing down backlog faster than refilling. <span id="an-alsub" style="font-weight:600"></span></div>
       <div class="alarms" id="an-alarms"></div>
     </div>
   </div>
@@ -4161,7 +4161,7 @@ function chart2(g){
   var labels=[],r=[];
   for(var i=2;i<g.invex.length;i++){var inv3=(g.invex[i]+g.invex[i-1]+g.invex[i-2])/3;r.push(g.bl[i]>0?+(inv3/g.bl[i]*100).toFixed(1):null);labels.push(ML(MONTHS_FULL[i]));}
   destroy('c2');
-  AX.c2=new Chart(document.getElementById('an-c2'),{type:'line',data:{labels:labels,datasets:[{data:r,borderColor:'#0E7C7B',backgroundColor:'rgba(14,124,123,.09)',fill:true,tension:.3,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:false},tooltip:{callbacks:{label:function(c){return 'Drain rate '+c.raw+'%';}}}},scales:{x:{grid:{display:false},ticks:{font:{size:8},maxRotation:60,minRotation:60}},y:{ticks:{font:{size:9},callback:function(v){return v+'%';}},grid:{color:'#e3e6e9'}}}}});
+  AX.c2=new Chart(document.getElementById('an-c2'),{type:'line',data:{labels:labels,datasets:[{data:r,borderColor:'#0E7C7B',backgroundColor:'rgba(14,124,123,.09)',fill:true,tension:.3,pointRadius:2.5,pointBackgroundColor:'#0E7C7B',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:true,align:'top',offset:4,font:{size:8,weight:'700'},color:'#0E7C7B',formatter:function(v){return v!=null?v.toFixed(1)+'%':null;}},tooltip:{callbacks:{label:function(c){return 'Drain rate '+c.raw+'%';}}}},scales:{x:{grid:{display:false},ticks:{font:{size:8},maxRotation:60,minRotation:60}},y:{ticks:{font:{size:9},callback:function(v){return v+'%';}},grid:{color:'#e3e6e9'}}}}});
 }
 function chart3(g){
   function val(arr,yr,m){var key=yr+'-'+(m<10?'0'+m:m);var idx=MONTHS_FULL.indexOf(key);return idx>=0?arr[idx]:null;}
@@ -4179,6 +4179,31 @@ function chart3(g){
     scales:{x:{grid:{color:function(c){return c.index%2===0&&c.index>0?'rgba(15,36,48,.18)':'rgba(15,36,48,.04)';},lineWidth:function(c){return c.index%2===0&&c.index>0?1.3:0.4;}},ticks:{font:{size:7.5},autoSkip:false,maxRotation:90,minRotation:90}},
       y:{position:'left',title:{display:true,text:'Award / Invoice (flow)',font:{size:9},color:'#8b9199'},ticks:{font:{size:9},callback:function(v){return v+'M';}},grid:{color:'#e3e6e9'}},
       y1:{position:'right',title:{display:true,text:'Backlog (stock)',font:{size:9},color:'#8b9199'},ticks:{font:{size:9},callback:function(v){return v+'M';}},grid:{display:false}}}}});
+}
+
+// Per-team balance: is each team's backlog inflow (award) vs outflow (invoice/drain) in balance?
+// Returns one verdict row per team. Always evaluates ALL teams, independent of the selected group.
+function teamBalanceRows(){
+  var teamsList=['Central Projects','West Projects','East Projects','Direct Channel','ACS'];
+  return teamsList.map(function(nm){
+    var g=seriesFor(nm);
+    var A=g.award,I=g.invex,B=g.bl;
+    var bltrend=B[0]>0?(B[B.length-1]-B[0])/B[0]*100:0;
+    // recent 6-month award vs invoice (inflow vs outflow)
+    var rA=sum(A.slice(-6)), rI=sum(I.slice(-6));
+    var gap=rA-rI; // +ve = adding to backlog faster than draining
+    // drain rate: avg invoice ÷ backlog over last 3 months
+    var dr=[];for(var i=Math.max(2,B.length-3);i<B.length;i++)if(B[i]>0)dr.push(I[i]/B[i]*100);
+    var drain=dr.length?mean(dr):0;
+    // Backlog trend is the clearest balance signal (it's the net of inflow vs outflow).
+    // >+15% = building, <-15% = draining, in between = balanced. Award/invoice give the why.
+    var sev,tag,msg;
+    var ctx='award '+rA.toFixed(0)+'M vs invoice '+rI.toFixed(0)+'M (6mo), drain '+drain.toFixed(1)+'%/mo';
+    if(bltrend>15){sev='alarm';tag='Backlog building';msg='Backlog +'+bltrend.toFixed(0)+'% — winning faster than delivering, work piling up. '+ctx+'.';}
+    else if(bltrend<-15){sev='warn';tag='Backlog draining';msg='Backlog '+bltrend.toFixed(0)+'% — billing down faster than refilling, revenue cliff risk. '+ctx+'.';}
+    else{sev='ok';tag='Balanced';msg='Backlog '+(bltrend>=0?'+':'')+bltrend.toFixed(0)+'% — inflow ≈ outflow, stable. '+ctx+'.';}
+    return [sev,nm,tag,msg,{bltrend:bltrend,rA:rA,rI:rI,drain:drain}];
+  });
 }
 
 function alarmsFor(g){
@@ -4228,10 +4253,14 @@ function render(){
   document.getElementById('an-obs1').innerHTML='<b>Observation:</b> '+o.c1;
   document.getElementById('an-obs2').innerHTML='<b>Observation:</b> '+o.c2;
   document.getElementById('an-obs3').innerHTML='<b>Observation:</b> '+o.c3;
-  var al=alarmsFor(g);
-  document.getElementById('an-alteam').textContent=CUR;
-  document.getElementById('an-alsub').textContent=al.filter(function(a){return a[0]!=='ok';}).length+' indicator(s) firing';
-  document.getElementById('an-alarms').innerHTML=al.map(function(a){return '<div class="al '+a[0]+'"><span class="ic">'+a[1]+'</span><div><span class="tt">'+a[2]+'</span> — <span class="mm">'+a[3]+'</span></div></div>';}).join('');
+  var rows=teamBalanceRows();
+  var flagged=rows.filter(function(r){return r[0]!=='ok';}).length;
+  document.getElementById('an-alteam').textContent='by team';
+  document.getElementById('an-alsub').textContent=flagged===0?'All teams balanced':flagged+' team'+(flagged>1?'s':'')+' out of balance';
+  var icon={alarm:'!',warn:'▲',ok:'✓'};
+  document.getElementById('an-alarms').innerHTML=rows.map(function(r){
+    return '<div class="al '+r[0]+'"><span class="ic">'+icon[r[0]]+'</span><div><span class="tt">'+r[1]+' — '+r[2]+'</span><br><span class="mm">'+r[3]+'</span></div></div>';
+  }).join('');
 }
 
 function buildScope(){
