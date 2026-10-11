@@ -1082,7 +1082,7 @@ var BUSY=false;
 function dark(hex){var h=hex.replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c;}).join('');var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return (0.299*r+0.587*g+0.114*b)<150;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function num(v){v=parseFloat(v);return isFinite(v)?v:0;}
-function fmt(v){if(!v)return'';var n=Math.abs(v);if(n>=1e6)return (v<0?'-':'')+(n/1e6).toFixed(1)+'M';if(n>=1e3)return (v<0?'-':'')+Math.round(n/1e3)+'K';return String(Math.round(v));}
+function fmt(v){if(!v)return'';var n=Math.abs(v);if(n>=1e6)return (v<0?'-':'')+(n/1e6).toFixed(1)+'M';if(n>=1e3)return (v<0?'-':'')+(n/1e3).toFixed(1)+'K';return (v<0?'-':'')+n.toFixed(1);}
 function fmtFull(v){v=num(v);return v.toLocaleString('en-US',{maximumFractionDigits:0});}
 function pct(v){if(v==null||!isFinite(v))return'';return (v>=0?'+':'')+v.toFixed(1)+'%';}
 function st(id){return STATE[id]||(STATE[id]={mode:'yoy',teams:null});}
@@ -4142,9 +4142,9 @@ function chart1(g){
   }
   destroy('c1');
   AX.c1=new Chart(document.getElementById('an-c1'),{data:{labels:labels,datasets:[
-    {type:'bar',data:blv,backgroundColor:'rgba(191,224,202,.85)',yAxisID:'y',order:2,datalabels:{display:false}},
-    {type:'bar',data:inv,backgroundColor:'#2e7d52',yAxisID:'y',order:3,datalabels:{display:true,anchor:'end',align:'top',font:{size:7.5,weight:'600'},color:'#1a4a30',formatter:function(v){return v?v.toFixed(0):null;}}},
-    {type:'line',data:conv,borderColor:'#0E7C7B',yAxisID:'y1',order:1,tension:.25,pointRadius:2.5,pointBackgroundColor:'#0E7C7B',borderWidth:2.5,datalabels:{display:true,align:'top',offset:4,font:{size:8,weight:'700'},color:'#0E7C7B',formatter:function(v){return v!=null?v.toFixed(0)+'%':null;}}}
+    {type:'bar',data:blv,backgroundColor:'rgba(191,224,202,.85)',yAxisID:'y',order:2,datalabels:{display:true,anchor:'end',align:'top',font:{size:7.5,weight:'600'},color:'#5a7a63',formatter:function(v){return v?v.toFixed(1):null;}}},
+    {type:'bar',data:inv,backgroundColor:'#2e7d52',yAxisID:'y',order:3,datalabels:{display:true,anchor:'end',align:'top',font:{size:7.5,weight:'600'},color:'#1a4a30',formatter:function(v){return v?v.toFixed(1):null;}}},
+    {type:'line',data:conv,borderColor:'#0E7C7B',yAxisID:'y1',order:1,tension:.25,pointRadius:2.5,pointBackgroundColor:'#0E7C7B',borderWidth:2.5,datalabels:{display:true,align:'top',offset:4,font:{size:8,weight:'700'},color:'#0E7C7B',formatter:function(v){return v!=null?v.toFixed(1)+'%':null;}}}
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{},tooltip:{callbacks:{title:function(i){return i[0].label.join(' → ');},label:function(c){if(c.datasetIndex===2)return 'Converted '+c.raw+'% of backlog';return (c.datasetIndex===0?'Backlog ':'Invoice ')+c.raw+'M';}}}},
     scales:{x:{grid:{display:false},ticks:{font:{size:7},autoSkip:false,maxRotation:90,minRotation:90}},
       y:{position:'left',title:{display:true,text:'SAR millions',font:{size:9},color:'#8b9199'},ticks:{font:{size:9},callback:function(v){return v+'M';}},grid:{color:'#e3e6e9'}},
@@ -4165,9 +4165,9 @@ function chart3(g){
   }
   destroy('c3');
   AX.c3=new Chart(document.getElementById('an-c3'),{data:{labels:labels,datasets:[
-    {type:'bar',label:'Backlog',data:blb,backgroundColor:'rgba(191,224,202,.7)',yAxisID:'y1',order:3,datalabels:{display:false}},
-    {type:'bar',label:'Award',data:aw,backgroundColor:'#b3903a',yAxisID:'y',order:2,datalabels:{display:false}},
-    {type:'line',label:'Invoice',data:inv,borderColor:'#2e7d52',yAxisID:'y',order:1,tension:.25,pointRadius:2,borderWidth:2.5,spanGaps:true,datalabels:{display:false}}
+    {type:'bar',label:'Backlog',data:blb,backgroundColor:'rgba(191,224,202,.7)',yAxisID:'y1',order:3,datalabels:{display:true,anchor:'end',align:'top',font:{size:6.5,weight:'600'},color:'#5a7a63',formatter:function(v){return v?v.toFixed(1):null;}}},
+    {type:'bar',label:'Award',data:aw,backgroundColor:'#b3903a',yAxisID:'y',order:2,datalabels:{display:true,anchor:'end',align:'top',font:{size:6.5,weight:'600'},color:'#7a5e1a',formatter:function(v){return v?v.toFixed(1):null;}}},
+    {type:'line',label:'Invoice',data:inv,borderColor:'#2e7d52',yAxisID:'y',order:1,tension:.25,pointRadius:2,borderWidth:2.5,spanGaps:true,datalabels:{display:true,align:'bottom',offset:3,font:{size:6.5,weight:'700'},color:'#1a4a30',formatter:function(v){return v!=null?v.toFixed(1):null;}}}
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return c.raw==null?null:c.dataset.label+': '+c.raw+'M';}}}},
     scales:{x:{grid:{color:function(c){return c.index%2===0&&c.index>0?'rgba(15,36,48,.18)':'rgba(15,36,48,.04)';},lineWidth:function(c){return c.index%2===0&&c.index>0?1.3:0.4;}},ticks:{font:{size:7.5},autoSkip:false,maxRotation:90,minRotation:90}},
       y:{position:'left',title:{display:true,text:'Award / Invoice (flow)',font:{size:9},color:'#8b9199'},ticks:{font:{size:9},callback:function(v){return v+'M';}},grid:{color:'#e3e6e9'}},
