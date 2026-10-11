@@ -4121,11 +4121,18 @@ function groupTeams(name){
 }
 function seriesFor(name){
   var teams=groupTeams(name);
+  // "All Project" means the whole business: project teams + ACS. Flow metrics
+  // (award/invoice/install) sum the ACS sub-teams; backlog uses blACSM which is
+  // combined-ACS pre-split (through Aug 2025) and ACS-CR/ER/WR after.
+  var isAll=(name==='All Project');
+  var flowTeams=isAll?teams.concat(ACS_SUB):teams;
   var award=[],invex=[],bl=[],install=[],invoice=[];
   MONTHS_FULL.forEach(function(key){
     var a=0,ie=0,b=0,ins=0,iv=0;
-    teams.forEach(function(tn){var t=tmapGet(tn);if(!t)return;a+=awardM(t,key);ie+=invexM(t,key);ins+=instM(t,key);iv+=salesM(t,key);});
-    if(name==='ACS')b=blACSM(key); else teams.forEach(function(tn){b+=blTeamM(tn,key);});
+    flowTeams.forEach(function(tn){var t=tmapGet(tn);if(!t)return;a+=awardM(t,key);ie+=invexM(t,key);ins+=instM(t,key);iv+=salesM(t,key);});
+    if(name==='ACS'){b=blACSM(key);}
+    else if(isAll){teams.forEach(function(tn){b+=blTeamM(tn,key);});b+=blACSM(key);}
+    else {teams.forEach(function(tn){b+=blTeamM(tn,key);});}
     award.push(+(a/1e6).toFixed(2));invex.push(+(ie/1e6).toFixed(2));bl.push(+(b/1e6).toFixed(2));install.push(+(ins/1e6).toFixed(2));invoice.push(+(iv/1e6).toFixed(2));
   });
   return {award:award,invex:invex,bl:bl,install:install,invoice:invoice};
