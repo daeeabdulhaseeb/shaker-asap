@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ASAP Sales Dashboard - Shaker Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="auth.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1470,7 +1472,7 @@ function renderAccTable(resetPage){
     +'<td class="r">'+sar(tot23)+'</td><td class="r">'+sar(tot24)+'</td><td class="r">'+sar(tot25)+'</td><td class="r">'+sar(tot26)+'</td>'
     +'<td></td><td class="r">'+sar(totHot)+'</td><td class="r">'+sar(totAwd25)+'</td><td class="r">'+sar(totAwd26)+'</td><td class="r">'+sar(totBL)+'</td>'
     +'<td></td>'
-    +(function(){var p30=ACC_FILTERED.reduce(function(s,a){return s+((a.projects||[]).reduce(function(ps,p){return ps+((p.probability||'').indexOf('30%')===0?p.q_gross_value||0:0);},0));},0);var td=ACC_FILTERED.reduce(function(s,a){return s+((a.projects||[]).reduce(function(ps,p){return ps+((p.probability||'').indexOf('15%')===0?p.q_gross_value||0:0);},0));},0);var ls=ACC_FILTERED.reduce(function(s,a){return s+((a.projects||[]).reduce(function(ps,p){var pb=p.probability||'';return ps+((pb.indexOf('0%')===0||pb.indexOf('10%')===0)?p.q_gross_value||0:0);},0));},0);return'<td class="r">'+sar(p30)+'</td><td class="r">'+sar(td)+'</td><td class="r">'+sar(ls)+'</td>';})()
+    +(function(){var p30=ACC_FILTERED.reduce(function(s,a){return s+(a.pipe_30||0);},0);var td=ACC_FILTERED.reduce(function(s,a){return s+(a.pipe_15||0);},0);var ls=ACC_FILTERED.reduce(function(s,a){return s+(a.pipe_lost||0);},0);return'<td class="r">'+sar(p30)+'</td><td class="r">'+sar(td)+'</td><td class="r">'+sar(ls)+'</td>';})()
     +'<td></td></tr>';
   var prevSec='';
   sorted.forEach(function(a,i){
@@ -1497,9 +1499,9 @@ function renderAccTable(resetPage){
       +'<td class="r">'+sar(a.award_by_year&&a.award_by_year['2026'])+'</td>'
       +'<td class="r">'+sar(a.backlog)+'</td>'
       +'<td>'+groupShift(a.group_2024,a.group_2025)+'</td>'
-      +'<td class="r dim">'+sar((a.projects||[]).reduce(function(s,p){return s+((p.probability||'').indexOf('30%')===0?p.q_gross_value||0:0);},0))+'</td>'
-      +'<td class="r dim">'+sar((a.projects||[]).reduce(function(s,p){return s+((p.probability||'').indexOf('15%')===0?p.q_gross_value||0:0);},0))+'</td>'
-      +'<td class="r dim">'+sar((a.projects||[]).reduce(function(s,p){var pb=p.probability||'';return s+((pb.indexOf('0%')===0||pb.indexOf('10%')===0)?p.q_gross_value||0:0);},0))+'</td>'
+      +'<td class="r dim">'+sar(a.pipe_30||0)+'</td>'
+      +'<td class="r dim">'+sar(a.pipe_15||0)+'</td>'
+      +'<td class="r dim">'+sar(a.pipe_lost||0)+'</td>'
       +'<td style="font-size:10px;color:var(--text2)">'+a.curr_se+(a.curr_team?' / '+a.curr_team:'')+'</td>'
       +'</tr>'
       +'<tr id="dd-'+idx+'" class="drilldown-row" style="display:none"><td colspan="19">'+renderDrilldown(a)+'</td></tr>';
@@ -1537,8 +1539,9 @@ function renderDrilldown(a){
     +'<div class="kpi"><div class="kpi-label">Backlog</div><div class="kpi-val" style="font-size:16px">'+sar(a.backlog||0)+'</div></div>'
     +'<div class="kpi"><div class="kpi-label">Expected award (50%+70%)</div><div class="kpi-val" style="font-size:16px">'+sar(a.hot_pipeline||0)+'</div></div>'
     +'</div>';
-  // Projects sorted by Valid From desc, with filter row
-  var projs=(a.projects||[]).slice().sort(function(x,y){
+  // Projects sorted by Valid From desc, with filter row.
+  // Uses full detail from the lazy-loaded file once available; trimmed inline until then.
+  var projs=acctProjects(a).slice().sort(function(x,y){
     var dx=x.valid_from||'',dy=y.valid_from||'';
     return dy.localeCompare(dx);
   });
@@ -1603,12 +1606,38 @@ function filterDDProj(ddId){
   });
 }
 
+// --- Lazy full-project detail (the big list lives in a separate file) ---
+var ACCOUNT_PROJECTS=null;      // {customer: [full project objs]} once loaded
+var ACCOUNT_PROJECTS_LOADING=false;
+function loadAccountProjects(cb){
+  if(ACCOUNT_PROJECTS){cb&&cb();return;}
+  if(ACCOUNT_PROJECTS_LOADING){return;}
+  ACCOUNT_PROJECTS_LOADING=true;
+  fetch('data/asap_account_projects.json?v='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(d){ACCOUNT_PROJECTS=d||{};ACCOUNT_PROJECTS_LOADING=false;cb&&cb();})
+    .catch(function(e){console.error('project detail load failed',e);ACCOUNT_PROJECTS={};ACCOUNT_PROJECTS_LOADING=false;cb&&cb();});
+}
+// full projects for an account if loaded, else the trimmed inline list
+function acctProjects(a){
+  if(ACCOUNT_PROJECTS&&ACCOUNT_PROJECTS[a.customer])return ACCOUNT_PROJECTS[a.customer];
+  return a.projects||[];
+}
 function toggleDD(idx){
   if(OPEN_DD!==null&&OPEN_DD!==idx){var prev=document.getElementById('dd-'+OPEN_DD);if(prev)prev.style.display='none';}
   var row=document.getElementById('dd-'+idx);
   if(!row)return;
-  row.style.display=(row.style.display==='table-row')?'none':'table-row';
-  OPEN_DD=(row.style.display==='table-row')?idx:null;
+  var opening=(row.style.display!=='table-row');
+  row.style.display=opening?'table-row':'none';
+  OPEN_DD=opening?idx:null;
+  // On first expand, load full project detail then re-render this drilldown with it
+  if(opening&&!ACCOUNT_PROJECTS){
+    var a=ACCOUNTS[idx];
+    loadAccountProjects(function(){
+      var cell=row.querySelector('td');
+      if(cell&&a)cell.innerHTML=renderDrilldown(a);
+    });
+  }
 }
 function closeDD(){
   if(OPEN_DD!==null){var r=document.getElementById('dd-'+OPEN_DD);if(r)r.style.display='none';OPEN_DD=null;}
@@ -1720,8 +1749,10 @@ function toggleSEDD(idx){
   var row=document.getElementById('se-dd-'+idx);
   if(!row)return;
   if(OPEN_SE_DD!==null&&OPEN_SE_DD!==idx){var prev=document.getElementById('se-dd-'+OPEN_SE_DD);if(prev)prev.style.display='none';}
-  row.style.display=(row.style.display==='none'||row.style.display==='')?'table-row':'none';
-  OPEN_SE_DD=(row.style.display==='table-row')?idx:null;
+  var opening=(row.style.display==='none'||row.style.display==='');
+  row.style.display=opening?'table-row':'none';
+  OPEN_SE_DD=opening?idx:null;
+  if(opening&&!ACCOUNT_PROJECTS){var a=ACCOUNTS[idx];loadAccountProjects(function(){var cell=row.querySelector('td');if(cell&&a)cell.innerHTML=renderDrilldown(a);});}
 }
 function renderSECharts(team,se){
   var data=null;
@@ -4201,7 +4232,7 @@ function buildScope(){
     if(my.some(function(tn){return ACS_SUB.indexOf(tn)>=0;}))TEAMS_SCOPE.push('ACS');
     CUR=TEAMS_SCOPE[0]||'All Project';
   } else {
-    TEAMS_SCOPE=['All Project'].concat(PROJECT).concat(['ACS']).concat(ACS_SUB);
+    TEAMS_SCOPE=['All Project'].concat(PROJECT).concat(['ACS']);
     CUR='All Project';
   }
   var seg=document.getElementById('an-grpseg');
@@ -4211,8 +4242,13 @@ function buildScope(){
 var INIT=false;
 function init(){
   if(INIT){render();return;}
-  if(typeof Chart==='undefined'||!TEAM_DATA||!TEAM_DATA.length)return;
-  Chart.register(ChartDataLabels);
+  if(typeof Chart==='undefined'){
+    var el=document.getElementById('an-kbar');
+    if(el)el.innerHTML='<div style="padding:16px;color:#AF291D;font-size:12px">Charting library did not load (Chart.js blocked or offline). Reload the page; if it persists the CDN may be blocked on this network.</div>';
+    return;
+  }
+  if(!TEAM_DATA||!TEAM_DATA.length)return;
+  try{if(typeof ChartDataLabels!=='undefined')Chart.register(ChartDataLabels);}catch(e){}
   buildMonths();buildScope();
   var seg=document.getElementById('an-grpseg');
   seg.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;CUR=b.getAttribute('data-g');this.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');render();});
