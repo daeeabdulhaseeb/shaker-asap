@@ -1090,6 +1090,8 @@ var BUSY=false;
 /* ---------- helpers ---------- */
 function dark(hex){var h=hex.replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c;}).join('');var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return (0.299*r+0.587*g+0.114*b)<150;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// Lighten a hex toward white by f (0..1) — used so 2025 stacked segments are a lighter shade than 2026.
+function lighten(hex,f){var h=hex.replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c;}).join('');var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);r=Math.round(r+(255-r)*f);g=Math.round(g+(255-g)*f);b=Math.round(b+(255-b)*f);function hx(n){return ('0'+n.toString(16)).slice(-2);}return '#'+hx(r)+hx(g)+hx(b);}
 function num(v){v=parseFloat(v);return isFinite(v)?v:0;}
 function fmt(v){if(!v)return'';var n=Math.abs(v);if(n>=1e6)return (v<0?'-':'')+(n/1e6).toFixed(1)+'M';if(n>=1e3)return (v<0?'-':'')+(n/1e3).toFixed(1)+'K';return (v<0?'-':'')+n.toFixed(1);}
 function fmtFull(v){v=num(v);return v.toLocaleString('en-US',{maximumFractionDigits:0});}
@@ -1161,12 +1163,13 @@ function build(id,teams,mode,lat,noInstall){
   function pushStacked(k0,k1,keys,pal,reduce){
     legend=keys.map(function(k){return{l:k,c:pal[k]};});
     var red=reduce||sumK;
-    function segs(dk,ms){var a=red(dk,ms,keys);return keys.map(function(k){return{k:k,v:a[k]||0,c:pal[k]};});}
+    // prior=true → 2025 bar: lighten each category color so 2025 reads lighter than 2026
+    function segs(dk,ms,prior){var a=red(dk,ms,keys);return keys.map(function(k){return{k:k,v:a[k]||0,c:prior?lighten(pal[k],0.45):pal[k]};});}
     if(isYoy){
-      for(var i=0;i<12;i++){var m=i+1;var bars=[{yr:y0,segs:segs(k0,[m])}];if(m<=lat)bars.push({yr:y1,segs:segs(k1,[m])});groups.push({label:MONTHS[i],bars:bars});}
+      for(var i=0;i<12;i++){var m=i+1;var bars=[{yr:y0,segs:segs(k0,[m],true)}];if(m<=lat)bars.push({yr:y1,segs:segs(k1,[m],false)});groups.push({label:MONTHS[i],bars:bars});}
     }else{
-      bk.forEach(function(b){groups.push({label:b.l+' '+String(y0).slice(2),bars:[{yr:y0,segs:segs(k0,b.ms)}]});});
-      bk.forEach(function(b){if(mode==='ytd'||b.ms[0]<=lat)groups.push({label:b.l+' '+String(y1).slice(2),bars:[{yr:y1,segs:segs(k1,b.ms)}]});});
+      bk.forEach(function(b){groups.push({label:b.l+' '+String(y0).slice(2),bars:[{yr:y0,segs:segs(k0,b.ms,true)}]});});
+      bk.forEach(function(b){if(mode==='ytd'||b.ms[0]<=lat)groups.push({label:b.l+' '+String(y1).slice(2),bars:[{yr:y1,segs:segs(k1,b.ms,false)}]});});
     }
   }
 
