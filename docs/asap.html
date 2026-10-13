@@ -1211,7 +1211,15 @@ function build(id,teams,mode,lat,noInstall){
     var k0={},k1={};for(var m=1;m<=12;m++){k0[m]={'Quotation':q0[m],'Award':a0[m],'Invoice':i0[m]};k1[m]={'Quotation':q1[m],'Award':a1[m],'Invoice':i1[m]};}
     pushStacked(k0,k1,['Quotation','Award','Invoice'],PAL.qai);
   }
-  return{groups:groups,legend:legend};
+  var model={groups:groups,legend:legend};
+  if(id==='status'){
+    model.line=groups.map(function(g){var tot=0,act=0;g.bars.forEach(function(b){b.segs.forEach(function(sg){tot+=sg.v;if(sg.k==='Active')act+=sg.v;});});return tot>0?+(act/tot*100).toFixed(1):null;});
+    model.lineLabel='Active %';model.lineMax=100;
+  } else if(id==='qai'){
+    model.line=groups.map(function(g){var q=0,aw=0;g.bars.forEach(function(b){b.segs.forEach(function(sg){if(sg.k==='Quotation')q+=sg.v;if(sg.k==='Award')aw+=sg.v;});});return q>0?+(aw/q*100).toFixed(1):null;});
+    model.lineLabel='Hit ratio %';model.lineMax=100;
+  }
+  return model;
 }
 
 /* ---------- SVG renderer ---------- */
@@ -1219,7 +1227,7 @@ function renderSVG(model,opts){
   var groups=model.groups;
   var n=groups.length;
   if(!n)return'<div class="empty">No data</div>';
-  var W=opts.width||560, H=150, padL=38, padR=8, padT=10, padB=22;
+  var W=opts.width||560, H=150, padL=38, padR=(model&&model.line)?26:8, padT=10, padB=22;
   var plotW=W-padL-padR, plotH=H-padT-padB;
   var maxV=0;
   groups.forEach(function(g){g.bars.forEach(function(b){var t=0;b.segs.forEach(function(s){t+=s.v;});if(t>maxV)maxV=t;});});
@@ -1260,6 +1268,14 @@ function renderSVG(model,opts){
     /* x label */
     s+='<text x="'+(gx+gw/2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="8" fill="var(--text3)">'+esc(g.label)+'</text>';
   });
+  /* optional % line overlay on a right axis (model.line = [v per group], model.lineMax) */
+  if(model.line){
+    var lineMax=opts.lineMax||100, lc=opts.lineColor||'#0E7C7B';
+    for(var li=0;li<=4;li++){var ly=padT+plotH-plotH*li/4;s+='<text x="'+(W-padR+4)+'" y="'+(ly+3).toFixed(1)+'" text-anchor="start" font-size="8" fill="'+lc+'">'+Math.round(lineMax*li/4)+'%</text>';}
+    var pts=[];model.line.forEach(function(v,gi){if(v==null)return;var cx=padL+gw*gi+gw/2;var cy=padT+plotH-(v/lineMax)*plotH;pts.push([cx,cy,v,gi]);});
+    for(var li=1;li<pts.length;li++){if(pts[li][3]===pts[li-1][3]+1)s+='<line x1="'+pts[li-1][0].toFixed(1)+'" y1="'+pts[li-1][1].toFixed(1)+'" x2="'+pts[li][0].toFixed(1)+'" y2="'+pts[li][1].toFixed(1)+'" stroke="'+lc+'" stroke-width="2"/>';}
+    pts.forEach(function(p){s+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.3" fill="'+lc+'"/>';s+='<text x="'+p[0].toFixed(1)+'" y="'+(p[1]-5).toFixed(1)+'" text-anchor="middle" font-size="7.5" font-weight="700" fill="'+lc+'">'+p[2].toFixed(1)+'%</text>';});
+  }
   s+='</svg>';
   return s;
 }
@@ -1285,8 +1301,9 @@ function renderChart(id){
   var w=el.clientWidth||560;
   try{
     var model=build(id,teams,st(id).mode,lat,st(id).noInstall);
-    var legend='<div class="lgd">'+model.legend.map(function(l){return'<span><i style="background:'+l.c+'"></i>'+esc(l.l)+'</span>';}).join('')+'</div>';
-    el.innerHTML=renderSVG(model,{width:w})+legend;
+    var legItems=model.legend.map(function(l){return'<span><i style="background:'+l.c+'"></i>'+esc(l.l)+'</span>';});
+    if(model.line)legItems.push('<span><i class="line" style="background:#0E7C7B"></i>'+esc(model.lineLabel||'')+' (right axis)</span>');
+    el.innerHTML=renderSVG(model,{width:w,lineMax:model.lineMax,lineColor:'#0E7C7B'})+'<div class="lgd">'+legItems.join('')+'</div>';
   }catch(e){
     el.innerHTML='<div class="empty">Chart error</div>';
     if(global.console)console.error('chart',id,e);
