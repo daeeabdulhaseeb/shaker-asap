@@ -1125,6 +1125,12 @@ function aggYM(teams,fld,yr){var r={};for(var m=1;m<=12;m++)r[m]=0;for(var i=0;i
 function sumM(d,ms){var t=0;for(var i=0;i<ms.length;i++)t+=(d[ms[i]]||0);return t;}
 function sumK(dk,ms,keys){var r={};for(var i=0;i<keys.length;i++)r[keys[i]]=0;for(var j=0;j<ms.length;j++){var b=dk[ms[j]]||{};for(var i=0;i<keys.length;i++)r[keys[i]]+=(b[keys[i]]||0);}return r;}
 function avgK(dk,ms,keys){var r=sumK(dk,ms,keys);for(var i=0;i<keys.length;i++)r[keys[i]]=Math.round(r[keys[i]]/ms.length);return r;}
+// For STOCK metrics (backlog): a bucket's value is the period-END month that actually has data,
+// never the sum. Walk the bucket's months backwards to the last one with any value.
+function lastK(dk,ms,keys){
+  for(var j=ms.length-1;j>=0;j--){var b=dk[ms[j]];if(b){var any=false;for(var i=0;i<keys.length;i++)if(b[keys[i]]){any=true;break;}if(any){var r={};for(var i=0;i<keys.length;i++)r[keys[i]]=b[keys[i]]||0;return r;}}}
+  var z={};for(var i=0;i<keys.length;i++)z[keys[i]]=0;return z;
+}
 
 function buckets(mode,lat){
   if(mode==='yoy'){var b=[];for(var m=1;m<=12;m++)b.push({l:MONTHS[m-1],ms:[m]});return b;}
@@ -1172,7 +1178,7 @@ function build(id,teams,mode,lat,noInstall){
     function blAgg(yr){var r={};for(var m=1;m<=12;m++)r[m]={Single:0,Applied:0};
       blTeams.forEach(function(bt){var md=BL_DATA_ENGINE[bt]||{};for(var m=1;m<=12;m++){var key=yr+'-'+(m<10?'0'+m:m);var b=md[key];if(b){r[m].Single+=num(b.Single);r[m].Applied+=num(b.Applied);}}});
       return r;}
-    pushStacked(blAgg(y0),blAgg(y1),['Single','Applied'],PAL.bl);
+    pushStacked(blAgg(y0),blAgg(y1),['Single','Applied'],PAL.bl,lastK);
   }
   else if(id==='sales'){var s0=aggM(teams,'monthly_sales',y0),s1=aggM(teams,'monthly_sales',y1);if(noInstall){s0=netInstall(s0,aggInstall(teams,y0));s1=netInstall(s1,aggInstall(teams,y1));}pushSimple(s0,s1,C_PREV,C_CURR,'2025','2026');}
   else if(id==='newacc'){pushSimple(aggM(teams,'new_accs_monthly',y0),aggM(teams,'new_accs_monthly',y1),C_PREV,C_CURR,'2025','2026');}
@@ -1245,7 +1251,8 @@ function renderSVG(model,opts){
           s+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(yTop+h/2+2.6).toFixed(1)+'" text-anchor="middle" font-size="7.5" fill="'+(dark(sg.c)?'rgba(255,255,255,.92)':'rgba(30,34,38,.85)')+'">'+esc(fmt(sg.v))+'</text>';
         }
       });
-      if(!stacked&&total>0&&bw>=9){var ty=padT+plotH-total/maxV*plotH-3;if(ty<padT+7)ty=padT+7;s+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" font-size="7.5" fill="var(--text2)">'+esc(fmt(total))+'</text>';}
+      // Total label on top of every bar (stacked and simple)
+      if(total>0&&bw>=9){var ty=padT+plotH-total/maxV*plotH-3;if(ty<padT+7)ty=padT+7;s+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" font-size="7.5" font-weight="600" fill="var(--text2)">'+esc(fmt(total))+'</text>';}
     });
     /* x label */
     s+='<text x="'+(gx+gw/2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="8" fill="var(--text3)">'+esc(g.label)+'</text>';
