@@ -1182,7 +1182,7 @@ function build(id,teams,mode,lat,noInstall){
   }
   else if(id==='sales'){var s0=aggM(teams,'monthly_sales',y0),s1=aggM(teams,'monthly_sales',y1);if(noInstall){s0=netInstall(s0,aggInstall(teams,y0));s1=netInstall(s1,aggInstall(teams,y1));}pushSimple(s0,s1,C_PREV,C_CURR,'2025','2026');}
   else if(id==='newacc'){pushSimple(aggM(teams,'new_accs_monthly',y0),aggM(teams,'new_accs_monthly',y1),C_PREV,C_CURR,'2025','2026');}
-  else if(id==='status'){pushStacked(aggK(teams,'monthly_status',y0),aggK(teams,'monthly_status',y1),['New','Active','Inactive','OB Claimed'],PAL.status,avgK);}
+  else if(id==='status'){pushStacked(aggK(teams,'monthly_status',y0),aggK(teams,'monthly_status',y1),['New','Active','Inactive','OB Claimed'],PAL.status,lastK);}
   else if(id==='group'){pushStacked(aggK(teams,'monthly_sales_by_group',y0),aggK(teams,'monthly_sales_by_group',y1),['CAC Ducted','CAC Non-Ducted','RAC','Applied'],PAL.group);}
   else if(id==='size'){
     var z0=aggK(teams,'monthly_sales_by_size',y0),z1=aggK(teams,'monthly_sales_by_size',y1);
