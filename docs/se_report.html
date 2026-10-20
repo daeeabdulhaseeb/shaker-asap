@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1791707854"></script>
+<script src="auth.js?v=1792476593"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -188,6 +188,14 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
 .cmp-vs{font-size:12px;font-weight:700;color:var(--ink-faint)}
 .score-info{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;font-style:normal;text-decoration:none;cursor:pointer;vertical-align:middle;margin-left:4px;opacity:0.7;transition:opacity 0.15s}.score-info:hover{opacity:1}
 .score-breakdown td{background:var(--bg);border-bottom:1px solid var(--line)}
+.chart-row.c3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.team-card{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px 14px;flex:1;min-width:200px}
+.team-card h4{font-size:13px;font-weight:600;margin:0 0 6px}
+.team-card .tc-metric{font-size:11px;color:var(--ink-soft);margin:2px 0}
+.team-card .tc-metric b{color:var(--ink);font-weight:600}
+.team-card .tc-tags{margin-top:8px;display:flex;gap:4px;flex-wrap:wrap}
+.tc-spark{display:inline-flex;align-items:end;gap:1px;height:16px;margin-left:6px;vertical-align:middle}
+.tc-spark i{width:2px;border-radius:1px}
 .se-exclude{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:transparent;color:var(--ink-faint);font-size:13px;font-weight:400;text-decoration:none;cursor:pointer;vertical-align:middle;margin-left:2px;opacity:0;transition:opacity 0.15s;border:1px solid transparent}
 .se-row:hover .se-exclude{opacity:0.5}.se-exclude:hover{opacity:1!important;color:var(--red);border-color:var(--red)}
 .excluded-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;margin:0 0 6px;background:var(--bg);border:1px solid var(--line);border-radius:8px;font-size:11px;color:var(--ink-soft)}
@@ -218,6 +226,7 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
   <div class="page-nav" id="page-nav">
     <button class="active" data-view="trends">Trends &amp; Analytics</button>
     <button data-view="table">SE Rankings</button>
+    <button data-view="teams">Team Summary</button>
   </div>
 
   <!-- ===== VIEW: TRENDS ===== -->
@@ -385,9 +394,9 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
       <div class="dd-menu" id="dd-se-menu"></div>
     </div>
     <div class="seg" id="seg-year">
-      <button data-y="all" class="on">2025 + 2026 YTD</button>
+      <button data-y="all">2025 + 2026 YTD</button>
       <button data-y="2025">2025</button>
-      <button data-y="2026">2026 YTD</button>
+      <button data-y="2026" class="on">2026 YTD</button>
     </div>
     <div class="seg" id="seg-metric">
       <button data-m="quo" class="on">Quotations</button>
@@ -437,6 +446,47 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
 
   <div id="analytics"></div>
   </div><!-- /view-table -->
+
+  <!-- ===== VIEW: TEAM SUMMARY ===== -->
+  <div class="view" id="view-teams">
+    <div class="analytics-head">Team summary <span>compare teams side by side — all metrics trend-first</span></div>
+    <div class="controls" style="justify-content:flex-start">
+      <div class="seg" id="seg-team-ch">
+        <button data-tch="project" class="on">Projects</button>
+        <button data-tch="acs">ACS</button>
+      </div>
+    </div>
+    <div class="chart-row c1">
+      <div class="chart-box"><h3>Team avg composite score — trend</h3>
+        <div class="chart-desc">One line per team, YoY paired. Data labels on last point.</div>
+        <canvas id="ch-team-score"></canvas>
+      </div>
+    </div>
+    <div class="chart-row c1" id="team-cards-row"></div>
+    <div class="chart-row c3" id="team-metric-charts">
+      <div class="chart-box"><h3>Quotation trend by team</h3><canvas id="ch-team-quo"></canvas></div>
+      <div class="chart-box"><h3>Award trend by team</h3><canvas id="ch-team-awd"></canvas></div>
+      <div class="chart-box"><h3>Invoiced trend by team</h3><canvas id="ch-team-inv"></canvas></div>
+    </div>
+    <div class="analytics-head" style="margin-top:16px">Team rankings <span>click a row to expand SE detail</span></div>
+    <div class="panel">
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr>
+            <th>Team</th>
+            <th class="num">SEs</th>
+            <th class="num">Avg score</th>
+            <th class="num">Total quo</th>
+            <th class="num">Total award</th>
+            <th class="num">Total inv</th>
+            <th>Top SE</th>
+            <th>Needs attention</th>
+          </tr></thead>
+          <tbody id="tbody-teams"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -452,7 +502,7 @@ var INACTIVE_SES = {
   'Ahmed Elkorany':1,'Saeed Alghizzawi':1,'Belal Sheikh Khaled':1,
   'Nour Salameh':1
 };
-var STATE = { year:'all', metric:'quo', teams:[], ses:[], own:true, tenure:'all', type:'all', showInactive:false, sort:'score',
+var STATE = { year:'2026', metric:'quo', teams:[], ses:[], own:true, tenure:'all', type:'all', showInactive:false, sort:'score',
   channel:'project', excluded:[],  // SE names manually excluded from calculations
   // Trends page state
   trendTeams:[], trendSEs:[], trendMetric:'quo', trendSort:'score', compare:'off' };
@@ -510,61 +560,139 @@ function updateMethodBox(){
 // Per-SE score breakdown — plain English, step by step
 function seScoreBreakdown(se, allPeers){
   var sp=scoreParts(se, allPeers);
-  var f=sp.formula;
-  var pc=sp.peerCount||1;
-  var S='style="font-size:11.5px;color:var(--ink);line-height:1.9;margin:8px 0 12px"';
-  var R='style="display:flex;align-items:center;gap:8px;margin:2px 0 8px"';
-  var B1='style="width:140px;height:12px;background:#eee;border-radius:3px;overflow:hidden"';
-  var B2='style="height:100%;border-radius:3px;background:var(--blue)"';
+  var f=sp.formula, pc=sp.peerCount||1;
+  var isPrj=f==='project';
 
-  function bar(n100){ return '<div '+R+'><div '+B1+'><div '+B2+';width:'+Math.max(2,Math.round(n100))+'%"></div></div></div>'; }
-
-  function componentRow(num, label, rawLabel, rank100, weight, pts){
-    return '<div style="margin:0 0 10px;padding:8px 10px;background:var(--bg);border-radius:6px">'
-      +'<div style="font-size:12px;font-weight:600;margin-bottom:2px">'+num+'. '+label+' <span style="font-weight:400;color:var(--ink-soft)">('+Math.round(weight*100)+'% of score)</span></div>'
-      +'<div style="font-size:11px;color:var(--ink-soft)">Your average: <b style="color:var(--ink)">'+rawLabel+'</b></div>'
-      +'<div style="font-size:11px;color:var(--ink-soft)">Rank among '+pc+' peers: <b style="color:var(--ink)">'+Math.round(rank100)+' out of 100</b>'
-      +' <span style="color:var(--ink-faint)">(100 = best, 0 = lowest)</span></div>'
-      +bar(rank100)
-      +'<div style="font-size:11px;color:var(--ink-soft)">Points earned: '+Math.round(rank100)+' × '+Math.round(weight*100)+'% = <b style="color:var(--ink)">'+pts+' pts</b></div>'
-      +'</div>';
-  }
-
-  var html='<div '+S+'>';
-
-  if(f==='project'){
-    var q_pts=Math.round(0.20*sp.quoN), qhp_pts=Math.round(0.20*sp.qhpN);
-    var a_pts=Math.round(0.20*sp.awdN), hpa_pts=Math.round(0.20*sp.hpaN);
-    var i_pts=Math.round(0.20*sp.invN);
-
-    html+='<div style="font-size:13px;font-weight:700;margin-bottom:8px">Score breakdown — Project formula (5 components × 20% each)</div>';
-    html+=componentRow('1','Quotation value', sar(sp.quoPM)+' SAR/month', sp.quoN, 0.20, q_pts);
-    html+=componentRow('2','Q → Hot Projects conversion',
-      sp.hasHP ? (sp.qhpRaw*100).toFixed(1)+'% of quotations became hot (latest month)' : 'No HP data available — defaults to mid-rank',
-      sp.qhpN, 0.20, qhp_pts);
-    html+=componentRow('3','Award value', sar(sp.awdPM)+' SAR/month', sp.awdN, 0.20, a_pts);
-    html+=componentRow('4','Hot Projects → Award conversion',
-      sp.hasHPA ? (sp.hpaRaw*100).toFixed(1)+'% of total award came from hot projects (cumulative)' : 'No HP data available — defaults to mid-rank',
-      sp.hpaN, 0.20, hpa_pts);
-    html+=componentRow('5','Invoiced value', sar(sp.invPM)+' SAR/month', sp.invN, 0.20, i_pts);
-
-    html+='<div style="padding:10px;background:var(--paper);border:1px solid var(--line);border-radius:6px;font-size:13px">'
-      +'<b>Total score = '+q_pts+' + '+qhp_pts+' + '+a_pts+' + '+hpa_pts+' + '+i_pts+' = '+sp.score+'</b>'
-      +'</div>';
+  // Build component list with labels, raw, rank, weight, pts
+  var comps=[];
+  if(isPrj){
+    comps=[
+      {label:'Quotation value',raw:sar(sp.quoPM)+' SAR/mo',rank:sp.quoN,w:0.20,pts:Math.round(0.20*sp.quoN)},
+      {label:'Q → HP conversion',raw:sp.hasHP?(sp.qhpRaw*100).toFixed(1)+'% (latest month)':'No HP data',rank:sp.qhpN,w:0.20,pts:Math.round(0.20*sp.qhpN)},
+      {label:'Award value',raw:sar(sp.awdPM)+' SAR/mo',rank:sp.awdN,w:0.20,pts:Math.round(0.20*sp.awdN)},
+      {label:'HP → Award conversion',raw:sp.hasHPA?(sp.hpaRaw*100).toFixed(1)+'% (cumulative)':'No HP data',rank:sp.hpaN,w:0.20,pts:Math.round(0.20*sp.hpaN)},
+      {label:'Invoiced value',raw:sar(sp.invPM)+' SAR/mo',rank:sp.invN,w:0.20,pts:Math.round(0.20*sp.invN)}
+    ];
   } else {
-    var q_pts=Math.round(0.30*sp.quoN), a_pts=Math.round(0.40*sp.awdN), i_pts=Math.round(0.30*sp.invN);
-
-    html+='<div style="font-size:13px;font-weight:700;margin-bottom:8px">Score breakdown — ACS formula (30% / 40% / 30%)</div>';
-    html+=componentRow('1','Quotation value', sar(sp.quoPM)+' SAR/month', sp.quoN, 0.30, q_pts);
-    html+=componentRow('2','Award value', sar(sp.awdPM)+' SAR/month', sp.awdN, 0.40, a_pts);
-    html+=componentRow('3','Invoiced value', sar(sp.invPM)+' SAR/month', sp.invN, 0.30, i_pts);
-
-    html+='<div style="padding:10px;background:var(--paper);border:1px solid var(--line);border-radius:6px;font-size:13px">'
-      +'<b>Total score = '+q_pts+' + '+a_pts+' + '+i_pts+' = '+sp.score+'</b>'
-      +'</div>';
+    comps=[
+      {label:'Quotation value',raw:sar(sp.quoPM)+' SAR/mo',rank:sp.quoN,w:0.30,pts:Math.round(0.30*sp.quoN)},
+      {label:'Award value',raw:sar(sp.awdPM)+' SAR/mo',rank:sp.awdN,w:0.40,pts:Math.round(0.40*sp.awdN)},
+      {label:'Invoiced value',raw:sar(sp.invPM)+' SAR/mo',rank:sp.invN,w:0.30,pts:Math.round(0.30*sp.invN)}
+    ];
   }
-  html+='</div>';
+  var totalPts=comps.reduce(function(s,c){return s+c.pts;},0);
+
+  // Find insights
+  var sorted=comps.slice().sort(function(a,b){return a.rank-b.rank;});
+  var weakest=sorted[0], strongest=sorted[sorted.length-1];
+  var watchItems=comps.filter(function(c){return c.raw.indexOf('No HP')===0;});
+
+  // LEFT: score breakdown with bars
+  var left='<div style="font-size:13px;font-weight:700;margin:0 0 10px">'+(isPrj?'Project formula (5 × 20%)':'ACS formula (30/40/30)')+'</div>';
+  comps.forEach(function(c,i){
+    var barW=Math.max(2,Math.round(c.rank));
+    left+='<div style="margin:0 0 8px;padding:7px 10px;background:var(--bg);border-radius:6px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between">'
+      +'<span style="font-size:12px;font-weight:600">'+(i+1)+'. '+c.label+' <span style="font-weight:400;color:var(--ink-soft)">('+Math.round(c.w*100)+'%)</span></span>'
+      +'<span style="font-size:12px;font-weight:700;color:var(--blue)">'+c.pts+' pts</span></div>'
+      +'<div style="font-size:11px;color:var(--ink-soft);margin:2px 0">'+c.raw+' · rank: <b style="color:var(--ink)">'+Math.round(c.rank)+'</b>/100</div>'
+      +'<div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:6px;background:#eee;border-radius:3px;overflow:hidden">'
+      +'<div style="width:'+barW+'%;height:100%;border-radius:3px;background:var(--blue)"></div></div></div>'
+      +'</div>';
+  });
+  left+='<div style="padding:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:6px;font-size:13px;margin-top:6px">'
+    +'<b>Total = '+comps.map(function(c){return c.pts;}).join(' + ')+' = '+totalPts+'</b></div>';
+
+  // RIGHT: insights + recommendations
+  var right='<div style="font-size:13px;font-weight:700;margin:0 0 10px">Insights and analysis</div>';
+
+  // Strongest
+  right+='<div style="padding:7px 10px;background:var(--bg);border-radius:6px;margin:0 0 6px;border-left:3px solid #137a4b">'
+    +'<div style="font-size:11px;font-weight:600;color:#137a4b;margin:0 0 2px">Strongest: '+strongest.label+'</div>'
+    +'<div style="font-size:11px;color:var(--ink-soft)">Rank '+Math.round(strongest.rank)+'/100 among '+pc+' peers. Contributing '+strongest.pts+' points ('+Math.round(strongest.pts/Math.max(1,totalPts)*100)+'% of total score).</div>'
+    +'</div>';
+
+  // Weakest
+  var weakColor=weakest.rank<30?'#b91c1c':'#b06f10';
+  right+='<div style="padding:7px 10px;background:var(--bg);border-radius:6px;margin:0 0 6px;border-left:3px solid '+weakColor+'">'
+    +'<div style="font-size:11px;font-weight:600;color:'+weakColor+';margin:0 0 2px">Weakest: '+weakest.label+'</div>'
+    +'<div style="font-size:11px;color:var(--ink-soft)">Rank '+Math.round(weakest.rank)+'/100. Only contributing '+weakest.pts+' points. '
+    +(weakest.rank<20?'Significant drag on overall score — priority area for improvement.':'Room for improvement here would lift the overall score.')
+    +'</div></div>';
+
+  // Watch items
+  watchItems.forEach(function(w){
+    right+='<div style="padding:7px 10px;background:var(--bg);border-radius:6px;margin:0 0 6px;border-left:3px solid var(--blue)">'
+      +'<div style="font-size:11px;font-weight:600;color:var(--blue);margin:0 0 2px">Data gap: '+w.label+'</div>'
+      +'<div style="font-size:11px;color:var(--ink-soft)">No HP conversion data available — scoring defaults to mid-rank (50). Actual performance may be higher or lower.</div>'
+      +'</div>';
+  });
+
+  // Recommendation
+  var recText='';
+  if(weakest.label.indexOf('Invoiced')>=0) recText='Focus on closing invoiced pipeline — quotation and award generation are relatively strong.';
+  else if(weakest.label.indexOf('Award')>=0) recText='Win rate needs attention — pipeline is healthy but conversion to awards is below peers.';
+  else if(weakest.label.indexOf('Quo')>=0&&weakest.label.indexOf('HP')<0) recText='Pipeline generation is the bottleneck — need more quotation activity to feed downstream conversion.';
+  else if(weakest.label.indexOf('HP')>=0) recText='Hot project conversion is low — quotes are being submitted but not progressing to the hot stage. Review quote quality and follow-up process.';
+  else recText='No single metric stands out as a drag. Focus on maintaining consistent output across all components.';
+  right+='<div style="padding:7px 10px;background:var(--bg);border-radius:6px;margin:8px 0 0;border-left:3px solid var(--ink-faint)">'
+    +'<div style="font-size:11px;font-weight:600;color:var(--ink);margin:0 0 2px">Recommendation</div>'
+    +'<div style="font-size:11px;color:var(--ink-soft)">'+recText+'</div></div>';
+
+  // Score trend canvas placeholder
+  right+='<div style="margin-top:10px;padding:7px 10px;background:var(--bg);border-radius:6px">'
+    +'<div style="font-size:11px;font-weight:600;color:var(--ink);margin:0 0 4px">Composite score trend</div>'
+    +'<canvas id="ch-sbk-'+esc(se.se_name).replace(/\s/g,'_')+'" height="80"></canvas></div>';
+
+  // Combine as two-column
+  var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:11.5px;color:var(--ink);line-height:1.6;margin:8px 0 12px">'
+    +'<div>'+left+'</div><div>'+right+'</div></div>';
   return html;
+}
+
+// Render the mini score trend chart inside an SE breakdown panel
+function renderBreakdownTrend(se, allPeers){
+  var canvasId='ch-sbk-'+esc(se.se_name).replace(/\\s/g,'_');
+  var ctx=document.getElementById(canvasId);
+  if(!ctx)return;
+  if(_charts[canvasId]){_charts[canvasId].destroy();delete _charts[canvasId];}
+  var yoy=yoyMonths(months()), ms_=months();
+  var teamPeers=allPeers.filter(function(s){return s.team===se.team;});
+  var cp=channelPeers(allPeers,se);
+  var HS={quo:2,awd:2,inv:2};
+  var labels=[],seLine=[],ksaLine=[];
+  for(var i=0;i<yoy.length;i++){
+    var pt=yoy[i]; labels.push(pt.label);
+    var slice=ms_.filter(function(m){return m<=pt.key;});
+    if(!slice.length){seLine.push(null);ksaLine.push(null);continue;}
+    function totalS2(s,metric){var d=seData(s),v=0,k=metric==='awd'?'award':metric==='inv'?'inv':'quo';slice.forEach(function(m){v+=d[k][m]||0;});return v;}
+    function amS2(s,hs){var jd=s.join_date;if(!jd)return Math.max(1,slice.length-hs);var y=parseInt(jd.slice(0,4)),m=parseInt(jd.slice(5,7)),last=slice[slice.length-1],ly=parseInt(last.slice(0,4)),lm=parseInt(last.slice(5)),active=(ly-y)*12+(lm-m)+1;return Math.max(1,(active<1?0:active)-hs);}
+    function pmS2(s,metric){var t=amS2(s,HS[metric]);return t>0?totalS2(s,metric)/t:0;}
+    function nrm2(a,v){var mn=Math.min.apply(null,a),mx=Math.max.apply(null,a);return mx>mn?(v-mn)/(mx-mn)*100:50;}
+    function score2(s){
+      var cpQ=cp.map(function(x){return pmS2(x,'quo');}),cpA=cp.map(function(x){return pmS2(x,'awd');}),cpI=cp.map(function(x){return pmS2(x,'inv');});
+      var qn=nrm2(cpQ,pmS2(s,'quo')),an=nrm2(cpA,pmS2(s,'awd')),in_=nrm2(cpI,pmS2(s,'inv'));
+      if(isProjectTeam(s.team)){
+        var qhpAtM=(s.hp_quo_pct||{})[pt.key]||0;
+        var qhAll=cp.map(function(x){return(x.hp_quo_pct||{})[pt.key]||0;});
+        var haAll=cp.map(function(x){var n2=0,d2=0;slice.forEach(function(m2){n2+=(x.award_from_hp||{})[m2]||0;d2+=(x.total_award_hp||{})[m2]||0;});return d2>0?n2/d2:0;});
+        var hpaSe=0,hpaSd=0;slice.forEach(function(m2){hpaSe+=(s.award_from_hp||{})[m2]||0;hpaSd+=(s.total_award_hp||{})[m2]||0;});
+        var qhN=nrm2(qhAll,qhpAtM),haN=nrm2(haAll,hpaSd>0?hpaSe/hpaSd:0);
+        return Math.round(0.20*qn)+Math.round(0.20*qhN)+Math.round(0.20*an)+Math.round(0.20*haN)+Math.round(0.20*in_);
+      }
+      return Math.round(0.30*qn)+Math.round(0.40*an)+Math.round(0.30*in_);
+    }
+    seLine.push(score2(se));
+    var ksaSum=0;allPeers.forEach(function(s){ksaSum+=score2(s);});
+    ksaLine.push(Math.round(ksaSum/allPeers.length));
+  }
+  _charts[canvasId]=new Chart(ctx.getContext('2d'),{type:'line',data:{labels:labels,datasets:[
+    {label:se.se_name,data:seLine,borderColor:'#141b24',pointRadius:2,pointBackgroundColor:'#141b24',borderWidth:2,tension:0.3,
+     datalabels:{display:function(c){return c.dataIndex===seLine.length-1&&seLine[c.dataIndex]!=null;},font:{size:10,weight:'bold'},color:'#141b24',anchor:'end',align:'top'}},
+    {label:'KSA avg',data:ksaLine,borderColor:'rgba(31,95,214,0.5)',pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.3,
+     datalabels:{display:function(c){return c.dataIndex===ksaLine.length-1&&ksaLine[c.dataIndex]!=null;},font:{size:9},color:'rgba(31,95,214,0.7)',anchor:'end',align:'bottom'}}
+  ]},options:{responsive:true,maintainAspectRatio:true,aspectRatio:3.5,plugins:{legend:{display:false},datalabels:{formatter:function(v){return v!=null?v:'';}}},
+    scales:{x:{ticks:{font:{size:8},maxRotation:65},grid:yoyGrid},y:{min:0,max:100,ticks:{font:{size:8},callback:function(v){return v}}}}}});
 }
 
 function sar(v){
@@ -783,6 +911,7 @@ function renderTable(){
       if(!se){inner.innerHTML='';return;}
       var allActive=SE_DATA.filter(function(s){return STATE.excluded.indexOf(s.se_name)<0&&(!INACTIVE_SES[s.se_name]||STATE.showInactive);});
       inner.innerHTML=seScoreBreakdown(se,allActive);
+      if(typeof Chart!=='undefined')renderBreakdownTrend(se,allActive);
     });
   });
   // Wire exclude buttons
@@ -942,7 +1071,11 @@ function renderAnalytics(){
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function escAttr(s){return esc(s).replace(/"/g,'&quot;');}
 
-function renderAll(){ renderTable(); renderAnalytics(); if(document.getElementById('view-trends').classList.contains('active'))renderTrends(); }
+function renderAll(){
+  renderTable(); renderAnalytics();
+  if(document.getElementById('view-trends').classList.contains('active'))renderTrends();
+  if(document.getElementById('view-teams').classList.contains('active'))renderTeamSummary();
+}
 
 // Wire controls
 document.getElementById('f-own').addEventListener('change',function(){STATE.own=this.checked;renderAll();});
@@ -1140,6 +1273,7 @@ document.querySelectorAll('#page-nav button').forEach(function(b){
     var vw=document.getElementById('view-'+b.getAttribute('data-view'));
     if(vw)vw.classList.add('active');
     if(b.getAttribute('data-view')==='trends')renderTrends();
+    if(b.getAttribute('data-view')==='teams')renderTeamSummary();
   });
 });
 
@@ -1682,6 +1816,157 @@ function renderSETrends(p,ms){
   }
 }
 
+
+// ---- TEAM SUMMARY (Feature 4) ----
+var _teamSummaryState={ch:'project'};
+document.querySelectorAll('#seg-team-ch button').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('#seg-team-ch button').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on');_teamSummaryState.ch=b.getAttribute('data-tch');renderTeamSummary();
+  });
+});
+
+function renderTeamSummary(){
+  if(typeof Chart==='undefined')return;
+  Chart.register(ChartDataLabels);
+  Chart.defaults.set('plugins.datalabels',{display:false});
+
+  var ch=_teamSummaryState.ch;
+  var allActive=SE_DATA.filter(function(s){
+    if(STATE.excluded.indexOf(s.se_name)>=0)return false;
+    if(!STATE.showInactive && INACTIVE_SES[s.se_name])return false;
+    if(ch==='project'&&!isProjectTeam(s.team))return false;
+    if(ch==='acs'&&isProjectTeam(s.team))return false;
+    return true;
+  });
+  var ms=months(),yoy=yoyMonths(ms);
+
+  // Group by team
+  var teamMap={};
+  allActive.forEach(function(se){
+    var t=se.team||'Unknown';
+    if(!teamMap[t])teamMap[t]={name:t,members:[],scores:[]};
+    teamMap[t].members.push(se);
+  });
+  var teamNames=Object.keys(teamMap).sort();
+  var teamColors=['#1f5fd6','#137a4b','#b06f10','#7c3aed','#b91c1c','#0891b2','#4f46e5'];
+
+  // Compute scores for each SE
+  teamNames.forEach(function(t){
+    teamMap[t].members.forEach(function(se){
+      teamMap[t].scores.push({se:se,score:composite(se,allActive)});
+    });
+    teamMap[t].scores.sort(function(a,b){return b.score-a.score;});
+  });
+
+  // CHART 1: Team avg score trend (one line per team)
+  (function(){
+    var ctx=getCtx('ch-team-score');if(!ctx)return;
+    var HS={quo:2,awd:2,inv:2};
+    var datasets=[];
+    teamNames.forEach(function(tn,ti){
+      var line=[];
+      for(var i=0;i<yoy.length;i++){
+        var pt=yoy[i];
+        var slice=ms.filter(function(m){return m<=pt.key;});
+        if(!slice.length){line.push(null);continue;}
+        // Compute avg score at this time point for this team
+        var members=teamMap[tn].members;
+        function totalS3(s,metric){var d=seData(s),v=0,k=metric==='awd'?'award':metric==='inv'?'inv':'quo';slice.forEach(function(m){v+=d[k][m]||0;});return v;}
+        function amS3(s,hs){var jd=s.join_date;if(!jd)return Math.max(1,slice.length-hs);var y=parseInt(jd.slice(0,4)),m=parseInt(jd.slice(5,7)),last=slice[slice.length-1],ly=parseInt(last.slice(0,4)),lm=parseInt(last.slice(5)),active=(ly-y)*12+(lm-m)+1;return Math.max(1,(active<1?0:active)-hs);}
+        function pmS3(s,metric){var t2=amS3(s,HS[metric]);return t2>0?totalS3(s,metric)/t2:0;}
+        function nrm3(a,v){var mn=Math.min.apply(null,a),mx=Math.max.apply(null,a);return mx>mn?(v-mn)/(mx-mn)*100:50;}
+        var cp=ch==='project'?allActive.filter(function(s){return isProjectTeam(s.team);}):allActive.filter(function(s){return !isProjectTeam(s.team);});
+        function sc3(s){
+          var cpQ=cp.map(function(x){return pmS3(x,'quo');}),cpA=cp.map(function(x){return pmS3(x,'awd');}),cpI=cp.map(function(x){return pmS3(x,'inv');});
+          var qn=nrm3(cpQ,pmS3(s,'quo')),an=nrm3(cpA,pmS3(s,'awd')),in_=nrm3(cpI,pmS3(s,'inv'));
+          if(isProjectTeam(s.team)){
+            var qhAll=cp.map(function(x){return(x.hp_quo_pct||{})[pt.key]||0;});
+            var haAll=cp.map(function(x){var n2=0,d2=0;slice.forEach(function(m2){n2+=(x.award_from_hp||{})[m2]||0;d2+=(x.total_award_hp||{})[m2]||0;});return d2>0?n2/d2:0;});
+            var qhpAtM=(s.hp_quo_pct||{})[pt.key]||0;
+            var hpaSe=0,hpaSd=0;slice.forEach(function(m2){hpaSe+=(s.award_from_hp||{})[m2]||0;hpaSd+=(s.total_award_hp||{})[m2]||0;});
+            return Math.round(0.20*nrm3(cpQ,pmS3(s,'quo')))+Math.round(0.20*nrm3(qhAll,qhpAtM))+Math.round(0.20*nrm3(cpA,pmS3(s,'awd')))+Math.round(0.20*nrm3(haAll,hpaSd>0?hpaSe/hpaSd:0))+Math.round(0.20*in_);
+          }
+          return Math.round(0.30*qn)+Math.round(0.40*an)+Math.round(0.30*in_);
+        }
+        var sum=0;members.forEach(function(s){sum+=sc3(s);});
+        line.push(members.length?Math.round(sum/members.length):null);
+      }
+      datasets.push({label:tn,data:line,borderColor:teamColors[ti%teamColors.length],
+        pointRadius:2,pointBackgroundColor:teamColors[ti%teamColors.length],borderWidth:2,tension:0.3,
+        datalabels:{display:function(c){return c.dataIndex===line.length-1&&line[c.dataIndex]!=null;},
+          font:{size:10,weight:'bold'},color:teamColors[ti%teamColors.length],anchor:'end',align:'top'}});
+    });
+    _charts['ch-team-score']=new Chart(ctx,{type:'line',data:{labels:yoy.map(function(p){return p.label;}),datasets:datasets},
+      options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10}}},datalabels:{formatter:function(v){return v!=null?v:'';}}},
+      scales:{x:{ticks:{font:{size:9},maxRotation:65},grid:yoyGrid},y:{min:0,max:100,ticks:{callback:function(v){return v}}}}}});
+  })();
+
+  // CHARTS 2-4: Quo/Award/Inv trends by team
+  ['quo','awd','inv'].forEach(function(metric){
+    var canvasId='ch-team-'+metric;
+    var ctx=getCtx(canvasId);if(!ctx)return;
+    var datasets=[];
+    teamNames.forEach(function(tn,ti){
+      var vals=[];
+      yoy.forEach(function(pt){
+        var v=0;
+        teamMap[tn].members.forEach(function(se){var d=seData(se);v+=(metric==='quo'?d.quo:metric==='awd'?d.award:d.inv)[pt.key]||0;});
+        vals.push(v/1e6);
+      });
+      datasets.push({label:tn,data:vals,borderColor:teamColors[ti%teamColors.length],
+        pointRadius:2,pointBackgroundColor:teamColors[ti%teamColors.length],borderWidth:2,tension:0.3,
+        datalabels:{display:function(c){return c.dataIndex===vals.length-1&&vals[c.dataIndex]>0;},
+          font:{size:9,weight:'bold'},color:teamColors[ti%teamColors.length],anchor:'end',align:'top'}});
+    });
+    _charts[canvasId]=new Chart(ctx,{type:'line',data:{labels:yoy.map(function(p){return p.label;}),datasets:datasets},
+      options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10}}},datalabels:{formatter:fmtM}},
+      scales:{x:{ticks:{font:{size:9},maxRotation:65},grid:yoyGrid},y:{ticks:{callback:function(v){return v+'M'}}}}}});
+  });
+
+  // Team cards
+  var cardsHtml='<div style="display:flex;gap:12px;flex-wrap:wrap;padding:4px 0">';
+  teamNames.forEach(function(tn){
+    var tm=teamMap[tn], members=tm.members, scores=tm.scores;
+    var avgScore=scores.length?Math.round(scores.reduce(function(s,r){return s+r.score;},0)/scores.length):0;
+    var totalQuo=0,totalAwd=0,totalInv=0;
+    members.forEach(function(se){totalQuo+=total(se,'quo');totalAwd+=total(se,'awd');totalInv+=total(se,'inv');});
+    var top=scores[0],bot=scores[scores.length-1];
+    var sc=avgScore>=60?'score-hi':avgScore>=40?'score-mid':'score-lo';
+    cardsHtml+='<div class="team-card">'
+      +'<h4>'+esc(tn)+'</h4>'
+      +'<div class="tc-metric"><b>'+members.length+'</b> SEs · avg score: <span class="score '+sc+'" style="font-size:13px">'+avgScore+'</span></div>'
+      +'<div class="tc-metric">Quo: <b>'+sar(totalQuo)+'</b> · Awd: <b>'+sar(totalAwd)+'</b> · Inv: <b>'+sar(totalInv)+'</b></div>'
+      +'<div class="tc-tags">'
+      +(top?'<span class="tag tag-new" style="font-size:10px">Top: '+top.se.se_name+' ('+top.score+')</span>':'')
+      +(bot&&bot!==top?'<span class="tag tag-ksa" style="font-size:10px">Lowest: '+bot.se.se_name+' ('+bot.score+')</span>':'')
+      +'</div></div>';
+  });
+  cardsHtml+='</div>';
+  document.getElementById('team-cards-row').innerHTML=cardsHtml;
+
+  // Team rankings table
+  var tbody='';
+  teamNames.forEach(function(tn){
+    var tm=teamMap[tn], scores=tm.scores;
+    var avgScore=scores.length?Math.round(scores.reduce(function(s,r){return s+r.score;},0)/scores.length):0;
+    var totalQuo=0,totalAwd=0,totalInv=0;
+    tm.members.forEach(function(se){totalQuo+=total(se,'quo');totalAwd+=total(se,'awd');totalInv+=total(se,'inv');});
+    var top=scores[0],bot=scores[scores.length-1];
+    var sc=avgScore>=60?'score-hi':avgScore>=40?'score-mid':'score-lo';
+    tbody+='<tr>'
+      +'<td><b>'+esc(tn)+'</b></td>'
+      +'<td class="num">'+tm.members.length+'</td>'
+      +'<td class="num"><span class="score '+sc+'">'+avgScore+'</span></td>'
+      +'<td class="num">'+sar(totalQuo)+'</td>'
+      +'<td class="num val-award">'+sar(totalAwd)+'</td>'
+      +'<td class="num val-inv">'+sar(totalInv)+'</td>'
+      +'<td>'+(top?esc(top.se.se_name)+' ('+top.score+')':'')+'</td>'
+      +'<td>'+(bot&&bot!==top?esc(bot.se.se_name)+' ('+bot.score+')':'')+'</td>'
+      +'</tr>';
+  });
+  document.getElementById('tbody-teams').innerHTML=tbody;
+}
 
 // -- AUTH GATE --
 function startReport(session){
