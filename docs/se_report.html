@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1792484017"></script>
+<script src="auth.js?v=1792488999"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -569,44 +569,57 @@ function updateMethodBox(){
 }
 
 // Per-SE score breakdown — plain English, step by step
+function _sbkId(name){return 'ch-sbk-'+name.replace(/[^a-zA-Z0-9]/g,'_');}
+
 function seScoreBreakdown(se, allPeers){
   var sp=scoreParts(se, allPeers);
   var f=sp.formula, pc=sp.peerCount||1;
   var isPrj=f==='project';
 
-  // Build component list with labels, raw, rank, weight, pts
+  // Compute actual rank position per component (1 = best)
+  var cp=channelPeers(allPeers,se);
+  function rankPos(normArr,myVal){
+    var above=normArr.filter(function(v){return v>myVal;}).length;
+    return above+1;
+  }
+
+  // Build component list
   var comps=[];
   if(isPrj){
     comps=[
-      {label:'Quotation value',raw:sar(sp.quoPM)+' SAR/mo',rank:sp.quoN,w:0.20,pts:Math.round(0.20*sp.quoN)},
-      {label:'Q → HP conversion',raw:sp.hasHP?(sp.qhpRaw*100).toFixed(1)+'% (latest month)':'No HP data',rank:sp.qhpN,w:0.20,pts:Math.round(0.20*sp.qhpN)},
-      {label:'Award value',raw:sar(sp.awdPM)+' SAR/mo',rank:sp.awdN,w:0.20,pts:Math.round(0.20*sp.awdN)},
-      {label:'HP → Award conversion',raw:sp.hasHPA?(sp.hpaRaw*100).toFixed(1)+'% (cumulative)':'No HP data',rank:sp.hpaN,w:0.20,pts:Math.round(0.20*sp.hpaN)},
-      {label:'Invoiced value',raw:sar(sp.invPM)+' SAR/mo',rank:sp.invN,w:0.20,pts:Math.round(0.20*sp.invN)}
+      {label:'Quotation value',basis:'per-month avg',raw:sar(sp.quoPM)+' SAR/mo',norm:sp.quoN,w:0.20,pts:Math.round(0.20*sp.quoN)},
+      {label:'Q → HP conversion',basis:'latest month',raw:sp.hasHP?(sp.qhpRaw*100).toFixed(1)+'%':'No HP data',norm:sp.qhpN,w:0.20,pts:Math.round(0.20*sp.qhpN)},
+      {label:'Award value',basis:'per-month avg',raw:sar(sp.awdPM)+' SAR/mo',norm:sp.awdN,w:0.20,pts:Math.round(0.20*sp.awdN)},
+      {label:'HP → Award conversion',basis:'cumulative',raw:sp.hasHPA?(sp.hpaRaw*100).toFixed(1)+'%':'No HP data',norm:sp.hpaN,w:0.20,pts:Math.round(0.20*sp.hpaN)},
+      {label:'Invoiced value',basis:'per-month avg',raw:sar(sp.invPM)+' SAR/mo',norm:sp.invN,w:0.20,pts:Math.round(0.20*sp.invN)}
     ];
   } else {
     comps=[
-      {label:'Quotation value',raw:sar(sp.quoPM)+' SAR/mo',rank:sp.quoN,w:0.30,pts:Math.round(0.30*sp.quoN)},
-      {label:'Award value',raw:sar(sp.awdPM)+' SAR/mo',rank:sp.awdN,w:0.40,pts:Math.round(0.40*sp.awdN)},
-      {label:'Invoiced value',raw:sar(sp.invPM)+' SAR/mo',rank:sp.invN,w:0.30,pts:Math.round(0.30*sp.invN)}
+      {label:'Quotation value',basis:'per-month avg',raw:sar(sp.quoPM)+' SAR/mo',norm:sp.quoN,w:0.30,pts:Math.round(0.30*sp.quoN)},
+      {label:'Award value',basis:'per-month avg',raw:sar(sp.awdPM)+' SAR/mo',norm:sp.awdN,w:0.40,pts:Math.round(0.40*sp.awdN)},
+      {label:'Invoiced value',basis:'per-month avg',raw:sar(sp.invPM)+' SAR/mo',norm:sp.invN,w:0.30,pts:Math.round(0.30*sp.invN)}
     ];
   }
+  // Compute rank positions
+  var normArrays=isPrj?
+    [cp.map(function(s){return scoreParts(s,allPeers).quoN;}),cp.map(function(s){return scoreParts(s,allPeers).qhpN;}),cp.map(function(s){return scoreParts(s,allPeers).awdN;}),cp.map(function(s){return scoreParts(s,allPeers).hpaN;}),cp.map(function(s){return scoreParts(s,allPeers).invN;})]
+    :[cp.map(function(s){return scoreParts(s,allPeers).quoN;}),cp.map(function(s){return scoreParts(s,allPeers).awdN;}),cp.map(function(s){return scoreParts(s,allPeers).invN;})];
+  comps.forEach(function(c,i){c.rankPos=rankPos(normArrays[i],c.norm);});
+
   var totalPts=comps.reduce(function(s,c){return s+c.pts;},0);
-
-  // Find insights
-  var sorted=comps.slice().sort(function(a,b){return a.rank-b.rank;});
+  var sorted=comps.slice().sort(function(a,b){return a.norm-b.norm;});
   var weakest=sorted[0], strongest=sorted[sorted.length-1];
-  var watchItems=comps.filter(function(c){return c.raw.indexOf('No HP')===0;});
+  var watchItems=comps.filter(function(c){return c.raw==='No HP data';});
 
-  // LEFT: score breakdown with bars
+  // LEFT: score breakdown
   var left='<div style="font-size:13px;font-weight:700;margin:0 0 10px">'+(isPrj?'Project formula (5 × 20%)':'ACS formula (30/40/30)')+'</div>';
   comps.forEach(function(c,i){
-    var barW=Math.max(2,Math.round(c.rank));
+    var barW=Math.max(2,Math.round(c.norm));
     left+='<div style="margin:0 0 8px;padding:7px 10px;background:var(--bg);border-radius:6px">'
       +'<div style="display:flex;align-items:center;justify-content:space-between">'
       +'<span style="font-size:12px;font-weight:600">'+(i+1)+'. '+c.label+' <span style="font-weight:400;color:var(--ink-soft)">('+Math.round(c.w*100)+'%)</span></span>'
       +'<span style="font-size:12px;font-weight:700;color:var(--blue)">'+c.pts+' pts</span></div>'
-      +'<div style="font-size:11px;color:var(--ink-soft);margin:2px 0">'+c.raw+' · rank: <b style="color:var(--ink)">'+Math.round(c.rank)+'</b>/100</div>'
+      +'<div style="font-size:11px;color:var(--ink-soft);margin:2px 0">'+c.raw+' <span style="color:var(--ink-faint)">· '+c.basis+'</span> · <b style="color:var(--ink)">'+c.rankPos+' of '+pc+'</b> peers</div>'
       +'<div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:6px;background:#eee;border-radius:3px;overflow:hidden">'
       +'<div style="width:'+barW+'%;height:100%;border-radius:3px;background:var(--blue)"></div></div></div>'
       +'</div>';
@@ -614,35 +627,27 @@ function seScoreBreakdown(se, allPeers){
   left+='<div style="padding:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:6px;font-size:13px;margin-top:6px">'
     +'<b>Total = '+comps.map(function(c){return c.pts;}).join(' + ')+' = '+totalPts+'</b></div>';
 
-  // RIGHT: insights + recommendations
+  // RIGHT: insights
   var right='<div style="font-size:13px;font-weight:700;margin:0 0 10px">Insights and analysis</div>';
-
-  // Strongest
   right+='<div style="padding:7px 10px;background:var(--bg);border-radius:6px;margin:0 0 6px;border-left:3px solid #137a4b">'
     +'<div style="font-size:11px;font-weight:600;color:#137a4b;margin:0 0 2px">Strongest: '+strongest.label+'</div>'
-    +'<div style="font-size:11px;color:var(--ink-soft)">Rank '+Math.round(strongest.rank)+'/100 among '+pc+' peers. Contributing '+strongest.pts+' points ('+Math.round(strongest.pts/Math.max(1,totalPts)*100)+'% of total score).</div>'
+    +'<div style="font-size:11px;color:var(--ink-soft)">Ranked '+strongest.rankPos+' of '+pc+' peers. Contributing '+strongest.pts+' points ('+Math.round(strongest.pts/Math.max(1,totalPts)*100)+'% of total score).</div>'
     +'</div>';
-
-  // Weakest
-  var weakColor=weakest.rank<30?'#b91c1c':'#b06f10';
+  var weakColor=weakest.norm<30?'#b91c1c':'#b06f10';
   right+='<div style="padding:7px 10px;background:var(--bg);border-radius:6px;margin:0 0 6px;border-left:3px solid '+weakColor+'">'
     +'<div style="font-size:11px;font-weight:600;color:'+weakColor+';margin:0 0 2px">Weakest: '+weakest.label+'</div>'
-    +'<div style="font-size:11px;color:var(--ink-soft)">Rank '+Math.round(weakest.rank)+'/100. Only contributing '+weakest.pts+' points. '
-    +(weakest.rank<20?'Significant drag on overall score — priority area for improvement.':'Room for improvement here would lift the overall score.')
+    +'<div style="font-size:11px;color:var(--ink-soft)">Ranked '+weakest.rankPos+' of '+pc+'. Only contributing '+weakest.pts+' points. '
+    +(weakest.norm<20?'Significant drag on overall score — priority area for improvement.':'Room for improvement here would lift the overall score.')
     +'</div></div>';
-
-  // Watch items
   watchItems.forEach(function(w){
     right+='<div style="padding:7px 10px;background:var(--bg);border-radius:6px;margin:0 0 6px;border-left:3px solid var(--blue)">'
       +'<div style="font-size:11px;font-weight:600;color:var(--blue);margin:0 0 2px">Data gap: '+w.label+'</div>'
-      +'<div style="font-size:11px;color:var(--ink-soft)">No HP conversion data available — scoring defaults to mid-rank (50). Actual performance may be higher or lower.</div>'
+      +'<div style="font-size:11px;color:var(--ink-soft)">No HP conversion data available — scoring defaults to mid-rank. Actual performance may be higher or lower.</div>'
       +'</div>';
   });
-
-  // Recommendation
   var recText='';
   if(weakest.label.indexOf('Invoiced')>=0) recText='Focus on closing invoiced pipeline — quotation and award generation are relatively strong.';
-  else if(weakest.label.indexOf('Award')>=0) recText='Win rate needs attention — pipeline is healthy but conversion to awards is below peers.';
+  else if(weakest.label.indexOf('Award')>=0&&weakest.label.indexOf('HP')<0) recText='Win rate needs attention — pipeline is healthy but conversion to awards is below peers.';
   else if(weakest.label.indexOf('Quo')>=0&&weakest.label.indexOf('HP')<0) recText='Pipeline generation is the bottleneck — need more quotation activity to feed downstream conversion.';
   else if(weakest.label.indexOf('HP')>=0) recText='Hot project conversion is low — quotes are being submitted but not progressing to the hot stage. Review quote quality and follow-up process.';
   else recText='No single metric stands out as a drag. Focus on maintaining consistent output across all components.';
@@ -650,12 +655,12 @@ function seScoreBreakdown(se, allPeers){
     +'<div style="font-size:11px;font-weight:600;color:var(--ink);margin:0 0 2px">Recommendation</div>'
     +'<div style="font-size:11px;color:var(--ink-soft)">'+recText+'</div></div>';
 
-  // Score trend canvas placeholder
+  // Score trend canvas
+  var cid=_sbkId(se.se_name);
   right+='<div style="margin-top:10px;padding:7px 10px;background:var(--bg);border-radius:6px">'
     +'<div style="font-size:11px;font-weight:600;color:var(--ink);margin:0 0 4px">Composite score trend</div>'
-    +'<canvas id="ch-sbk-'+esc(se.se_name).replace(/\s/g,'_')+'" height="80"></canvas></div>';
+    +'<canvas id="'+cid+'" height="80"></canvas></div>';
 
-  // Combine as two-column
   var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:11.5px;color:var(--ink);line-height:1.6;margin:8px 0 12px">'
     +'<div>'+left+'</div><div>'+right+'</div></div>';
   return html;
@@ -663,7 +668,7 @@ function seScoreBreakdown(se, allPeers){
 
 // Render the mini score trend chart inside an SE breakdown panel
 function renderBreakdownTrend(se, allPeers){
-  var canvasId='ch-sbk-'+esc(se.se_name).replace(/\\s/g,'_');
+  var canvasId=_sbkId(se.se_name);
   var ctx=document.getElementById(canvasId);
   if(!ctx)return;
   if(_charts[canvasId]){_charts[canvasId].destroy();delete _charts[canvasId];}
