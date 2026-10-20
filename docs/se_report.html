@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1792482332"></script>
+<script src="auth.js?v=1792484017"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -775,7 +775,16 @@ function total(se,metric){
 function activeMonths(se,headstart){
   var ms=months(), jd=se.join_date?new Date(se.join_date):new Date(2025,0,1);
   var active=ms.filter(function(m){return new Date(m+'-01')>=jd;}).length;
-  return Math.max(1, active-(headstart||0));
+  // Only apply headstart if the ramp period (join + headstart months) overlaps
+  // with the current filtered window. If the SE already ramped up before the
+  // window starts, headstart = 0.
+  var hs=headstart||0;
+  if(hs>0 && ms.length>0){
+    var rampEnd=new Date(jd.getFullYear(), jd.getMonth()+hs, 1);
+    var windowStart=new Date(ms[0]+'-01');
+    if(rampEnd<=windowStart) hs=0; // fully ramped before this window
+  }
+  return Math.max(1, active-hs);
 }
 
 // Channel type: determines which scoring formula to apply.
