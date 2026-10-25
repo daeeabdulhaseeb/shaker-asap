@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1792932140"></script>
+<script src="auth.js?v=1792932570"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -196,6 +196,15 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
 .team-card .tc-tags{margin-top:8px;display:flex;gap:4px;flex-wrap:wrap}
 .tc-spark{display:inline-flex;align-items:end;gap:1px;height:16px;margin-left:6px;vertical-align:middle}
 .tc-spark i{width:2px;border-radius:1px}
+.fs-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:none;align-items:center;justify-content:center}
+.fs-overlay.open{display:flex}
+.fs-box{background:var(--paper);border-radius:12px;width:94vw;height:88vh;padding:20px 24px;position:relative;display:flex;flex-direction:column}
+.fs-close{position:absolute;top:12px;right:16px;font-size:22px;color:var(--ink-soft);cursor:pointer;background:none;border:none;font-family:inherit;z-index:1}
+.fs-close:hover{color:var(--ink)}
+.fs-title{font-size:14px;font-weight:600;margin:0 0 8px}
+.fs-canvas-wrap{flex:1;position:relative;min-height:0}
+.expand-btn{font-size:11px;color:var(--blue);cursor:pointer;background:none;border:none;font-family:inherit;padding:2px 6px;margin-left:6px;opacity:0.7}
+.expand-btn:hover{opacity:1;text-decoration:underline}
 .se-exclude{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:transparent;color:var(--ink-faint);font-size:13px;font-weight:400;text-decoration:none;cursor:pointer;vertical-align:middle;margin-left:2px;opacity:0;transition:opacity 0.15s;border:1px solid transparent}
 .se-row:hover .se-exclude{opacity:0.5}.se-exclude:hover{opacity:1!important;color:var(--red);border-color:var(--red)}
 .excluded-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;margin:0 0 6px;background:var(--bg);border:1px solid var(--line);border-radius:8px;font-size:11px;color:var(--ink-soft)}
@@ -489,6 +498,15 @@ tr.detail>td{padding:0;background:var(--blue-soft)}
   </div>
 </div>
 
+<!-- Fullscreen trend modal -->
+<div class="fs-overlay" id="fs-overlay">
+  <div class="fs-box">
+    <button class="fs-close" id="fs-close">✕</button>
+    <div class="fs-title" id="fs-title">Score trend</div>
+    <div class="fs-canvas-wrap"><canvas id="ch-fs-trend"></canvas></div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
@@ -622,7 +640,8 @@ function seScoreBreakdown(se, allPeers){
   // Score trend canvas
   var cid=_sbkId(se.se_name);
   right+='<div style="margin-top:10px;padding:7px 10px;background:var(--bg);border-radius:6px">'
-    +'<div style="font-size:11px;font-weight:600;color:var(--ink);margin:0 0 4px">Composite score trend</div>'
+    +'<div style="font-size:11px;font-weight:600;color:var(--ink);margin:0 0 4px">Composite score trend'
+    +'<button class="expand-btn" data-fs-se="'+escAttr(se.se_name)+'" title="Full screen">⛶ Expand</button></div>'
     +'<canvas id="'+cid+'" height="80"></canvas></div>';
 
   var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:11.5px;color:var(--ink);line-height:1.6;margin:8px 0 12px">'
@@ -1945,6 +1964,86 @@ function renderTeamSummary(){
       +'</tr>';
   });
   document.getElementById('tbody-teams').innerHTML=tbody;
+}
+
+// ---- FULLSCREEN TREND ----
+var _fsCurrentSE=null;
+document.getElementById('fs-close').addEventListener('click',function(){
+  document.getElementById('fs-overlay').classList.remove('open');
+});
+document.getElementById('fs-overlay').addEventListener('click',function(e){
+  if(e.target===this)this.classList.remove('open');
+});
+// Delegate expand button clicks (they're dynamically created)
+document.addEventListener('click',function(e){
+  var btn=e.target.closest('.expand-btn[data-fs-se]');
+  if(!btn)return;
+  var name=btn.getAttribute('data-fs-se');
+  var se=SE_DATA.find(function(s){return s.se_name===name;});
+  if(!se)return;
+  _fsCurrentSE=se;
+  document.getElementById('fs-title').textContent='Score trend — '+se.se_name;
+  document.getElementById('fs-overlay').classList.add('open');
+  setTimeout(function(){renderFullscreenTrend(se);},50);
+});
+
+function renderFullscreenTrend(se){
+  var allPeers=SE_DATA.filter(function(s){return STATE.excluded.indexOf(s.se_name)<0&&(!INACTIVE_SES[s.se_name]||STATE.showInactive);});
+  var cp=allPeers;
+  var ms_=months(); // continuous, chronological
+  var HS={quo:2,awd:2,inv:2};
+  var labels=[],seLine=[],ksaLine=[],quoLine=[],qhpLine=[],awdLine=[],hpaLine=[],invLine=[];
+  for(var i=0;i<ms_.length;i++){
+    var mKey=ms_[i];
+    labels.push(mKey.slice(5)+'/'+mKey.slice(2,4)); // 01/25
+    var slice=ms_.filter(function(m){return m<=mKey;});
+    function totalFS(s,metric){var d=seData(s),v=0,k=metric==='awd'?'award':metric==='inv'?'inv':'quo';slice.forEach(function(m){v+=d[k][m]||0;});return v;}
+    function amFS(s,hs){var jd=s.join_date;if(!jd)return Math.max(1,slice.length-hs);var y=parseInt(jd.slice(0,4)),m=parseInt(jd.slice(5,7)),last=slice[slice.length-1],ly=parseInt(last.slice(0,4)),lm=parseInt(last.slice(5)),active=(ly-y)*12+(lm-m)+1;return Math.max(1,(active<1?0:active)-hs);}
+    function pmFS(s,metric){var t=amFS(s,HS[metric]);return t>0?totalFS(s,metric)/t:0;}
+    function nrmFS(a,v){return wnorm(a,v);}
+    var cpQ=cp.map(function(x){return pmFS(x,'quo');}),cpA=cp.map(function(x){return pmFS(x,'awd');}),cpI=cp.map(function(x){return pmFS(x,'inv');});
+    var qhAll=cp.map(function(x){return(x.hp_quo_pct||{})[mKey]||0;});
+    var haAll=cp.map(function(x){var n2=0,d2=0;slice.forEach(function(m2){n2+=(x.award_from_hp||{})[m2]||0;d2+=(x.total_award_hp||{})[m2]||0;});return d2>0?n2/d2:0;});
+
+    var qn=nrmFS(cpQ,pmFS(se,'quo')),an=nrmFS(cpA,pmFS(se,'awd')),in_=nrmFS(cpI,pmFS(se,'inv'));
+    var qhpAtM=(se.hp_quo_pct||{})[mKey]||0;
+    var qhN=nrmFS(qhAll,qhpAtM);
+    var hpaSe=0,hpaSd=0;slice.forEach(function(m2){hpaSe+=(se.award_from_hp||{})[m2]||0;hpaSd+=(se.total_award_hp||{})[m2]||0;});
+    var haN=nrmFS(haAll,hpaSd>0?hpaSe/hpaSd:0);
+    var ttl=Math.round(0.15*qn)+Math.round(0.15*qhN)+Math.round(0.20*an)+Math.round(0.30*haN)+Math.round(0.20*in_);
+    seLine.push(ttl);quoLine.push(Math.round(qn));qhpLine.push(Math.round(qhN));awdLine.push(Math.round(an));hpaLine.push(Math.round(haN));invLine.push(Math.round(in_));
+    var ksaSum=0;cp.forEach(function(s2){
+      var q2=nrmFS(cpQ,pmFS(s2,'quo')),a2=nrmFS(cpA,pmFS(s2,'awd')),i2=nrmFS(cpI,pmFS(s2,'inv'));
+      var qh2=nrmFS(qhAll,(s2.hp_quo_pct||{})[mKey]||0);
+      var hp2n=0,hp2d=0;slice.forEach(function(m2){hp2n+=(s2.award_from_hp||{})[m2]||0;hp2d+=(s2.total_award_hp||{})[m2]||0;});
+      var ha2=nrmFS(haAll,hp2d>0?hp2n/hp2d:0);
+      ksaSum+=Math.round(0.15*q2)+Math.round(0.15*qh2)+Math.round(0.20*a2)+Math.round(0.30*ha2)+Math.round(0.20*i2);
+    });
+    ksaLine.push(Math.round(ksaSum/cp.length));
+  }
+  var paramColors=['#1f5fd6','#7c3aed','#137a4b','#b06f10','#b91c1c'];
+  var paramNames=['Quo (15%)','Q→HP (15%)','Award (20%)','HP→Awd (30%)','Inv (20%)'];
+  var paramData=[quoLine,qhpLine,awdLine,hpaLine,invLine];
+  // All data labels visible in fullscreen
+  var dlAll={display:true,font:{size:9,weight:'bold'},anchor:'end',align:'top',offset:2};
+  var datasets=[
+    {label:'Total score',data:seLine,borderColor:'#141b24',pointRadius:3,pointBackgroundColor:'#141b24',borderWidth:2.5,tension:0.3,
+     datalabels:Object.assign({},dlAll,{color:'#141b24',font:{size:10,weight:'bold'}})},
+    {label:'KSA avg',data:ksaLine,borderColor:'rgba(100,100,100,0.4)',pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.3,
+     datalabels:{display:false}}
+  ];
+  paramData.forEach(function(d,di){
+    datasets.push({label:paramNames[di],data:d,borderColor:paramColors[di],pointRadius:2,pointBackgroundColor:paramColors[di],borderWidth:1.5,tension:0.3,
+      datalabels:Object.assign({},dlAll,{color:paramColors[di],font:{size:8}})});
+  });
+  var ctx=document.getElementById('ch-fs-trend');
+  if(_charts['ch-fs-trend']){_charts['ch-fs-trend'].destroy();delete _charts['ch-fs-trend'];}
+  _charts['ch-fs-trend']=new Chart(ctx.getContext('2d'),{type:'line',data:{labels:labels,datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:14}},
+        datalabels:{formatter:function(v){return v!=null?v:'';},clamp:true,clip:false}},
+      scales:{x:{ticks:{font:{size:10},maxRotation:45},grid:{color:'rgba(0,0,0,0.06)'}},
+        y:{min:0,max:100,ticks:{font:{size:10},callback:function(v){return v}}}}}});
 }
 
 // -- AUTH GATE --
