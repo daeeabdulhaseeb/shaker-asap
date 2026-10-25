@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1792488999"></script>
+<script src="auth.js?v=1792932140"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -520,45 +520,19 @@ var STATE = { year:'2026', metric:'quo', teams:[], ses:[], own:true, tenure:'all
 
 // Dynamic score method box — updates when channel filter changes
 function updateMethodBox(){
-  var ch=STATE.channel;
   var box=document.getElementById('method-box');
   var det=document.getElementById('explainer-detail');
-  if(ch==='project'){
-    box.innerHTML='<b>Project Scoring — funnel conversion formula</b><br><br>'
-      +'Teams: East Projects, West Projects, Central Projects, Direct Channel<br>'
-      +'<b>20%</b> Quotation value · <b>20%</b> Q→Hot Projects hit rate · <b>20%</b> Award value · <b>20%</b> HP→Award hit rate · <b>20%</b> Invoiced value<br><br>'
-      +'Each component normalized 0–100 against <b>project peers only</b>, prorated for tenure (2-month headstart).'
-      +'<br><br><a href="javascript:void(0)" id="toggle-explainer" style="color:var(--blue);font-weight:600;text-decoration:none">▸ How is the score calculated?</a>';
-    det.innerHTML='<b>Step 1 — Cumulative total.</b> For each value metric (quo, award, invoiced), sum all SAR from the start of data through the latest month.<br><br>'
-      +'<b>Step 2 — Adjust for tenure.</b> Divide by active months minus 2-month grace period → per-month average.<br><br>'
-      +'<b>Step 3 — Normalize against project peers.</b> Min-max scale to 0–100 across project-team SEs only. HP hit rates (Q→HP and HP→Award) are averaged across available months per SE, then normalized the same way.<br><br>'
-      +'<b>Step 4 — Weight equally.</b><br>'
-      +'<span style="display:block;margin:4px 0 6px 12px;font-size:11px">Score = 20% × Quo + 20% × Q→HP rate + 20% × Award + 20% × HP→Awd rate + 20% × Invoiced</span>'
-      +'Maximum 100. Score of ~50 = middle of project peer group.<br><br>'
-      +'<b>Limitations:</b> Relative to peers (shifts as the pool changes). Does not measure quota attainment. Outliers can compress the rest.';
-  } else if(ch==='acs'){
-    box.innerHTML='<b>ACS Scoring — value-weighted formula</b><br><br>'
-      +'Teams: ACS - ER, ACS - WR, ACS - CR<br>'
-      +'<b>30%</b> Quotation value · <b>40%</b> Award value · <b>30%</b> Invoiced value<br><br>'
-      +'Each component normalized 0–100 against <b>ACS peers only</b>, prorated for tenure (2-month headstart).'
-      +'<br><br><a href="javascript:void(0)" id="toggle-explainer" style="color:var(--blue);font-weight:600;text-decoration:none">▸ How is the score calculated?</a>';
-    det.innerHTML='<b>Step 1 — Cumulative total.</b> For each metric (quotation, award, invoiced), sum all SAR from the start of data through the latest month.<br><br>'
-      +'<b>Step 2 — Adjust for tenure.</b> Divide by active months minus 2-month grace period → per-month average.<br><br>'
-      +'<b>Step 3 — Normalize against ACS peers.</b> Min-max scale to 0–100 across ACS-team SEs only.<br><br>'
-      +'<b>Step 4 — Weight and sum.</b><br>'
-      +'<span style="display:block;margin:4px 0 6px 12px;font-size:11px">Score = 30% × Quo + 40% × Award + 30% × Invoiced</span>'
-      +'Maximum 100. Score of ~50 = middle of ACS peer group.<br><br>'
-      +'<b>Limitations:</b> Relative to peers (shifts as the pool changes). Does not measure quota attainment. Outliers can compress the rest.';
-  } else {
-    box.innerHTML='<b>Composite score — two formulas by channel type</b><br><br>'
-      +'<b>Project</b> (East/West/Central Projects, Direct Channel): 20% Quo · 20% Q→HP rate · 20% Award · 20% HP→Awd rate · 20% Invoiced — normalized against project peers<br>'
-      +'<b>ACS</b> (ACS-ER, ACS-WR, ACS-CR): 30% Quo · 40% Award · 30% Invoiced — normalized against ACS peers<br><br>'
-      +'Each SE scored against their own channel\'s peer pool. Prorated for tenure (2-month headstart).'
-      +'<br><br><a href="javascript:void(0)" id="toggle-explainer" style="color:var(--blue);font-weight:600;text-decoration:none">▸ How is the score calculated?</a>';
-    det.innerHTML='<b>Project formula:</b> Score = 20% × Quo + 20% × Q→HP rate + 20% × Award + 20% × HP→Awd rate + 20% × Invoiced<br>'
-      +'<b>ACS formula:</b> Score = 30% × Quo + 40% × Award + 30% × Invoiced<br><br>'
-      +'Both use min-max normalization (0–100) within their own channel peer pool. Per-month averages adjusted for tenure with a 2-month headstart.';
-  }
+  box.innerHTML='<b>SE Composite Score — universal formula</b><br><br>'
+    +'<b>15%</b> Quotation value · <b>15%</b> Q→Hot Projects rate · <b>20%</b> Award value · <b>30%</b> HP→Award rate · <b>20%</b> Invoiced value<br><br>'
+    +'Each component normalized 0–100 across all active peers, prorated for tenure (2-month headstart for new joiners).'
+    +'<br><br><a href="javascript:void(0)" id="toggle-explainer" style="color:var(--blue);font-weight:600;text-decoration:none">▸ How is the score calculated?</a>';
+  det.innerHTML='<b>Step 1 — Cumulative total.</b> For value metrics (quo, award, invoiced), sum all SAR from start through latest month. Q→HP uses the latest month\'s conversion rate. HP→Award uses cumulative ratio.<br><br>'
+    +'<b>Step 2 — Adjust for tenure.</b> Divide by active months minus 2-month grace period (only applies if SE joined within the current view window).<br><br>'
+    +'<b>Step 3 — Normalize against peers.</b> Capped min-max (2nd lowest to 2nd highest) scale to 0–100 across all active SEs.<br><br>'
+    +'<b>Step 4 — Weight and sum.</b><br>'
+    +'<span style="display:block;margin:4px 0 6px 12px;font-size:11px">Score = 15% × Quo + 15% × Q→HP + 20% × Award + 30% × HP→Awd + 20% × Invoiced</span>'
+    +'Maximum 100. Score of ~50 = middle of the peer group.<br><br>'
+    +'<b>Limitations:</b> Relative to peers (shifts as the pool changes). Does not measure quota attainment. One outlier\'s impact is capped (2nd-highest/2nd-lowest normalization).';
   document.getElementById('score-explainer').style.display='none';
   document.getElementById('toggle-explainer').addEventListener('click',function(){
     var el=document.getElementById('score-explainer');
@@ -574,36 +548,26 @@ function _sbkId(name){return 'ch-sbk-'+name.replace(/[^a-zA-Z0-9]/g,'_');}
 function seScoreBreakdown(se, allPeers){
   var sp=scoreParts(se, allPeers);
   var f=sp.formula, pc=sp.peerCount||1;
-  var isPrj=f==='project';
-
   // Compute actual rank position per component (1 = best)
-  var cp=channelPeers(allPeers,se);
+  var cp=allPeers;
   function rankPos(normArr,myVal){
     var above=normArr.filter(function(v){return v>myVal;}).length;
     return above+1;
   }
 
-  // Build component list
-  var comps=[];
-  if(isPrj){
-    comps=[
-      {label:'Quotation value',basis:'per-month avg',raw:sar(sp.quoPM)+' SAR/mo',norm:sp.quoN,w:0.20,pts:Math.round(0.20*sp.quoN)},
-      {label:'Q → HP conversion',basis:'latest month',raw:sp.hasHP?(sp.qhpRaw*100).toFixed(1)+'%':'No HP data',norm:sp.qhpN,w:0.20,pts:Math.round(0.20*sp.qhpN)},
-      {label:'Award value',basis:'per-month avg',raw:sar(sp.awdPM)+' SAR/mo',norm:sp.awdN,w:0.20,pts:Math.round(0.20*sp.awdN)},
-      {label:'HP → Award conversion',basis:'cumulative',raw:sp.hasHPA?(sp.hpaRaw*100).toFixed(1)+'%':'No HP data',norm:sp.hpaN,w:0.20,pts:Math.round(0.20*sp.hpaN)},
-      {label:'Invoiced value',basis:'per-month avg',raw:sar(sp.invPM)+' SAR/mo',norm:sp.invN,w:0.20,pts:Math.round(0.20*sp.invN)}
-    ];
-  } else {
-    comps=[
-      {label:'Quotation value',basis:'per-month avg',raw:sar(sp.quoPM)+' SAR/mo',norm:sp.quoN,w:0.30,pts:Math.round(0.30*sp.quoN)},
-      {label:'Award value',basis:'per-month avg',raw:sar(sp.awdPM)+' SAR/mo',norm:sp.awdN,w:0.40,pts:Math.round(0.40*sp.awdN)},
-      {label:'Invoiced value',basis:'per-month avg',raw:sar(sp.invPM)+' SAR/mo',norm:sp.invN,w:0.30,pts:Math.round(0.30*sp.invN)}
-    ];
-  }
-  // Compute rank positions
-  var normArrays=isPrj?
-    [cp.map(function(s){return scoreParts(s,allPeers).quoN;}),cp.map(function(s){return scoreParts(s,allPeers).qhpN;}),cp.map(function(s){return scoreParts(s,allPeers).awdN;}),cp.map(function(s){return scoreParts(s,allPeers).hpaN;}),cp.map(function(s){return scoreParts(s,allPeers).invN;})]
-    :[cp.map(function(s){return scoreParts(s,allPeers).quoN;}),cp.map(function(s){return scoreParts(s,allPeers).awdN;}),cp.map(function(s){return scoreParts(s,allPeers).invN;})];
+  // Build component list — universal formula 15/15/20/30/20
+  var comps=[
+    {label:'Quotation value',basis:'per-month avg',raw:sar(sp.quoPM)+' SAR/mo',norm:sp.quoN,w:0.15,pts:Math.round(0.15*sp.quoN)},
+    {label:'Q → HP conversion',basis:'latest month',raw:sp.hasHP?(sp.qhpRaw*100).toFixed(1)+'%':'No HP data',norm:sp.qhpN,w:0.15,pts:Math.round(0.15*sp.qhpN)},
+    {label:'Award value',basis:'per-month avg',raw:sar(sp.awdPM)+' SAR/mo',norm:sp.awdN,w:0.20,pts:Math.round(0.20*sp.awdN)},
+    {label:'HP → Award conversion',basis:'cumulative',raw:sp.hasHPA?(sp.hpaRaw*100).toFixed(1)+'%':'No HP data',norm:sp.hpaN,w:0.30,pts:Math.round(0.30*sp.hpaN)},
+    {label:'Invoiced value',basis:'per-month avg',raw:sar(sp.invPM)+' SAR/mo',norm:sp.invN,w:0.20,pts:Math.round(0.20*sp.invN)}
+  ];
+  var normArrays=[
+    cp.map(function(s){return scoreParts(s,allPeers).quoN;}),cp.map(function(s){return scoreParts(s,allPeers).qhpN;}),
+    cp.map(function(s){return scoreParts(s,allPeers).awdN;}),cp.map(function(s){return scoreParts(s,allPeers).hpaN;}),
+    cp.map(function(s){return scoreParts(s,allPeers).invN;})
+  ];
   comps.forEach(function(c,i){c.rankPos=rankPos(normArrays[i],c.norm);});
 
   var totalPts=comps.reduce(function(s,c){return s+c.pts;},0);
@@ -612,7 +576,7 @@ function seScoreBreakdown(se, allPeers){
   var watchItems=comps.filter(function(c){return c.raw==='No HP data';});
 
   // LEFT: score breakdown
-  var left='<div style="font-size:13px;font-weight:700;margin:0 0 10px">'+(isPrj?'Project formula (5 × 20%)':'ACS formula (30/40/30)')+'</div>';
+  var left='<div style="font-size:13px;font-weight:700;margin:0 0 10px">Score formula (15/15/20/30/20)</div>';
   comps.forEach(function(c,i){
     var barW=Math.max(2,Math.round(c.norm));
     left+='<div style="margin:0 0 8px;padding:7px 10px;background:var(--bg);border-radius:6px">'
@@ -676,38 +640,50 @@ function renderBreakdownTrend(se, allPeers){
   var teamPeers=allPeers.filter(function(s){return s.team===se.team;});
   var cp=channelPeers(allPeers,se);
   var HS={quo:2,awd:2,inv:2};
-  var labels=[],seLine=[],ksaLine=[];
+  var labels=[],seLine=[],ksaLine=[],quoLine=[],qhpLine=[],awdLine=[],hpaLine=[],invLine=[];
   for(var i=0;i<yoy.length;i++){
     var pt=yoy[i]; labels.push(pt.label);
     var slice=ms_.filter(function(m){return m<=pt.key;});
-    if(!slice.length){seLine.push(null);ksaLine.push(null);continue;}
+    if(!slice.length){seLine.push(null);ksaLine.push(null);quoLine.push(null);qhpLine.push(null);awdLine.push(null);hpaLine.push(null);invLine.push(null);continue;}
     function totalS2(s,metric){var d=seData(s),v=0,k=metric==='awd'?'award':metric==='inv'?'inv':'quo';slice.forEach(function(m){v+=d[k][m]||0;});return v;}
     function amS2(s,hs){var jd=s.join_date;if(!jd)return Math.max(1,slice.length-hs);var y=parseInt(jd.slice(0,4)),m=parseInt(jd.slice(5,7)),last=slice[slice.length-1],ly=parseInt(last.slice(0,4)),lm=parseInt(last.slice(5)),active=(ly-y)*12+(lm-m)+1;return Math.max(1,(active<1?0:active)-hs);}
     function pmS2(s,metric){var t=amS2(s,HS[metric]);return t>0?totalS2(s,metric)/t:0;}
     function nrm2(a,v){return wnorm(a,v);}
-    function score2(s){
-      var cpQ=cp.map(function(x){return pmS2(x,'quo');}),cpA=cp.map(function(x){return pmS2(x,'awd');}),cpI=cp.map(function(x){return pmS2(x,'inv');});
-      var qn=nrm2(cpQ,pmS2(s,'quo')),an=nrm2(cpA,pmS2(s,'awd')),in_=nrm2(cpI,pmS2(s,'inv'));
-      if(isProjectTeam(s.team)){
-        var qhpAtM=(s.hp_quo_pct||{})[pt.key]||0;
-        var qhAll=cp.map(function(x){return(x.hp_quo_pct||{})[pt.key]||0;});
-        var haAll=cp.map(function(x){var n2=0,d2=0;slice.forEach(function(m2){n2+=(x.award_from_hp||{})[m2]||0;d2+=(x.total_award_hp||{})[m2]||0;});return d2>0?n2/d2:0;});
-        var hpaSe=0,hpaSd=0;slice.forEach(function(m2){hpaSe+=(s.award_from_hp||{})[m2]||0;hpaSd+=(s.total_award_hp||{})[m2]||0;});
-        var qhN=nrm2(qhAll,qhpAtM),haN=nrm2(haAll,hpaSd>0?hpaSe/hpaSd:0);
-        return Math.round(0.20*qn)+Math.round(0.20*qhN)+Math.round(0.20*an)+Math.round(0.20*haN)+Math.round(0.20*in_);
-      }
-      return Math.round(0.30*qn)+Math.round(0.40*an)+Math.round(0.30*in_);
-    }
-    seLine.push(score2(se));
-    var ksaSum=0;allPeers.forEach(function(s){ksaSum+=score2(s);});
+    // Per-parameter norms for this slice
+    var cpQ=cp.map(function(x){return pmS2(x,'quo');}),cpA=cp.map(function(x){return pmS2(x,'awd');}),cpI=cp.map(function(x){return pmS2(x,'inv');});
+    var qn=nrm2(cpQ,pmS2(se,'quo')),an=nrm2(cpA,pmS2(se,'awd')),in_=nrm2(cpI,pmS2(se,'inv'));
+    var qhpAtM=(se.hp_quo_pct||{})[pt.key]||0;
+    var qhAll=cp.map(function(x){return(x.hp_quo_pct||{})[pt.key]||0;});
+    var haAll=cp.map(function(x){var n2=0,d2=0;slice.forEach(function(m2){n2+=(x.award_from_hp||{})[m2]||0;d2+=(x.total_award_hp||{})[m2]||0;});return d2>0?n2/d2:0;});
+    var hpaSe=0,hpaSd=0;slice.forEach(function(m2){hpaSe+=(se.award_from_hp||{})[m2]||0;hpaSd+=(se.total_award_hp||{})[m2]||0;});
+    var qhN=nrm2(qhAll,qhpAtM),haN=nrm2(haAll,hpaSd>0?hpaSe/hpaSd:0);
+    var ttl=Math.round(0.15*qn)+Math.round(0.15*qhN)+Math.round(0.20*an)+Math.round(0.30*haN)+Math.round(0.20*in_);
+    seLine.push(ttl);
+    quoLine.push(Math.round(qn)); qhpLine.push(Math.round(qhN)); awdLine.push(Math.round(an)); hpaLine.push(Math.round(haN)); invLine.push(Math.round(in_));
+    var ksaSum=0;allPeers.forEach(function(s2){
+      var q2=nrm2(cpQ,pmS2(s2,'quo')),a2=nrm2(cpA,pmS2(s2,'awd')),i2=nrm2(cpI,pmS2(s2,'inv'));
+      var qh2=nrm2(qhAll,(s2.hp_quo_pct||{})[pt.key]||0);
+      var hp2n=0,hp2d=0;slice.forEach(function(m2){hp2n+=(s2.award_from_hp||{})[m2]||0;hp2d+=(s2.total_award_hp||{})[m2]||0;});
+      var ha2=nrm2(haAll,hp2d>0?hp2n/hp2d:0);
+      ksaSum+=Math.round(0.15*q2)+Math.round(0.15*qh2)+Math.round(0.20*a2)+Math.round(0.30*ha2)+Math.round(0.20*i2);
+    });
     ksaLine.push(Math.round(ksaSum/allPeers.length));
   }
-  _charts[canvasId]=new Chart(ctx.getContext('2d'),{type:'line',data:{labels:labels,datasets:[
-    {label:se.se_name,data:seLine,borderColor:'#141b24',pointRadius:2,pointBackgroundColor:'#141b24',borderWidth:2,tension:0.3,
+  var paramColors=['#1f5fd6','#7c3aed','#137a4b','#b06f10','#b91c1c'];
+  var paramNames=['Quo (15%)','Q→HP (15%)','Award (20%)','HP→Awd (30%)','Inv (20%)'];
+  var paramData=[quoLine,qhpLine,awdLine,hpaLine,invLine];
+  var datasets=[
+    {label:'Total score',data:seLine,borderColor:'#141b24',pointRadius:2,pointBackgroundColor:'#141b24',borderWidth:2.5,tension:0.3,
      datalabels:{display:function(c){return c.dataIndex===seLine.length-1&&seLine[c.dataIndex]!=null;},font:{size:10,weight:'bold'},color:'#141b24',anchor:'end',align:'top'}},
-    {label:'KSA avg',data:ksaLine,borderColor:'rgba(31,95,214,0.5)',pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.3,
-     datalabels:{display:function(c){return c.dataIndex===ksaLine.length-1&&ksaLine[c.dataIndex]!=null;},font:{size:9},color:'rgba(31,95,214,0.7)',anchor:'end',align:'bottom'}}
-  ]},options:{responsive:true,maintainAspectRatio:true,aspectRatio:3.5,plugins:{legend:{display:false},datalabels:{formatter:function(v){return v!=null?v:'';}}},
+    {label:'KSA avg',data:ksaLine,borderColor:'rgba(100,100,100,0.4)',pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.3,
+     datalabels:{display:false}}
+  ];
+  paramData.forEach(function(d,di){
+    datasets.push({label:paramNames[di],data:d,borderColor:paramColors[di],pointRadius:0,borderWidth:1.2,tension:0.3,borderDash:[3,2],
+      datalabels:{display:function(c){return c.dataIndex===d.length-1&&d[c.dataIndex]!=null;},font:{size:8},color:paramColors[di],anchor:'end',align:'top'}});
+  });
+  _charts[canvasId]=new Chart(ctx.getContext('2d'),{type:'line',data:{labels:labels,datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.5,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:12}},datalabels:{formatter:function(v){return v!=null?v:'';}}},
     scales:{x:{ticks:{font:{size:8},maxRotation:65},grid:yoyGrid},y:{min:0,max:100,ticks:{font:{size:8},callback:function(v){return v}}}}}});
 }
 
@@ -802,8 +778,8 @@ function isProjectTeam(team){return PROJECT_TEAMS[team]||false;}
 // Channel-aware peer pool for normalization: project SEs normalize against
 // project peers, ACS against ACS peers. This keeps the two scales independent.
 function channelPeers(allPeers, se){
-  if(isProjectTeam(se.team)) return allPeers.filter(function(s){return isProjectTeam(s.team);});
-  return allPeers.filter(function(s){return !isProjectTeam(s.team);});
+  // Universal formula: all peers in one pool for normalization
+  return allPeers;
 }
 
 function scoreParts(se,allPeers){
@@ -818,33 +794,21 @@ function scoreParts(se,allPeers){
   var qi=perMo(se,'quo'), ai=perMo(se,'awd'), ii=perMo(se,'inv');
   var qN=norm(quoA,qi), aN=norm(awdA,ai), iN=norm(invA,ii);
 
-  if(isProjectTeam(se.team)){
-    // Project formula: 5 × 20%
-    // Q→HP: latest available month's ratio (each month stands alone)
-    var ms_=months();
-    function latestPct(s){
-      var obj=s.hp_quo_pct||{};
-      for(var i=ms_.length-1;i>=0;i--){if(obj[ms_[i]]!=null)return obj[ms_[i]];}
-      return 0;
-    }
-    // HP→Award: cumulative — sum(Award from HP) / sum(Total Award)
-    function sumField(s,field){var obj=s[field]||{},v=0;ms_.forEach(function(m){v+=obj[m]||0;});return v;}
-    function hpaRatio(s){var n=sumField(s,'award_from_hp'),d=sumField(s,'total_award_hp');return d>0?n/d:0;}
-    var qhpR=latestPct(se), hpaR=hpaRatio(se);
-    var qhpAll=cp.map(function(s){return latestPct(s);});
-    var hpaAll=cp.map(function(s){return hpaRatio(s);});
-    var qhpN=norm(qhpAll,qhpR), hpaN=norm(hpaAll,hpaR);
-    var hasHP=Object.keys(se.hp_quo_pct||{}).length>0;
-    var hasHPA=sumField(se,'award_from_hp')>0;
-    var score=Math.round(0.20*qN)+Math.round(0.20*qhpN)+Math.round(0.20*aN)+Math.round(0.20*hpaN)+Math.round(0.20*iN);
-    return {quoPM:qi, awdPM:ai, invPM:ii, quoN:qN, awdN:aN, invN:iN,
-            qhpRaw:qhpR, hpaRaw:hpaR, hasHP:hasHP, hasHPA:hasHPA,
-            qhpN:qhpN, hpaN:hpaN, peerCount:cp.length, formula:'project', score:score};
-  }
-
-  // ACS formula: 30/40/30
+  // Universal formula: 15% Quo, 15% Q→HP, 20% Award, 30% HP→Award, 20% Invoiced
+  var ms_=months();
+  function latestPct(s){var obj=s.hp_quo_pct||{};for(var i=ms_.length-1;i>=0;i--){if(obj[ms_[i]]!=null)return obj[ms_[i]];}return 0;}
+  function sumField(s,field){var obj=s[field]||{},v=0;ms_.forEach(function(m){v+=obj[m]||0;});return v;}
+  function hpaRatio(s){var n=sumField(s,'award_from_hp'),d=sumField(s,'total_award_hp');return d>0?n/d:0;}
+  var qhpR=latestPct(se), hpaR=hpaRatio(se);
+  var qhpAll=cp.map(function(s){return latestPct(s);});
+  var hpaAll=cp.map(function(s){return hpaRatio(s);});
+  var qhpN=norm(qhpAll,qhpR), hpaN=norm(hpaAll,hpaR);
+  var hasHP=Object.keys(se.hp_quo_pct||{}).length>0;
+  var hasHPA=sumField(se,'award_from_hp')>0;
+  var score=Math.round(0.15*qN)+Math.round(0.15*qhpN)+Math.round(0.20*aN)+Math.round(0.30*hpaN)+Math.round(0.20*iN);
   return {quoPM:qi, awdPM:ai, invPM:ii, quoN:qN, awdN:aN, invN:iN,
-          peerCount:cp.length, formula:'acs', score:Math.round(0.30*qN+0.40*aN+0.30*iN)};
+          qhpRaw:qhpR, hpaRaw:hpaR, hasHP:hasHP, hasHPA:hasHPA,
+          qhpN:qhpN, hpaN:hpaN, peerCount:cp.length, score:score};
 }
 function composite(se,peers){ return scoreParts(se,peers).score; }
 
@@ -1256,16 +1220,14 @@ function exportScores(){
             'Inv /mo (M)','Inv rank (0-100)','Inv weight','Inv pts',
             'Total quo (M)','Total award (M)','Total inv (M)','Tenure','Peers']];
   rows.forEach(function(r,i){
-    var se=r.se, sp=r.sp, f=sp.formula;
-    var isPrj=f==='project';
-    var qW=isPrj?0.20:0.30, aW=isPrj?0.20:0.40, iW=isPrj?0.20:0.30;
+    var se=r.se, sp=r.sp;
     aoa.push([
-      i+1, se.se_name, se.team||'', isPrj?'Project (5×20%)':'ACS (30/40/30)', sp.score,
-      toM(sp.quoPM), r1(sp.quoN), Math.round(qW*100)+'%', Math.round(qW*sp.quoN),
-      isPrj?pct(sp.qhpRaw):'n/a', isPrj?r1(sp.qhpN):'n/a', isPrj?'20%':'n/a', isPrj?Math.round(0.20*(sp.qhpN||0)):'n/a',
-      toM(sp.awdPM), r1(sp.awdN), Math.round(aW*100)+'%', Math.round(aW*sp.awdN),
-      isPrj?pct(sp.hpaRaw):'n/a', isPrj?r1(sp.hpaN):'n/a', isPrj?'20%':'n/a', isPrj?Math.round(0.20*(sp.hpaN||0)):'n/a',
-      toM(sp.invPM), r1(sp.invN), Math.round(iW*100)+'%', Math.round(iW*sp.invN),
+      i+1, se.se_name, se.team||'', '15/15/20/30/20', sp.score,
+      toM(sp.quoPM), r1(sp.quoN), '15%', Math.round(0.15*sp.quoN),
+      pct(sp.qhpRaw), r1(sp.qhpN), '15%', Math.round(0.15*(sp.qhpN||0)),
+      toM(sp.awdPM), r1(sp.awdN), '20%', Math.round(0.20*sp.awdN),
+      pct(sp.hpaRaw), r1(sp.hpaN), '30%', Math.round(0.30*(sp.hpaN||0)),
+      toM(sp.invPM), r1(sp.invN), '20%', Math.round(0.20*sp.invN),
       toM(r.quo), toM(r.awd), toM(r.inv),
       se.join_date||'', sp.peerCount||''
     ]);
@@ -1566,20 +1528,15 @@ function renderSEChartsFor(se,p,ms,idScore,idTgt,idPipe,idAcc,idMix){
       // HP→Award: cumulative up to this time slice
       function sumSlice(s,field){var obj=s[field]||{},v=0;slice.forEach(function(m){v+=obj[m]||0;});return v;}
       function hpaSlice(s){var n=sumSlice(s,'award_from_hp'),d=sumSlice(s,'total_award_hp');return d>0?n/d:0;}
-      // Channel-aware normalization
-      var projPool=p.filter(function(x){return isProjectTeam(x.team);});
-      var acsPool=p.filter(function(x){return !isProjectTeam(x.team);});
+      // Universal formula normalization
+      var cpAll=p;
       function composeScore(s){
-        var cp=isProjectTeam(s.team)?projPool:acsPool;
-        var cpQ=cp.map(function(x){return pmS(x,'quo');}),cpA=cp.map(function(x){return pmS(x,'awd');}),cpI=cp.map(function(x){return pmS(x,'inv');});
+        var cpQ=cpAll.map(function(x){return pmS(x,'quo');}),cpA=cpAll.map(function(x){return pmS(x,'awd');}),cpI=cpAll.map(function(x){return pmS(x,'inv');});
         var qn=nrm(cpQ,pmS(s,'quo')),an=nrm(cpA,pmS(s,'awd')),in_=nrm(cpI,pmS(s,'inv'));
-        if(isProjectTeam(s.team)){
-          var qhAll=cp.map(function(x){return qhpAtMonth(x);});
-          var haAll=cp.map(function(x){return hpaSlice(x);});
-          var qhN=nrm(qhAll,qhpAtMonth(s)),haN=nrm(haAll,hpaSlice(s));
-          return Math.round(0.20*qn)+Math.round(0.20*qhN)+Math.round(0.20*an)+Math.round(0.20*haN)+Math.round(0.20*in_);
-        }
-        return Math.round(0.30*qn)+Math.round(0.40*an)+Math.round(0.30*in_);
+        var qhAll=cpAll.map(function(x){return qhpAtMonth(x);});
+        var haAll=cpAll.map(function(x){return hpaSlice(x);});
+        var qhN=nrm(qhAll,qhpAtMonth(s)),haN=nrm(haAll,hpaSlice(s));
+        return Math.round(0.15*qn)+Math.round(0.15*qhN)+Math.round(0.20*an)+Math.round(0.30*haN)+Math.round(0.20*in_);
       }
       seLine.push(composeScore(se));
       // KSA avg
@@ -1901,18 +1858,15 @@ function renderTeamSummary(){
         function amS3(s,hs){var jd=s.join_date;if(!jd)return Math.max(1,slice.length-hs);var y=parseInt(jd.slice(0,4)),m=parseInt(jd.slice(5,7)),last=slice[slice.length-1],ly=parseInt(last.slice(0,4)),lm=parseInt(last.slice(5)),active=(ly-y)*12+(lm-m)+1;return Math.max(1,(active<1?0:active)-hs);}
         function pmS3(s,metric){var t2=amS3(s,HS[metric]);return t2>0?totalS3(s,metric)/t2:0;}
         function nrm3(a,v){return wnorm(a,v);}
-        var cp=ch==='project'?allActive.filter(function(s){return isProjectTeam(s.team);}):allActive.filter(function(s){return !isProjectTeam(s.team);});
+        var cpAll=allActive;
         function sc3(s){
-          var cpQ=cp.map(function(x){return pmS3(x,'quo');}),cpA=cp.map(function(x){return pmS3(x,'awd');}),cpI=cp.map(function(x){return pmS3(x,'inv');});
+          var cpQ=cpAll.map(function(x){return pmS3(x,'quo');}),cpA=cpAll.map(function(x){return pmS3(x,'awd');}),cpI=cpAll.map(function(x){return pmS3(x,'inv');});
           var qn=nrm3(cpQ,pmS3(s,'quo')),an=nrm3(cpA,pmS3(s,'awd')),in_=nrm3(cpI,pmS3(s,'inv'));
-          if(isProjectTeam(s.team)){
-            var qhAll=cp.map(function(x){return(x.hp_quo_pct||{})[pt.key]||0;});
-            var haAll=cp.map(function(x){var n2=0,d2=0;slice.forEach(function(m2){n2+=(x.award_from_hp||{})[m2]||0;d2+=(x.total_award_hp||{})[m2]||0;});return d2>0?n2/d2:0;});
-            var qhpAtM=(s.hp_quo_pct||{})[pt.key]||0;
-            var hpaSe=0,hpaSd=0;slice.forEach(function(m2){hpaSe+=(s.award_from_hp||{})[m2]||0;hpaSd+=(s.total_award_hp||{})[m2]||0;});
-            return Math.round(0.20*nrm3(cpQ,pmS3(s,'quo')))+Math.round(0.20*nrm3(qhAll,qhpAtM))+Math.round(0.20*nrm3(cpA,pmS3(s,'awd')))+Math.round(0.20*nrm3(haAll,hpaSd>0?hpaSe/hpaSd:0))+Math.round(0.20*in_);
-          }
-          return Math.round(0.30*qn)+Math.round(0.40*an)+Math.round(0.30*in_);
+          var qhAll=cpAll.map(function(x){return(x.hp_quo_pct||{})[pt.key]||0;});
+          var haAll=cpAll.map(function(x){var n2=0,d2=0;slice.forEach(function(m2){n2+=(x.award_from_hp||{})[m2]||0;d2+=(x.total_award_hp||{})[m2]||0;});return d2>0?n2/d2:0;});
+          var qhpAtM=(s.hp_quo_pct||{})[pt.key]||0;
+          var hpaSe=0,hpaSd=0;slice.forEach(function(m2){hpaSe+=(s.award_from_hp||{})[m2]||0;hpaSd+=(s.total_award_hp||{})[m2]||0;});
+          return Math.round(0.15*qn)+Math.round(0.15*nrm3(qhAll,qhpAtM))+Math.round(0.20*an)+Math.round(0.30*nrm3(haAll,hpaSd>0?hpaSe/hpaSd:0))+Math.round(0.20*in_);
         }
         var sum=0;members.forEach(function(s){sum+=sc3(s);});
         line.push(members.length?Math.round(sum/members.length):null);
