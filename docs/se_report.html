@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1792932570"></script>
+<script src="auth.js?v=1792932694"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -797,8 +797,17 @@ function isProjectTeam(team){return PROJECT_TEAMS[team]||false;}
 // Channel-aware peer pool for normalization: project SEs normalize against
 // project peers, ACS against ACS peers. This keeps the two scales independent.
 function channelPeers(allPeers, se){
-  // Universal formula: all peers in one pool for normalization
   return allPeers;
+}
+
+// Stable normalization pool — ignores channel/team/SE/tenure/type filters.
+// Only excludes inactive + manually excluded SEs. Scores never change with filters.
+function normPool(){
+  return SE_DATA.filter(function(s){
+    if(STATE.excluded.indexOf(s.se_name)>=0)return false;
+    if(!STATE.showInactive && INACTIVE_SES[s.se_name])return false;
+    return true;
+  });
 }
 
 function scoreParts(se,allPeers){
@@ -847,9 +856,9 @@ function peers(){
 }
 
 function renderTable(){
-  var p=peers();
+  var p=peers(), np=normPool();
   var rows=p.map(function(se){
-    return {se:se, score:composite(se,p), quo:total(se,'quo'), awd:total(se,'awd'), inv:total(se,'inv')};
+    return {se:se, score:composite(se,np), quo:total(se,'quo'), awd:total(se,'awd'), inv:total(se,'inv')};
   });
   var avg=rows.reduce(function(s,r){return s+r.score;},0)/(rows.length||1);
   var teamScores={};
@@ -1183,9 +1192,9 @@ function updateSEBtn(){
 
 // Excel export — respects active filters
 function exportExcel(){
-  var p=peers();
+  var p=peers(), np=normPool();
   var rows=p.map(function(se){
-    return {se:se, score:composite(se,p), quo:total(se,'quo'), awd:total(se,'awd'), inv:total(se,'inv')};
+    return {se:se, score:composite(se,np), quo:total(se,'quo'), awd:total(se,'awd'), inv:total(se,'inv')};
   });
   var sk=STATE.sort;
   rows.sort(function(a,b){ return sk==='score'?b.score-a.score:b[sk]-a[sk]; });
@@ -1221,10 +1230,10 @@ document.getElementById('btn-export').addEventListener('click',exportExcel);
 
 // Composite-score export — one row per SE with score + components, respects filters
 function exportScores(){
-  var allActive=SE_DATA.filter(function(s){return !INACTIVE_SES[s.se_name]||STATE.showInactive;});
+  var np=normPool();
   var p=peers();
   var rows=p.map(function(se){
-    return {se:se, sp:scoreParts(se,allActive), quo:total(se,'quo'), awd:total(se,'awd'), inv:total(se,'inv')};
+    return {se:se, sp:scoreParts(se,np), quo:total(se,'quo'), awd:total(se,'awd'), inv:total(se,'inv')};
   });
   rows.sort(function(a,b){return b.sp.score-a.sp.score;});
   function toM(v){return v?Math.round(v/1000)/1000:0;}
@@ -1665,9 +1674,9 @@ function renderSEChartsFor(se,p,ms,idScore,idTgt,idPipe,idAcc,idMix){
 
 // ---- TRENDS TABLE (Item 3) ----
 function renderTrendsTable(){
-  var p=trendPool();
+  var p=trendPool(), np=normPool();
   var rows=p.map(function(se){
-    return {se:se, score:composite(se,p), quo:total(se,'quo'), awd:total(se,'awd'), inv:total(se,'inv')};
+    return {se:se, score:composite(se,np), quo:total(se,'quo'), awd:total(se,'awd'), inv:total(se,'inv')};
   });
   var avg=rows.reduce(function(s,r){return s+r.score;},0)/(rows.length||1);
   var teamScores={};
@@ -1852,10 +1861,11 @@ function renderTeamSummary(){
   var teamNames=Object.keys(teamMap).sort();
   var teamColors=['#1f5fd6','#137a4b','#b06f10','#7c3aed','#b91c1c','#0891b2','#4f46e5'];
 
-  // Compute scores for each SE
+  // Compute scores for each SE (always against full norm pool)
+  var np=normPool();
   teamNames.forEach(function(t){
     teamMap[t].members.forEach(function(se){
-      teamMap[t].scores.push({se:se,score:composite(se,allActive)});
+      teamMap[t].scores.push({se:se,score:composite(se,np)});
     });
     teamMap[t].scores.sort(function(a,b){return b.score-a.score;});
   });
