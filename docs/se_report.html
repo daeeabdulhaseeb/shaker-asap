@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1793104760"></script>
+<script src="auth.js?v=1793105699"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -248,6 +248,9 @@ table.tva-grid{width:100%;border-collapse:collapse;font-size:11.5px;min-width:76
 table.tva-mt{width:100%;border-collapse:collapse;margin:6px 0;font-size:10.5px}
 .tva-mt th{text-align:left;background:var(--blue-soft);color:var(--ink);padding:5px 6px;border-bottom:1px solid var(--line)}
 .tva-mt td{vertical-align:top;padding:5px 6px;border-bottom:1px solid var(--line)}
+.tva-tgts{margin-top:12px;padding:10px 12px;background:var(--blue-soft);border-radius:6px;font-size:11px;color:var(--ink-soft);line-height:1.7}
+.tva-tgts b{color:var(--ink)}
+.tva-tgts span{display:inline-block;min-width:110px;font-weight:650;color:var(--ink)}
 </style>
 </head>
 <body>
@@ -2035,15 +2038,16 @@ function renderFullscreenTrend(se){
 var TVA={metric:'awd', ksaTeam:null, team:null};
 var MGR_TEAMS=null;   // set by startReport for manager roles
 var TVA_M=[
-  {k:'quo', lab:'Quotation',    kind:'flow',  der:true},
-  {k:'hot', lab:'HOT',          kind:'stock', der:true},
-  {k:'hotp',lab:'HOT share %',  kind:'rate',  der:true},
-  {k:'awd', lab:'Award',        kind:'flow'},
-  {k:'haw', lab:'HOT awarded',  kind:'flow',  der:true},
-  {k:'hawp',lab:'HOT conv %',   kind:'rate',  der:true},
-  {k:'inv', lab:'Invoice',      kind:'flow'}
+  {k:'quo', lab:'Quotation',     kind:'flow',  der:true},
+  {k:'hotp',lab:'Quo \u2192 HP %', kind:'rate',  der:true},
+  {k:'awd', lab:'Award',         kind:'flow'},
+  {k:'hawp',lab:'HP \u2192 Award %',kind:'rate',  der:true},
+  {k:'inv', lab:'Invoice',       kind:'flow'},
+  {k:'hit', lab:'Hit ratio',     kind:'info'}
 ];
-function tvaMeta(k){for(var i=0;i<TVA_M.length;i++)if(TVA_M[i].k===k)return TVA_M[i];}
+// (HOT value 'hot' and HOT awarded value 'haw' are still calculated by tvaCalc for the worked example)
+var TVA_EXTRA={hot:{k:'hot',lab:'HP',kind:'stock'},haw:{k:'haw',lab:'HP awarded',kind:'flow'}};
+function tvaMeta(k){for(var i=0;i<TVA_M.length;i++)if(TVA_M[i].k===k)return TVA_M[i];return TVA_EXTRA[k];}
 function tvaYear(){return cutoffMonth().slice(0,4);}
 function tvaMonths(){var y=tvaYear(),cm=parseInt(cutoffMonth().slice(5)),o=[];for(var i=1;i<=cm;i++)o.push(y+'-'+(i<10?'0':'')+i);return o;}
 function tvaPool(){return SE_DATA.filter(function(s){return STATE.excluded.indexOf(s.se_name)<0&&s.team;});}
@@ -2118,48 +2122,54 @@ function tvaCalc(e,k){
 function tvaFmt(k,v){if(v==null)return'–';return tvaMeta(k).kind==='rate'?(v*100).toFixed(1)+'%':sar(v);}
 function tvaCls(p){return p==null?'tva-na':p>=1?'tva-hi':p>=0.75?'tva-mid':'tva-lo';}
 function tvaCell(e,k){
+  if(k==='hit'){var h=tvaHit(e.o);return '<td><span class="tva-pct tva-na" style="color:var(--ink)">'+(h?(h*100).toFixed(1)+'%':'–')+'</span><span class="tva-sub">'+sar(tvaSum(e.o.awd))+' ÷ '+sar(tvaSum(e.o.quo))+'</span></td>';}
   var r=tvaCalc(e,k),on=k===TVA.metric?' on':'';
   return '<td class="'+on.trim()+'"><span class="tva-pct '+tvaCls(r.pct)+'">'+(r.pct==null?'–':Math.round(r.pct*100)+'%')+'</span>'
     +'<span class="tva-sub">'+tvaFmt(k,r.act)+' / '+tvaFmt(k,r.tgt)+'</span></td>';
 }
 function tvaGridHead(first){
   return '<tr><th>'+first+'</th>'+TVA_M.map(function(m){
+    if(m.kind==='info')return '<th style="cursor:default;color:var(--ink-faint)">'+m.lab+'<br><span style="font-weight:500;font-size:9px">supporting</span></th>';
     return '<th data-tvam="'+m.k+'" class="'+(m.k===TVA.metric?'on':'')+'">'+m.lab+(m.der?'*':'')+'</th>';}).join('')+'</tr>';
 }
 function tvaSegHtml(){
-  return '<div class="seg tva-seg">'+TVA_M.map(function(m){
+  return '<div class="seg tva-seg">'+TVA_M.filter(function(m){return m.kind!=='info';}).map(function(m){
     return '<button data-tvam="'+m.k+'" class="'+(m.k===TVA.metric?'on':'')+'">'+m.lab+'</button>';}).join('')+'</div>';
 }
 function tvaNote(M){
   var h=tvaHi(),ci=tvaCi(),ms=tvaMonths(),yr=tvaYear(),hl=h>=0?mLabel(ms[h]):'–',cl=ci>=0?mLabel(ms[ci]):'–',last=mLabel(ms[ms.length-1]);
-  var ex='';
+  function pc(v){return v==null?'–':(v*100).toFixed(1)+'%';}
+  var tg='',ex='';
   if(M&&M.ksa&&M.ksa.t){
     var k=M.ksa,t=k.t,hit=tvaHit(k.o),hp=tvaCalc(k,'hotp'),cv=tvaCalc(k,'hawp');
+    tg='<div class="tva-tgts"><b>How the targets are set</b> (KSA shown; each team and SE uses its own hit ratio)'
+      +'<div><span>Quotation</span> = Award target ÷ hit ratio = '+sar(t.awd)+' ÷ '+pc(hit)+' = <b>'+sar(t.quo)+'</b> a year</div>'
+      +'<div><span>HP → Award %</span> = 2 × hit ratio = 2 × '+pc(hit)+' = <b>'+pc(t.hcv)+'</b> (HOT projects should close at twice the normal rate)</div>'
+      +'<div><span>Quo → HP %</span> = HP needed ÷ active quotations. HP needed = 3 months of award target ÷ HP → Award target = '+sar(t.awd/4)+' ÷ '+pc(t.hcv)+' = '+sar(t.hot)+'; ÷ active quotations '+sar(k.o.ha[h])+' = <b>'+pc(hp.tgt)+'</b></div>'
+      +'<div><span>Award, Invoice</span> = annual SE targets (target file), ÷ 12 per month</div></div>';
     ex='<h4>Worked example — KSA '+yr+'</h4><ol>'
-      +'<li>Award target '+sar(t.awd)+'; hit ratio h = Award '+sar(tvaSum(k.o.awd))+' ÷ Quotations '+sar(tvaSum(k.o.quo))+' = <b>'+(hit*100).toFixed(1)+'%</b>.</li>'
-      +'<li>Quotation target = '+sar(t.awd)+' ÷ '+(hit*100).toFixed(1)+'% = <b>'+sar(t.quo)+'</b> a year ('+sar(t.quo/12)+' a month).</li>'
-      +'<li>HOT conv % target = 2 × '+(hit*100).toFixed(1)+'% = <b>'+(t.hcv*100).toFixed(1)+'%</b>. Actual: '+(cv.act!=null?(cv.act*100).toFixed(1)+'%':'–')+' of month-end HOT is awarded within 3 months.</li>'
-      +'<li>Award needed in the next 3 months = '+sar(t.awd)+' ÷ 4 = '+sar(t.awd/4)+'. HOT target = '+sar(t.awd/4)+' ÷ '+(t.hcv*100).toFixed(1)+'% = <b>'+sar(t.hot)+'</b>. Actual HOT ('+hl+'): '+sar(k.o.hh[h])+'.</li>'
-      +'<li>HOT share % target = '+sar(t.hot)+' ÷ active quotations '+sar(k.o.ha[h])+' = <b>'+(hp.tgt!=null?(hp.tgt*100).toFixed(1)+'%':'–')+'</b>. Actual: '+(hp.act!=null?(hp.act*100).toFixed(1)+'%':'–')+'.</li>'
+      +'<li>Hit ratio = Award '+sar(tvaSum(k.o.awd))+' ÷ Quotations '+sar(tvaSum(k.o.quo))+' = <b>'+pc(hit)+'</b>.</li>'
+      +'<li>Quotation target = '+sar(t.awd)+' ÷ '+pc(hit)+' = <b>'+sar(t.quo)+'</b> a year ('+sar(t.quo/12)+' a month).</li>'
+      +'<li>HP → Award target = 2 × '+pc(hit)+' = <b>'+pc(t.hcv)+'</b>. Actual: '+pc(cv.act)+' of the HP at each month end was awarded within 3 months ('+sar(tvaCalc(k,'haw').act)+' per month end).</li>'
+      +'<li>Award needed in the next 3 months = '+sar(t.awd)+' ÷ 4 = '+sar(t.awd/4)+'. HP needed = '+sar(t.awd/4)+' ÷ '+pc(t.hcv)+' = <b>'+sar(t.hot)+'</b>. HP on hand ('+hl+'): '+sar(k.o.hh[h])+'.</li>'
+      +'<li>Quo → HP target = '+sar(t.hot)+' ÷ active quotations '+sar(k.o.ha[h])+' = <b>'+pc(hp.tgt)+'</b>. Actual: '+pc(hp.act)+'.</li>'
       +'</ol>';
   }
   var rows=[
-    ['Quotation','Quotations issued (by Valid from month).','Pipeline (pipeline.csv, from BI Pipeline RD Weekly). VALID/NOT DUPLICATE; groups CAC Ducted / Non-Ducted / RAC / Applied; <b>all 15% excluded</b> (DX &amp; MV). Months before an SE’s join date are excluded.','Cumulative YTD.','Award target ÷ h, spread evenly (÷ 12 per month). Same as Power BI “tgt pipeline”.'],
-    ['Award','Quotations awarded (by Expected Award Date month).','Pipeline: probability 90% (PO only) or 100% (PO &amp; payment), same groups.','Cumulative YTD.','Annual SE award target (target_files_for_se.xlsx) ÷ 12 per month.'],
-    ['Invoice','Invoiced sales.','SAP sales (ZDSAL) by month.','Cumulative YTD.','Annual SE invoice target (target_files_for_se.xlsx) ÷ 12 per month.'],
-    ['HOT','Value of HOT projects at month end.','Historical Pipeline month-end snapshot: probability 50% or 70%; status WON or NO DECISION/IN PROGRESS; VALID/NOT DUPLICATE; Expected Award Date from the start of the snapshot month to 3 months after its end; any quote date.','Latest snapshot ('+hl+').','HOT needed to cover the next 3 months’ award: (Award target ÷ 4) ÷ HOT conv % target.'],
-    ['HOT share %','How much of the open pipeline is HOT.','Same snapshot. HOT ÷ active quotations (30/50/70%, same status/doc filters, quote date from Jan-2025). Both sides come from the same month end, so every month is comparable.','Latest snapshot ('+hl+').','HOT target ÷ active quotations.'],
-    ['HOT conv %','How much HOT actually closes.','HOT at a month end, matched by quotation number to the snapshot 3 months later: value now at 90/100% ÷ that HOT. Only month ends whose 3-month window is complete are used (to '+cl+').','All complete month ends in '+yr+', pooled.','2 × h (HOT should close at twice the normal hit ratio), max 100%.'],
-    ['HOT awarded','Value of HOT that closed within 3 months.','As HOT conv %: awarded value from each month-end HOT.','Average per month end.','HOT conv % target × the HOT we had (the award our HOT should have produced).']
+    ['Quotation','Quotations issued (by Valid from month).','Pipeline (pipeline.csv, from BI Pipeline RD Weekly). VALID/NOT DUPLICATE; groups CAC Ducted / Non-Ducted / RAC / Applied; <b>all 15% excluded</b> (DX &amp; MV). Months before an SE’s join date are excluded.','Cumulative YTD.','Award target ÷ hit ratio, ÷ 12 per month (Power BI “tgt pipeline”).'],
+    ['Quo → HP %','How much of the open quotation pipeline is HOT (HP).','Historical Pipeline month-end snapshot. <b>HP</b> = 50%/70%, WON or NO DECISION/IN PROGRESS, VALID/NOT DUPLICATE, Expected Award Date from the snapshot month to 3 months later, any quote date. <b>Active quotations</b> = 30/50/70%, same filters, quote date from Jan-2025. HP ÷ active quotations, both from the same month end.','Latest snapshot ('+hl+').','HP needed ÷ active quotations, where HP needed = (Award target ÷ 4) ÷ HP → Award target.'],
+    ['Award','Quotations awarded (by Expected Award Date month).','Pipeline: 90% (PO only) or 100% (PO &amp; payment), same groups.','Cumulative YTD.','Annual SE award target ÷ 12 per month.'],
+    ['HP → Award %','How much HP actually closes.','HP at a month end, matched by quotation number to the snapshot 3 months later: value now at 90/100% ÷ that HP. Only month ends with a complete 3-month window are used (to '+cl+').','All complete month ends in '+yr+', pooled.','2 × hit ratio (max 100%).'],
+    ['Invoice','Invoiced sales.','SAP sales (ZDSAL) by month.','Cumulative YTD.','Annual SE invoice target ÷ 12 per month.'],
+    ['Hit ratio','Supporting figure, no target.','Award ÷ Quotation (as above), '+yr+' YTD, for each SE, team and KSA separately (Power BI “Success Rate”).','YTD.','Used to set the Quotation, HP → Award and Quo → HP targets.']
   ];
-  return '<div class="tva-note">Cells: <b>achievement %</b> = actual ÷ target, with actual / target underneath, '+yr+' YTD to '+last+'. Green ≥ 100%, amber 75–99%, red &lt; 75%. * = derived target.'
+  return tg+'<div class="tva-note">Cells: <b>achievement %</b> = actual ÷ target, with actual / target underneath, '+yr+' YTD to '+last+'. Green ≥ 100%, amber 75–99%, red &lt; 75%. * = derived target. SEs without a row in the target file have no targets.'
     +'<details><summary>How every number is built (method, sources, targets)</summary><div class="tva-method">'
-    +'<p><b>h = hit ratio</b> = Award ÷ Quotation, '+yr+' YTD, worked out separately for each SE, each team and KSA (Power BI “Success Rate” rule). Each level uses its own h, so a team’s target is not the sum of its SEs’ targets for Quotation and HOT. SEs without a row in the target file have no targets.</p>'
     +'<table class="tva-mt"><tr><th>Metric</th><th>What it shows</th><th>Source &amp; filters</th><th>Actual</th><th>Target</th></tr>'
     +rows.map(function(r){return '<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td><td>'+r[4]+'</td></tr>';}).join('')
     +'</table>'+ex
-    +'<p><b>Why HOT is measured on snapshots:</b> the old Power BI ratio divided snapshot HOT by quotations at today’s status. Quotes that were later won or lost dropped out of the bottom only, so older months showed more than 100%. Taking both sides from the same month-end snapshot fixes this.</p>'
-    +'<p><b>Refresh:</b> Quotation, Award and Invoice update with the weekly run. HOT metrics update when a new month is added to Historical Pipeline.xlsx and automation\\snapshot_extract.py is re-run. HOT conv % for a month end appears 3 months later.</p>'
+    +'<p><b>Why HP is measured on snapshots:</b> the old Power BI ratio divided snapshot HP by quotations at today’s status. Quotes that were later won or lost dropped out of the bottom only, so older months showed more than 100%. Taking both sides from the same month-end snapshot fixes this.</p>'
+    +'<p><b>Refresh:</b> Quotation, Award and Invoice update with the weekly run. HP metrics update when a new month is added to Historical Pipeline.xlsx and automation\\snapshot_extract.py is re-run. HP → Award % for a month end appears 3 months later.</p>'
     +'</div></details></div>';
 }
 function tvaWire(root,rerender){
