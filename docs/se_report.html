@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1793194460"></script>
+<script src="auth.js?v=1793209145"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -530,11 +530,11 @@ function renderBreakdownTrend(se, allPeers){
   var teamPeers=allPeers.filter(function(s){return s.team===se.team;});
   var cp=channelPeers(allPeers,se);
   var HS={quo:2,awd:2,inv:2};
-  var labels=[],seLine=[],ksaLine=[],quoLine=[],qhpLine=[],awdLine=[],hpaLine=[],invLine=[];
+  var labels=[],seLine=[],ksaLine=[],teamLine=[],quoLine=[],qhpLine=[],awdLine=[],hpaLine=[],invLine=[];
   for(var i=0;i<yoy.length;i++){
     var pt=yoy[i]; labels.push(pt.label);
     var slice=ms_.filter(function(m){return m<=pt.key;});
-    if(!slice.length){seLine.push(null);ksaLine.push(null);quoLine.push(null);qhpLine.push(null);awdLine.push(null);hpaLine.push(null);invLine.push(null);continue;}
+    if(!slice.length){seLine.push(null);ksaLine.push(null);teamLine.push(null);quoLine.push(null);qhpLine.push(null);awdLine.push(null);hpaLine.push(null);invLine.push(null);continue;}
     function totalS2(s,metric){var d=seData(s),v=0,k=metric==='awd'?'award':metric==='inv'?'inv':'quo';slice.forEach(function(m){v+=d[k][m]||0;});return v;}
     function amS2(s,hs){var jd=s.join_date;if(!jd)return Math.max(1,slice.length-hs);var y=parseInt(jd.slice(0,4)),m=parseInt(jd.slice(5,7)),last=slice[slice.length-1],ly=parseInt(last.slice(0,4)),lm=parseInt(last.slice(5)),active=(ly-y)*12+(lm-m)+1;return Math.max(1,(active<1?0:active)-hs);}
     function pmS2(s,metric){var t=amS2(s,HS[metric]);return t>0?totalS2(s,metric)/t:0;}
@@ -550,30 +550,28 @@ function renderBreakdownTrend(se, allPeers){
     var ttl=Math.round(0.15*qn)+Math.round(0.15*qhN)+Math.round(0.20*an)+Math.round(0.30*haN)+Math.round(0.20*in_);
     seLine.push(ttl);
     quoLine.push(Math.round(qn)); qhpLine.push(Math.round(qhN)); awdLine.push(Math.round(an)); hpaLine.push(Math.round(haN)); invLine.push(Math.round(in_));
-    var ksaSum=0;allPeers.forEach(function(s2){
+    var ksaSum=0,tmSum=0,tmN=0;allPeers.forEach(function(s2){
       var q2=nrm2(cpQ,pmS2(s2,'quo')),a2=nrm2(cpA,pmS2(s2,'awd')),i2=nrm2(cpI,pmS2(s2,'inv'));
       var qh2=nrm2(qhAll,(s2.hp_quo_pct||{})[pt.key]||0);
       var hp2n=0,hp2d=0;slice.forEach(function(m2){hp2n+=(s2.award_from_hp||{})[m2]||0;hp2d+=(s2.total_award_hp||{})[m2]||0;});
       var ha2=nrm2(haAll,hp2d>0?hp2n/hp2d:0);
-      ksaSum+=Math.round(0.15*q2)+Math.round(0.15*qh2)+Math.round(0.20*a2)+Math.round(0.30*ha2)+Math.round(0.20*i2);
+      var sc2=Math.round(0.15*q2)+Math.round(0.15*qh2)+Math.round(0.20*a2)+Math.round(0.30*ha2)+Math.round(0.20*i2);
+      ksaSum+=sc2; if(s2.team===se.team){tmSum+=sc2;tmN++;}
     });
-    ksaLine.push(Math.round(ksaSum/allPeers.length));
+    ksaLine.push(Math.round(ksaSum/allPeers.length)); teamLine.push(tmN?Math.round(tmSum/tmN):null);
   }
-  var paramColors=['#1f5fd6','#7c3aed','#137a4b','#b06f10','#b91c1c'];
-  var paramNames=['Quo (15%)','Q→HP (15%)','Award (20%)','HP→Awd (30%)','Inv (20%)'];
-  var paramData=[quoLine,qhpLine,awdLine,hpaLine,invLine];
+  // SE vs team avg vs KSA avg only (parameter lines removed, Abdul 28-Oct-2026)
+  var lastOf=function(arr){var l=-1;arr.forEach(function(v,k){if(v!=null)l=k;});return l;};
   var datasets=[
-    {label:'Total score',data:seLine,borderColor:'#141b24',pointRadius:2,pointBackgroundColor:'#141b24',borderWidth:2.5,tension:0.3,
-     datalabels:{display:function(c){return c.dataIndex===seLine.length-1&&seLine[c.dataIndex]!=null;},font:{size:10,weight:'bold'},color:'#141b24',anchor:'end',align:'top'}},
-    {label:'KSA avg',data:ksaLine,borderColor:'rgba(100,100,100,0.4)',pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.3,
-     datalabels:{display:false}}
+    {label:se.se_name,data:seLine,borderColor:'#141b24',pointRadius:2.5,pointBackgroundColor:'#141b24',borderWidth:2.5,tension:0.3,
+     datalabels:{display:function(c){return seLine[c.dataIndex]!=null;},font:{size:9,weight:'bold'},color:'#141b24',anchor:'end',align:'top',offset:1}},
+    {label:'Team avg ('+se.team+')',data:teamLine,borderColor:'#1f5fd6',pointRadius:0,pointHitRadius:8,borderWidth:1.8,borderDash:[6,3],tension:0.3,
+     datalabels:{display:function(c){return c.dataIndex===lastOf(teamLine);},font:{size:9,weight:'bold'},color:'#1f5fd6',anchor:'end',align:'right',offset:4,formatter:function(v){return 'Team '+v;}}},
+    {label:'KSA avg',data:ksaLine,borderColor:'#8b96a3',pointRadius:0,pointHitRadius:8,borderWidth:1.8,borderDash:[2,3],tension:0.3,
+     datalabels:{display:function(c){return c.dataIndex===lastOf(ksaLine);},font:{size:9,weight:'bold'},color:'#6b7682',anchor:'end',align:'right',offset:4,formatter:function(v){return 'KSA '+v;}}}
   ];
-  paramData.forEach(function(d,di){
-    datasets.push({label:paramNames[di],data:d,borderColor:paramColors[di],pointRadius:0,borderWidth:1.2,tension:0.3,borderDash:[3,2],
-      datalabels:{display:function(c){return c.dataIndex===d.length-1&&d[c.dataIndex]!=null;},font:{size:8},color:paramColors[di],anchor:'end',align:'top'}});
-  });
   _charts[canvasId]=new Chart(ctx.getContext('2d'),{type:'line',data:{labels:labels,datasets:datasets},
-    options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.5,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:12}},datalabels:{formatter:function(v){return v!=null?v:'';}}},
+    options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.5,interaction:{mode:'index',intersect:false},layout:{padding:{right:56}},plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:12}},datalabels:{clip:false,formatter:function(v){return v!=null?v:'';}}},
     scales:{x:{ticks:{font:{size:8},maxRotation:65},grid:yoyGrid},y:{min:0,max:100,ticks:{font:{size:8},callback:function(v){return v}}}}}});
 }
 
@@ -1879,7 +1877,7 @@ function renderFullscreenTrend(se){
   var cp=allPeers;
   var ms_=months(); // continuous, chronological
   var HS={quo:2,awd:2,inv:2};
-  var labels=[],seLine=[],ksaLine=[],quoLine=[],qhpLine=[],awdLine=[],hpaLine=[],invLine=[];
+  var labels=[],seLine=[],ksaLine=[],teamLine=[],quoLine=[],qhpLine=[],awdLine=[],hpaLine=[],invLine=[];
   for(var i=0;i<ms_.length;i++){
     var mKey=ms_[i];
     labels.push(mKey.slice(5)+'/'+mKey.slice(2,4)); // 01/25
@@ -1899,34 +1897,30 @@ function renderFullscreenTrend(se){
     var haN=nrmFS(haAll,hpaSd>0?hpaSe/hpaSd:0);
     var ttl=Math.round(0.15*qn)+Math.round(0.15*qhN)+Math.round(0.20*an)+Math.round(0.30*haN)+Math.round(0.20*in_);
     seLine.push(ttl);quoLine.push(Math.round(qn));qhpLine.push(Math.round(qhN));awdLine.push(Math.round(an));hpaLine.push(Math.round(haN));invLine.push(Math.round(in_));
-    var ksaSum=0;cp.forEach(function(s2){
+    var ksaSum=0,tmSum=0,tmN=0;cp.forEach(function(s2){
       var q2=nrmFS(cpQ,pmFS(s2,'quo')),a2=nrmFS(cpA,pmFS(s2,'awd')),i2=nrmFS(cpI,pmFS(s2,'inv'));
       var qh2=nrmFS(qhAll,(s2.hp_quo_pct||{})[mKey]||0);
       var hp2n=0,hp2d=0;slice.forEach(function(m2){hp2n+=(s2.award_from_hp||{})[m2]||0;hp2d+=(s2.total_award_hp||{})[m2]||0;});
       var ha2=nrmFS(haAll,hp2d>0?hp2n/hp2d:0);
-      ksaSum+=Math.round(0.15*q2)+Math.round(0.15*qh2)+Math.round(0.20*a2)+Math.round(0.30*ha2)+Math.round(0.20*i2);
+      var sc2=Math.round(0.15*q2)+Math.round(0.15*qh2)+Math.round(0.20*a2)+Math.round(0.30*ha2)+Math.round(0.20*i2);
+      ksaSum+=sc2; if(s2.team===se.team){tmSum+=sc2;tmN++;}
     });
-    ksaLine.push(Math.round(ksaSum/cp.length));
+    ksaLine.push(Math.round(ksaSum/cp.length)); teamLine.push(tmN?Math.round(tmSum/tmN):null);
   }
-  var paramColors=['#1f5fd6','#7c3aed','#137a4b','#b06f10','#b91c1c'];
-  var paramNames=['Quo (15%)','Q→HP (15%)','Award (20%)','HP→Awd (30%)','Inv (20%)'];
-  var paramData=[quoLine,qhpLine,awdLine,hpaLine,invLine];
-  // All data labels visible in fullscreen
-  var dlAll={display:true,font:{size:9,weight:'bold'},anchor:'end',align:'top',offset:2};
+  // SE vs team avg vs KSA avg only (parameter lines removed, Abdul 28-Oct-2026)
+  var lastOf=function(arr){var l=-1;arr.forEach(function(v,k){if(v!=null)l=k;});return l;};
   var datasets=[
-    {label:'Total score',data:seLine,borderColor:'#141b24',pointRadius:3,pointBackgroundColor:'#141b24',borderWidth:2.5,tension:0.3,
-     datalabels:Object.assign({},dlAll,{color:'#141b24',font:{size:10,weight:'bold'}})},
-    {label:'KSA avg',data:ksaLine,borderColor:'rgba(100,100,100,0.4)',pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.3,
-     datalabels:{display:false}}
+    {label:se.se_name,data:seLine,borderColor:'#141b24',pointRadius:3,pointBackgroundColor:'#141b24',borderWidth:2.5,tension:0.3,
+     datalabels:{display:true,font:{size:10,weight:'bold'},color:'#141b24',anchor:'end',align:'top',offset:2}},
+    {label:'Team avg ('+se.team+')',data:teamLine,borderColor:'#1f5fd6',pointRadius:2,pointBackgroundColor:'#1f5fd6',borderWidth:2,borderDash:[6,3],tension:0.3,
+     datalabels:{display:function(c){return c.dataIndex===lastOf(teamLine);},font:{size:10,weight:'bold'},color:'#1f5fd6',anchor:'end',align:'right',offset:6,formatter:function(v){return 'Team '+v;}}},
+    {label:'KSA avg',data:ksaLine,borderColor:'#8b96a3',pointRadius:2,pointBackgroundColor:'#8b96a3',borderWidth:2,borderDash:[2,3],tension:0.3,
+     datalabels:{display:function(c){return c.dataIndex===lastOf(ksaLine);},font:{size:10,weight:'bold'},color:'#6b7682',anchor:'end',align:'right',offset:6,formatter:function(v){return 'KSA '+v;}}}
   ];
-  paramData.forEach(function(d,di){
-    datasets.push({label:paramNames[di],data:d,borderColor:paramColors[di],pointRadius:2,pointBackgroundColor:paramColors[di],borderWidth:1.5,tension:0.3,
-      datalabels:Object.assign({},dlAll,{color:paramColors[di],font:{size:8}})});
-  });
   var ctx=document.getElementById('ch-fs-trend');
   if(_charts['ch-fs-trend']){_charts['ch-fs-trend'].destroy();delete _charts['ch-fs-trend'];}
   _charts['ch-fs-trend']=new Chart(ctx.getContext('2d'),{type:'line',data:{labels:labels,datasets:datasets},
-    options:{responsive:true,maintainAspectRatio:false,
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},layout:{padding:{right:70}},
       plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:14}},
         datalabels:{formatter:function(v){return v!=null?v:'';},clamp:true,clip:false}},
       scales:{x:{ticks:{font:{size:10},maxRotation:45},grid:{color:'rgba(0,0,0,0.06)'}},
