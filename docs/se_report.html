@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1793193808"></script>
+<script src="auth.js?v=1793194460"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -2173,7 +2173,11 @@ function tvaDraw(px,e,ref,refName){
     +tvaKpi('Quo → HP %',tvaPct(rp.act),'target '+tvaPct(rp.tgt),tvaCls(rp.pct))
     +tvaKpi('HP → Award %',tvaPct(rh.act),'target '+tvaPct(rh.tgt),tvaCls(rh.pct));
   var M1=function(v){return v==null?null:+(v/1e6).toFixed(1);},P=function(v){return v==null?null:+(v*100).toFixed(1);};
-  var lineOpt=function(unit){return {responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:14}},
+  var lastIdx=function(arr){var l=-1;arr.forEach(function(v,i){if(v!=null)l=i;});return l;};
+  var endLabel=function(color,unit){return {display:function(c){return c.dataIndex===lastIdx(c.dataset.data);},align:'right',anchor:'end',offset:4,
+    font:{size:9,weight:'bold'},color:color,backgroundColor:'rgba(255,255,255,0.85)',borderRadius:3,padding:{top:1,bottom:1,left:3,right:3},
+    clip:false,formatter:function(v){return 'Tgt '+v+unit;}};};
+  var lineOpt=function(unit){return {responsive:true,interaction:{mode:'index',intersect:false},layout:{padding:{right:62}},plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:14}},
     tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+(c.raw==null?'–':c.raw+unit);}}}},
     scales:{x:{ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{font:{size:10},callback:function(v){return v+unit;}}}}};};
   // Quotation monthly
@@ -2182,7 +2186,7 @@ function tvaDraw(px,e,ref,refName){
     _charts[px+'-quo']=new Chart(ctx,{type:'bar',data:{labels:lab,datasets:[
       {type:'bar',label:'Quotations',data:e.o.quo.map(M1),backgroundColor:'#1f5fd6',order:2,
         datalabels:{display:true,anchor:'end',align:'top',font:{size:9,weight:'bold'},color:'#333',formatter:function(v){return v?v.toFixed(0):'';}}},
-      {type:'line',label:'Target'+(qt?' ('+sar(qt)+'/month)':''),data:ms.map(function(){return M1(qt);}),borderColor:'#c0392b',borderDash:[6,4],borderWidth:2,pointRadius:0,fill:false,order:1}
+      {type:'line',label:'Target'+(qt?' ('+sar(qt)+'/month)':''),data:ms.map(function(){return M1(qt);}),borderColor:'#c0392b',borderDash:[6,4],borderWidth:2,pointRadius:0,pointHoverRadius:4,pointHitRadius:10,fill:false,order:1,datalabels:endLabel('#c0392b','M')}
     ]},options:lineOpt('M')});}
   // Award & Invoice by quarter
   ctx=getCtx(px+'-ai');
@@ -2196,7 +2200,7 @@ function tvaDraw(px,e,ref,refName){
     var c=getCtx(id);if(!c)return;var r=tvaCalc(e,k),ds=[
       {label:e.name+' actual',data:r.ma.map(P),borderColor:'#1f5fd6',backgroundColor:'#1f5fd6',borderWidth:2.5,pointRadius:3,tension:0.25,spanGaps:true,
         datalabels:{display:function(x){return x.dataset.data[x.dataIndex]!=null;},align:'top',font:{size:9,weight:'bold'},color:'#1f5fd6',formatter:function(v){return v+'%';}}},
-      {label:e.name+' target',data:r.mt.map(P),borderColor:'#c0392b',borderDash:[6,4],borderWidth:2,pointRadius:0,spanGaps:true}];
+      {label:e.name+' target',data:r.mt.map(P),borderColor:'#c0392b',backgroundColor:'#c0392b',borderDash:[6,4],borderWidth:2,pointRadius:0,pointHoverRadius:4,pointHitRadius:10,spanGaps:true,datalabels:endLabel('#c0392b','%')}];
     if(ref){var rr=tvaCalc(ref,k);ds.push({label:refName+' actual',data:rr.ma.map(P),borderColor:'#141b24',borderWidth:1.5,pointRadius:2,tension:0.25,spanGaps:true});}
     _charts[id]=new Chart(c,{type:'line',data:{labels:lab,datasets:ds},options:lineOpt('%')});
   }
