@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1793190178"></script>
+<script src="auth.js?v=1793193808"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -285,71 +285,6 @@ table.tva-mt{width:100%;border-collapse:collapse;margin:6px 0;font-size:10.5px}
   <!-- ===== VIEW: TRENDS ===== -->
   <div class="view active" id="view-trends">
     <div id="tva-ksa"></div>
-    <div class="analytics-head">SE Performance <span>filter by team / engineer, or compare two SEs side-by-side</span></div>
-    <div class="trend-controls">
-      <div class="dropdown" id="dd-trend-team">
-        <button class="dd-btn" type="button">All teams <span class="dd-caret">&#9662;</span></button>
-        <div class="dd-menu" id="dd-trend-team-menu"></div>
-      </div>
-      <div class="dropdown" id="dd-trend-se">
-        <button class="dd-btn" type="button">All engineers <span class="dd-caret">&#9662;</span></button>
-        <div class="dd-menu" id="dd-trend-se-menu"></div>
-      </div>
-      <div class="seg" id="seg-compare">
-        <button data-cmp="off" class="on">Off</button>
-        <button data-cmp="se">SE vs SE</button>
-        <button data-cmp="team">SE vs Team</button>
-      </div>
-      <span id="cmp-picks-se" style="display:none">
-        <select id="se-pick-a"></select>
-        <span class="cmp-vs">vs</span>
-        <select id="se-pick-b"></select>
-      </span>
-      <span id="cmp-picks-team" style="display:none">
-        <select id="se-pick-cmp"></select>
-        <span class="cmp-vs">vs</span>
-        <select id="team-pick-b"></select>
-      </span>
-    </div>
-
-    <!-- Normal per-SE charts (single SE or aggregated multi-select) -->
-    <div id="se-normal">
-      <div class="chart-row c2">
-        <div class="chart-box"><h3>Composite score trend</h3>
-          <div class="chart-desc">SE score vs KSA average &amp; team average. YoY paired.</div>
-          <canvas id="ch-se-score"></canvas>
-        </div>
-        <div class="chart-box"><h3>Target achievement by quarter</h3>
-          <div class="chart-desc">Cumulative actual / annual target. Quarters beyond data cutoff hidden.</div>
-          <canvas id="ch-se-tgt"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- Compare mode: side-by-side SE A vs SE B -->
-    <div id="se-compare" style="display:none">
-      <div class="chart-row c2">
-        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-a">A</span><h3 id="cmp-h-score-a">Score</h3></div>
-          <div class="chart-desc">SE score vs KSA avg &amp; team avg</div>
-          <canvas id="ch-cmp-score-a"></canvas>
-        </div>
-        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-b">B</span><h3 id="cmp-h-score-b">Score</h3></div>
-          <div class="chart-desc">SE score vs KSA avg &amp; team avg</div>
-          <canvas id="ch-cmp-score-b"></canvas>
-        </div>
-      </div>
-      <div class="chart-row c2">
-        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-a">A</span><h3 id="cmp-h-tgt-a">Target</h3></div>
-          <div class="chart-desc">Cumulative actual / annual target</div>
-          <canvas id="ch-cmp-tgt-a"></canvas>
-        </div>
-        <div class="chart-box"><div class="cmp-header"><span class="cmp-badge cmp-badge-b">B</span><h3 id="cmp-h-tgt-b">Target</h3></div>
-          <div class="chart-desc">Cumulative actual / annual target</div>
-          <canvas id="ch-cmp-tgt-b"></canvas>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <!-- ===== VIEW: TABLE ===== -->
@@ -431,44 +366,7 @@ table.tva-mt{width:100%;border-collapse:collapse;margin:6px 0;font-size:10.5px}
   <!-- ===== VIEW: TEAM SUMMARY ===== -->
   <div class="view" id="view-teams">
     <div id="tva-team"></div>
-    <div class="analytics-head">Team summary <span>compare teams side by side — all metrics trend-first</span></div>
-    <div class="controls" style="justify-content:flex-start">
-      <div class="seg" id="seg-team-ch">
-        <button data-tch="project" class="on">Projects</button>
-        <button data-tch="acs">ACS</button>
-      </div>
     </div>
-    <div class="chart-row c1">
-      <div class="chart-box"><h3>Team avg composite score — trend</h3>
-        <div class="chart-desc">One line per team, YoY paired. Data labels on last point.</div>
-        <canvas id="ch-team-score"></canvas>
-      </div>
-    </div>
-    <div class="chart-row c1" id="team-cards-row"></div>
-    <div class="chart-row c3" id="team-metric-charts">
-      <div class="chart-box"><h3>Quotation trend by team</h3><canvas id="ch-team-quo"></canvas></div>
-      <div class="chart-box"><h3>Award trend by team</h3><canvas id="ch-team-awd"></canvas></div>
-      <div class="chart-box"><h3>Invoiced trend by team</h3><canvas id="ch-team-inv"></canvas></div>
-    </div>
-    <div class="analytics-head" style="margin-top:16px">Team rankings <span>click a row to expand SE detail</span></div>
-    <div class="panel">
-      <div class="tbl-scroll">
-        <table>
-          <thead><tr>
-            <th>Team</th>
-            <th class="num">SEs</th>
-            <th class="num">Avg score</th>
-            <th class="num">Total quo</th>
-            <th class="num">Total award</th>
-            <th class="num">Total inv</th>
-            <th>Top SE</th>
-            <th>Needs attention</th>
-          </tr></thead>
-          <tbody id="tbody-teams"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- Fullscreen trend modal -->
@@ -1312,6 +1210,7 @@ function renderTrends(){
   Chart.register(ChartDataLabels);
   Chart.defaults.set('plugins.datalabels',{display:false});
   renderTVAKsa();
+  return;  // other Trends charts removed (Abdul, 28-Oct-2026)
   var p=trendPool(), ms=months();
   if(!_trendsReady){
     buildTrendTeamMenu();
@@ -1392,8 +1291,8 @@ function updateTrendSEBtn(){
 }
 
 // Wire trend dropdown openers
-document.querySelector('#dd-trend-team .dd-btn').addEventListener('click',function(e){e.stopPropagation();toggleDropdown('dd-trend-team-menu');});
-document.querySelector('#dd-trend-se .dd-btn').addEventListener('click',function(e){e.stopPropagation();toggleDropdown('dd-trend-se-menu');});
+(document.querySelector('#dd-trend-team .dd-btn')||{addEventListener:function(){}}).addEventListener('click',function(e){e.stopPropagation();toggleDropdown('dd-trend-team-menu');});
+(document.querySelector('#dd-trend-se .dd-btn')||{addEventListener:function(){}}).addEventListener('click',function(e){e.stopPropagation();toggleDropdown('dd-trend-se-menu');});
 
 // ---- COMPARE MODE (SE vs SE / SE vs Team) ----
 function populateCompareDropdowns(pool){
@@ -1492,9 +1391,9 @@ document.querySelectorAll('#seg-compare button').forEach(function(btn){
     renderTrends();
   });
 });
-document.getElementById('se-pick-a').addEventListener('change',function(){renderTrends();});
-document.getElementById('se-pick-b').addEventListener('change',function(){renderTrends();});
-document.getElementById('se-pick-cmp').addEventListener('change',function(){
+(document.getElementById('se-pick-a')||{addEventListener:function(){}}).addEventListener('change',function(){renderTrends();});
+(document.getElementById('se-pick-b')||{addEventListener:function(){}}).addEventListener('change',function(){renderTrends();});
+(document.getElementById('se-pick-cmp')||{addEventListener:function(){}}).addEventListener('change',function(){
   // When SE changes in team mode, default team to that SE's team
   var pool=SE_DATA.filter(function(s){return !INACTIVE_SES[s.se_name]||STATE.showInactive;});
   var se=pool.find(function(s){return s.se_name===this.value;}.bind(this));
@@ -1504,7 +1403,7 @@ document.getElementById('se-pick-cmp').addEventListener('change',function(){
   }
   renderTrends();
 });
-document.getElementById('team-pick-b').addEventListener('change',function(){renderTrends();});
+(document.getElementById('team-pick-b')||{addEventListener:function(){}}).addEventListener('change',function(){renderTrends();});
 
 // ---- CHART RENDERING (refactored) ----
 // Renders score/target/pipeline/accounts/mix for one SE
@@ -1817,6 +1716,7 @@ function renderTeamSummary(){
   Chart.defaults.set('plugins.datalabels',{display:false});
 
   renderTVATeam();
+  return;  // other Team Summary charts removed (Abdul, 28-Oct-2026)
   var ch=_teamSummaryState.ch;
   var allActive=SE_DATA.filter(function(s){
     if(STATE.excluded.indexOf(s.se_name)>=0)return false;
@@ -2061,7 +1961,7 @@ function tvaYear(){return cutoffMonth().slice(0,4);}
 function tvaMonths(){var y=tvaYear(),cm=parseInt(cutoffMonth().slice(5)),o=[];for(var i=1;i<=cm;i++)o.push(y+'-'+(i<10?'0':'')+i);return o;}
 function tvaPool(){return SE_DATA.filter(function(s){return STATE.excluded.indexOf(s.se_name)<0&&s.team;});}
 function tvaSeries(list){
-  var ms=tvaMonths(),K=['quo','awd','inv','hh','ha','hb','hw'],o={ms:ms};
+  var ms=tvaMonths(),K=['quo','awd','inv','hh','ha','hb','hw','afh','tah'],o={ms:ms};
   K.forEach(function(k){o[k]=ms.map(function(){return 0;});});
   list.forEach(function(s){
     var d=seData(s),qh=s.monthly_quo_hr,jdm=(STATE.own&&s.join_date)?s.join_date.slice(0,7):null;
@@ -2070,6 +1970,7 @@ function tvaSeries(list){
       o.quo[i]+=qh?((jdm&&m<jdm)?0:(qh[m]||0)):(d.quo[m]||0); o.awd[i]+=d.award[m]||0; o.inv[i]+=d.inv[m]||0;
       o.hh[i]+=(s.hs_hot||{})[m]||0; o.ha[i]+=(s.hs_act||{})[m]||0;
       o.hb[i]+=(s.hs_hcb||{})[m]||0; o.hw[i]+=(s.hs_hca||{})[m]||0;
+      o.afh[i]+=(s.award_from_hp||{})[m]||0; o.tah[i]+=(s.total_award_hp||{})[m]||0;  // Power BI 'HP to Award %' CSV
     });
   });
   return o;
@@ -2084,26 +1985,28 @@ function tvaHi(){ // last snapshot month (index) with HOT data
 function tvaCi(){tvaHi();return _tvaCi;} // last snapshot month whose 3-month award window is complete
 function tvaHit(o){var q=tvaSum(o.quo);return q>0?tvaSum(o.awd)/q:0;}
 // Annual targets from award/invoice target + hit ratio at that level
-function tvaTargets(awd,inv,hit){
+// HP share of award target (Abdul, 28-Oct-2026): projects teams 75%, ACS teams 50% (rest from run-rate business)
+function tvaShare(team){return isProjectTeam(team)?0.75:0.5;}
+function tvaTargets(awd,inv,hit,sh){
   if(!awd&&!inv)return null;
-  var cv=Math.min(1,2*hit);
-  return {awd:awd, inv:inv, quo:hit>0?awd/hit:0, hcv:cv, hot:cv>0?awd/4/cv:0};
+  var cv=Math.min(1,2*hit);                     // HP close rate assumed at 2 x hit ratio
+  return {awd:awd, inv:inv, quo:hit>0?awd/hit:0, hcv:cv, hsh:sh, hot:cv>0?sh*awd/4/cv:0};
 }
 function tvaYT(s,k){return ((s[k]||{})[tvaYear()])||0;}
 // Build model: KSA, teams, SEs (each {name, o (series), t (targets)})
 function tvaModel(){
   var pool=tvaPool(),ko=tvaSeries(pool),K=tvaHit(ko),byT={};
   pool.forEach(function(s){(byT[s.team]=byT[s.team]||[]).push(s);});
-  var ka=0,ki=0;
+  var ka=0,ki=0,ksh=0;
   var teams=Object.keys(byT).sort().map(function(tn){
-    var o=tvaSeries(byT[tn]),th=tvaHit(o)||K,ta=0,ti=0;
+    var o=tvaSeries(byT[tn]),th=tvaHit(o)||K,ta=0,ti=0,sh=tvaShare(tn);
     var ses=byT[tn].map(function(s){
       var so=tvaSeries([s]),a=tvaYT(s,'award_tgt'),iv=tvaYT(s,'inv_tgt');ta+=a;ti+=iv;
-      return {name:s.se_name,list:[s],o:so,t:tvaTargets(a,iv,tvaHit(so)||th),inactive:!!INACTIVE_SES[s.se_name]};});
-    ka+=ta;ki+=ti;
-    return {name:tn,list:byT[tn],o:o,t:tvaTargets(ta,ti,th),ses:ses};
+      return {name:s.se_name,list:[s],o:so,t:tvaTargets(a,iv,tvaHit(so)||th,sh),inactive:!!INACTIVE_SES[s.se_name]};});
+    ka+=ta;ki+=ti;ksh+=ta*sh;
+    return {name:tn,list:byT[tn],o:o,t:tvaTargets(ta,ti,th,sh),ses:ses};
   });
-  return {ksa:{name:'KSA',list:pool,o:ko,t:tvaTargets(ka,ki,K)},teams:teams};
+  return {ksa:{name:'KSA',list:pool,o:ko,t:tvaTargets(ka,ki,K,ka>0?ksh/ka:0.5)},teams:teams};
 }
 // Actual vs target for one entity + metric: YTD and monthly series
 function tvaCalc(e,k){
@@ -2121,9 +2024,10 @@ function tvaCalc(e,k){
   } else if(k==='haw'){ // per month-end HOT: awarded within 3 months; YTD = average per month-end
     ms.forEach(function(_,i){if(i<=ci){r.ma.push(o.hw[i]);r.mt.push(t&&t.hcv?t.hcv*o.hb[i]:null);}else{r.ma.push(null);r.mt.push(null);}});
     var nc=ci+1;r.act=ci>=0?tvaSum(o.hw,ci)/nc:null;r.tgt=(ci>=0&&t&&t.hcv)?t.hcv*tvaSum(o.hb,ci)/nc:null;
-  } else { // hawp: HOT conversion % per snapshot month
-    ms.forEach(function(_,i){var b=o.hb[i];r.ma.push(i<=ci&&b>0?o.hw[i]/b:null);r.mt.push(i<=ci&&t&&t.hcv?t.hcv:null);});
-    var b=ci>=0?tvaSum(o.hb,ci):0;r.act=b>0?tvaSum(o.hw,ci)/b:null;r.tgt=t&&t.hcv?t.hcv:null;
+  } else { // hawp: HP share of award (Power BI: Award from HP / Total award), by month; YTD pooled
+    var la=-1;o.tah.forEach(function(v,i){if(v>0)la=i;});
+    ms.forEach(function(_,i){var d=o.tah[i];r.ma.push(d>0?o.afh[i]/d:(i<=la?0:null));r.mt.push(t&&t.hsh?t.hsh:null);});
+    var d=tvaSum(o.tah);r.act=d>0?tvaSum(o.afh)/d:null;r.tgt=t&&t.hsh?t.hsh:null;
   }
   r.pct=(r.act!=null&&r.tgt)?r.act/r.tgt:null;
   return r;
@@ -2154,24 +2058,24 @@ function tvaNote(M,E){
     var k=k0,t=k.t,hit=tvaHit(k.o),hp=tvaCalc(k,'hotp'),cv=tvaCalc(k,'hawp');
     tg='<div class="tva-tgts"><b>How the targets are set</b> ('+esc(k.name)+' shown; each team and SE uses its own hit ratio)'
       +'<div><span>Quotation</span> = Award target ÷ hit ratio = '+sar(t.awd)+' ÷ '+pc(hit)+' = <b>'+sar(t.quo)+'</b> a year</div>'
-      +'<div><span>HP → Award %</span> = 2 × hit ratio = 2 × '+pc(hit)+' = <b>'+pc(t.hcv)+'</b> (HOT projects should close at twice the normal rate)</div>'
-      +'<div><span>Quo → HP %</span> = HP needed ÷ active quotations. HP needed = 3 months of award target ÷ HP → Award target = '+sar(t.awd/4)+' ÷ '+pc(t.hcv)+' = '+sar(t.hot)+'; ÷ active quotations '+sar(k.o.ha[h])+' = <b>'+pc(hp.tgt)+'</b></div>'
+      +'<div><span>HP → Award %</span> = share of award that should come from HP: <b>75%</b> projects teams, <b>50%</b> ACS teams (rest from run-rate). '+(k.name==='KSA'?'KSA = weighted by award target = ':'Target = ')+'<b>'+pc(t.hsh)+'</b></div>'
+      +'<div><span>Quo → HP %</span> = HP needed ÷ active quotations. HP needed = HP share target × 3 months of award target ÷ HP close rate (2 × hit ratio) = '+pc(t.hsh)+' × '+sar(t.awd/4)+' ÷ '+pc(t.hcv)+' = '+sar(t.hot)+'; ÷ active quotations '+sar(k.o.ha[h])+' = <b>'+pc(hp.tgt)+'</b></div>'
       +'<div><span>Award, Invoice</span> = annual SE targets (target file), ÷ 12 per month</div></div>';
     ex='<h4>Worked example — '+esc(k.name)+' '+yr+'</h4><ol>'
       +'<li>Hit ratio = Award '+sar(tvaSum(k.o.awd))+' ÷ Quotations '+sar(tvaSum(k.o.quo))+' = <b>'+pc(hit)+'</b>.</li>'
       +'<li>Quotation target = '+sar(t.awd)+' ÷ '+pc(hit)+' = <b>'+sar(t.quo)+'</b> a year ('+sar(t.quo/12)+' a month).</li>'
-      +'<li>HP → Award target = 2 × '+pc(hit)+' = <b>'+pc(t.hcv)+'</b>. Actual: '+pc(cv.act)+' of the HP at each month end was awarded within 3 months ('+sar(tvaCalc(k,'haw').act)+' per month end).</li>'
-      +'<li>Award needed in the next 3 months = '+sar(t.awd)+' ÷ 4 = '+sar(t.awd/4)+'. HP needed = '+sar(t.awd/4)+' ÷ '+pc(t.hcv)+' = <b>'+sar(t.hot)+'</b>. HP on hand ('+hl+'): '+sar(k.o.hh[h])+'.</li>'
+      +'<li>HP → Award target = <b>'+pc(t.hsh)+'</b> of award from HP. Actual: '+pc(cv.act)+' (Award from HP '+sar(tvaSum(k.o.afh))+' ÷ Total award '+sar(tvaSum(k.o.tah))+').</li>'
+      +'<li>Award needed in the next 3 months = '+sar(t.awd)+' ÷ 4 = '+sar(t.awd/4)+'; '+pc(t.hsh)+' of it from HP = '+sar(t.hsh*t.awd/4)+'. HP closes at 2 × hit ratio = '+pc(t.hcv)+', so HP needed = '+sar(t.hsh*t.awd/4)+' ÷ '+pc(t.hcv)+' = <b>'+sar(t.hot)+'</b>. HP on hand ('+hl+'): '+sar(k.o.hh[h])+'.</li>'
       +'<li>Quo → HP target = '+sar(t.hot)+' ÷ active quotations '+sar(k.o.ha[h])+' = <b>'+pc(hp.tgt)+'</b>. Actual: '+pc(hp.act)+'.</li>'
       +'</ol>';
   }
   var rows=[
     ['Quotation','Quotations issued (by Valid from month).','Pipeline (pipeline.csv, from BI Pipeline RD Weekly). VALID/NOT DUPLICATE; groups CAC Ducted / Non-Ducted / RAC / Applied; <b>all 15% excluded</b> (DX &amp; MV). Months before an SE’s join date are excluded.','Cumulative YTD.','Award target ÷ hit ratio, ÷ 12 per month (Power BI “tgt pipeline”).'],
-    ['Quo → HP %','How much of the open quotation pipeline is HOT (HP).','Historical Pipeline month-end snapshot. <b>HP</b> = 50%/70%, WON or NO DECISION/IN PROGRESS, VALID/NOT DUPLICATE, Expected Award Date from the snapshot month to 3 months later, any quote date. <b>Active quotations</b> = 30/50/70%, same filters, quote date from Jan-2025. HP ÷ active quotations, both from the same month end.','Latest snapshot ('+hl+').','HP needed ÷ active quotations, where HP needed = (Award target ÷ 4) ÷ HP → Award target.'],
+    ['Quo → HP %','How much of the open quotation pipeline is HOT (HP).','Historical Pipeline month-end snapshot. <b>HP</b> = 50%/70%, WON or NO DECISION/IN PROGRESS, VALID/NOT DUPLICATE, Expected Award Date from the snapshot month to 3 months later, any quote date. <b>Active quotations</b> = 30/50/70%, same filters, quote date from Jan-2025. HP ÷ active quotations, both from the same month end.','Latest snapshot ('+hl+').','HP needed ÷ active quotations, where HP needed = HP share target × (Award target ÷ 4) ÷ (2 × hit ratio).'],
     ['Award','Quotations awarded (by Expected Award Date month).','Pipeline: 90% (PO only) or 100% (PO &amp; payment), same groups.','Cumulative YTD.','Annual SE award target ÷ 12 per month.'],
-    ['HP → Award %','How much HP actually closes.','HP at a month end, matched by quotation number to the snapshot 3 months later: value now at 90/100% ÷ that HP. Only month ends with a complete 3-month window are used (to '+cl+').','All complete month ends in '+yr+', pooled.','2 × hit ratio (max 100%).'],
+    ['HP → Award %','How much of the award came through HP.','Power BI \u201cHP to Award %\u201d export: Award from HP ÷ Total award, per SE per month.','Monthly; YTD pooled.','75% for projects teams (East / West / Central Projects, Direct Channel), 50% for ACS teams (rest from run-rate). KSA = weighted by award target.'],
     ['Invoice','Invoiced sales.','SAP sales (ZDSAL) by month.','Cumulative YTD.','Annual SE invoice target ÷ 12 per month.'],
-    ['Hit ratio','Supporting figure, no target.','Award ÷ Quotation (as above), '+yr+' YTD, for each SE, team and KSA separately (Power BI “Success Rate”).','YTD.','Used to set the Quotation, HP → Award and Quo → HP targets.']
+    ['Hit ratio','Supporting figure, no target.','Award ÷ Quotation (as above), '+yr+' YTD, for each SE, team and KSA separately (Power BI “Success Rate”).','YTD.','Used to set the Quotation and Quo → HP targets.']
   ];
   return tg+'<div class="tva-note"><b>Achievement %</b> = actual ÷ target, '+yr+' YTD to '+last+'. Green ≥ 100%, amber 75–99%, red &lt; 75%. SEs without a row in the target file have no targets.'
     +'<details><summary>How every number is built (method, sources, targets)</summary><div class="tva-method">'
@@ -2253,7 +2157,7 @@ function tvaPanelHtml(px,opts,sel){
     +'<div class="chart-box"><h3>Award &amp; Invoice — target achievement by quarter</h3><div class="chart-desc">Cumulative actual ÷ annual target. Prior year lighter, current year darker.</div><canvas id="'+px+'-ai"></canvas></div>'
     +'</div><div class="chart-row c2">'
     +'<div class="chart-box"><h3>Quo → HP % — monthly</h3><div class="chart-desc">HP ÷ active quotations (30/50/70%) at each month end. Dashed = target.</div><canvas id="'+px+'-qhp"></canvas></div>'
-    +'<div class="chart-box"><h3>HP → Award % — monthly</h3><div class="chart-desc">HP at each month end awarded within 3 months. Dashed = target. Shown to the last month end with a full 3-month window.</div><canvas id="'+px+'-hpa"></canvas></div>'
+    +'<div class="chart-box"><h3>HP → Award % — monthly</h3><div class="chart-desc">Share of each month’s award that came from HP (Power BI: Award from HP ÷ Total award). Dashed = target (75% projects teams, 50% ACS teams).</div><canvas id="'+px+'-hpa"></canvas></div>'
     +'</div>';
 }
 function tvaPct(v){return v==null?'–':(v*100).toFixed(1)+'%';}
@@ -2351,6 +2255,10 @@ function startReport(session){
   if(teams && teams.length && role && role.indexOf('manager_')===0){
     STATE.teams=teams.slice();
     MGR_TEAMS=teams.slice();
+    // Trends tab is EVP/ops only -> hide it and open Team Summary
+    var tb=document.querySelector('#page-nav button[data-view="trends"]');if(tb)tb.style.display='none';
+    document.querySelectorAll('#page-nav button').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-view')==='teams');});
+    document.querySelectorAll('.view').forEach(function(v){v.classList.toggle('active',v.id==='view-teams');});
     // hide the team dropdown so they can't widen scope
     var ddTeam=document.getElementById('dd-team');
     if(ddTeam)ddTeam.style.display='none';
