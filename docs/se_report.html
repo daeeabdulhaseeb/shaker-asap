@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1793105699"></script>
+<script src="auth.js?v=1793190178"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -251,6 +251,15 @@ table.tva-mt{width:100%;border-collapse:collapse;margin:6px 0;font-size:10.5px}
 .tva-tgts{margin-top:12px;padding:10px 12px;background:var(--blue-soft);border-radius:6px;font-size:11px;color:var(--ink-soft);line-height:1.7}
 .tva-tgts b{color:var(--ink)}
 .tva-tgts span{display:inline-block;min-width:110px;font-weight:650;color:var(--ink)}
+.tva-pick{display:flex;align-items:center;gap:8px;margin:12px 0 4px}
+.tva-pick label{font-size:12px;font-weight:600;color:var(--ink-soft)}
+.tva-pick select{font-family:inherit;font-size:12px;height:30px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);min-width:220px}
+.tva-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:10px}
+@media(max-width:900px){.tva-kpis{grid-template-columns:repeat(2,1fr)}}
+.tva-kpi{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--paper)}
+.tva-kl{font-size:10.5px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.03em}
+.tva-kv{font-size:20px;font-weight:700;color:var(--ink);margin:2px 0}
+.tva-ks{font-size:10px;color:var(--ink-faint)}
 </style>
 </head>
 <body>
@@ -2090,11 +2099,11 @@ function tvaModel(){
     var o=tvaSeries(byT[tn]),th=tvaHit(o)||K,ta=0,ti=0;
     var ses=byT[tn].map(function(s){
       var so=tvaSeries([s]),a=tvaYT(s,'award_tgt'),iv=tvaYT(s,'inv_tgt');ta+=a;ti+=iv;
-      return {name:s.se_name,o:so,t:tvaTargets(a,iv,tvaHit(so)||th),inactive:!!INACTIVE_SES[s.se_name]};});
+      return {name:s.se_name,list:[s],o:so,t:tvaTargets(a,iv,tvaHit(so)||th),inactive:!!INACTIVE_SES[s.se_name]};});
     ka+=ta;ki+=ti;
-    return {name:tn,o:o,t:tvaTargets(ta,ti,th),ses:ses};
+    return {name:tn,list:byT[tn],o:o,t:tvaTargets(ta,ti,th),ses:ses};
   });
-  return {ksa:{name:'KSA',o:ko,t:tvaTargets(ka,ki,K)},teams:teams};
+  return {ksa:{name:'KSA',list:pool,o:ko,t:tvaTargets(ka,ki,K)},teams:teams};
 }
 // Actual vs target for one entity + metric: YTD and monthly series
 function tvaCalc(e,k){
@@ -2136,18 +2145,19 @@ function tvaSegHtml(){
   return '<div class="seg tva-seg">'+TVA_M.filter(function(m){return m.kind!=='info';}).map(function(m){
     return '<button data-tvam="'+m.k+'" class="'+(m.k===TVA.metric?'on':'')+'">'+m.lab+'</button>';}).join('')+'</div>';
 }
-function tvaNote(M){
+function tvaNote(M,E){
   var h=tvaHi(),ci=tvaCi(),ms=tvaMonths(),yr=tvaYear(),hl=h>=0?mLabel(ms[h]):'–',cl=ci>=0?mLabel(ms[ci]):'–',last=mLabel(ms[ms.length-1]);
   function pc(v){return v==null?'–':(v*100).toFixed(1)+'%';}
   var tg='',ex='';
-  if(M&&M.ksa&&M.ksa.t){
-    var k=M.ksa,t=k.t,hit=tvaHit(k.o),hp=tvaCalc(k,'hotp'),cv=tvaCalc(k,'hawp');
-    tg='<div class="tva-tgts"><b>How the targets are set</b> (KSA shown; each team and SE uses its own hit ratio)'
+  var k0=E||(M&&M.ksa);
+  if(k0&&k0.t){
+    var k=k0,t=k.t,hit=tvaHit(k.o),hp=tvaCalc(k,'hotp'),cv=tvaCalc(k,'hawp');
+    tg='<div class="tva-tgts"><b>How the targets are set</b> ('+esc(k.name)+' shown; each team and SE uses its own hit ratio)'
       +'<div><span>Quotation</span> = Award target ÷ hit ratio = '+sar(t.awd)+' ÷ '+pc(hit)+' = <b>'+sar(t.quo)+'</b> a year</div>'
       +'<div><span>HP → Award %</span> = 2 × hit ratio = 2 × '+pc(hit)+' = <b>'+pc(t.hcv)+'</b> (HOT projects should close at twice the normal rate)</div>'
       +'<div><span>Quo → HP %</span> = HP needed ÷ active quotations. HP needed = 3 months of award target ÷ HP → Award target = '+sar(t.awd/4)+' ÷ '+pc(t.hcv)+' = '+sar(t.hot)+'; ÷ active quotations '+sar(k.o.ha[h])+' = <b>'+pc(hp.tgt)+'</b></div>'
       +'<div><span>Award, Invoice</span> = annual SE targets (target file), ÷ 12 per month</div></div>';
-    ex='<h4>Worked example — KSA '+yr+'</h4><ol>'
+    ex='<h4>Worked example — '+esc(k.name)+' '+yr+'</h4><ol>'
       +'<li>Hit ratio = Award '+sar(tvaSum(k.o.awd))+' ÷ Quotations '+sar(tvaSum(k.o.quo))+' = <b>'+pc(hit)+'</b>.</li>'
       +'<li>Quotation target = '+sar(t.awd)+' ÷ '+pc(hit)+' = <b>'+sar(t.quo)+'</b> a year ('+sar(t.quo/12)+' a month).</li>'
       +'<li>HP → Award target = 2 × '+pc(hit)+' = <b>'+pc(t.hcv)+'</b>. Actual: '+pc(cv.act)+' of the HP at each month end was awarded within 3 months ('+sar(tvaCalc(k,'haw').act)+' per month end).</li>'
@@ -2163,7 +2173,7 @@ function tvaNote(M){
     ['Invoice','Invoiced sales.','SAP sales (ZDSAL) by month.','Cumulative YTD.','Annual SE invoice target ÷ 12 per month.'],
     ['Hit ratio','Supporting figure, no target.','Award ÷ Quotation (as above), '+yr+' YTD, for each SE, team and KSA separately (Power BI “Success Rate”).','YTD.','Used to set the Quotation, HP → Award and Quo → HP targets.']
   ];
-  return tg+'<div class="tva-note">Cells: <b>achievement %</b> = actual ÷ target, with actual / target underneath, '+yr+' YTD to '+last+'. Green ≥ 100%, amber 75–99%, red &lt; 75%. * = derived target. SEs without a row in the target file have no targets.'
+  return tg+'<div class="tva-note"><b>Achievement %</b> = actual ÷ target, '+yr+' YTD to '+last+'. Green ≥ 100%, amber 75–99%, red &lt; 75%. SEs without a row in the target file have no targets.'
     +'<details><summary>How every number is built (method, sources, targets)</summary><div class="tva-method">'
     +'<table class="tva-mt"><tr><th>Metric</th><th>What it shows</th><th>Source &amp; filters</th><th>Actual</th><th>Target</th></tr>'
     +rows.map(function(r){return '<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td><td>'+r[4]+'</td></tr>';}).join('')
@@ -2218,60 +2228,109 @@ function tvaTrendChart(id,series,k,mode){
       tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+(c.raw==null?'–':c.raw+unit);}}}},
     scales:{x:{ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{font:{size:10},callback:function(v){return v+unit;}}}}}});
 }
+// ---- Chart panel (replaces the end-number grid) ----
+function tvaQtrAch(list){ // cumulative actual ÷ annual target by quarter, prior + current year (like "Target achievement by quarter")
+  var cut=cutoffMonth(),cy=parseInt(cut.slice(0,4)),cm=parseInt(cut.slice(5)),yrs=[String(cy-1),String(cy)];
+  var at={},it={},A={},I={};
+  list.forEach(function(s){var d=seData(s);
+    yrs.forEach(function(y){at[y]=(at[y]||0)+((s.award_tgt||{})[y]||0);it[y]=(it[y]||0)+((s.inv_tgt||{})[y]||0);});
+    Object.keys(d.award).forEach(function(m){A[m]=(A[m]||0)+(d.award[m]||0);});
+    Object.keys(d.inv).forEach(function(m){I[m]=(I[m]||0)+(d.inv[m]||0);});});
+  var lab=[],ap=[],ip=[],yr=[];
+  [3,6,9,12].forEach(function(e){yrs.forEach(function(y){
+    if(parseInt(y)===cy&&e-2>cm)return;
+    var ca=0,ci=0;for(var k=1;k<=e;k++){var key=y+'-'+(k<10?'0':'')+k;ca+=A[key]||0;ci+=I[key]||0;}
+    lab.push('Q'+(e/3)+' '+y.slice(2));yr.push(y);
+    ap.push(at[y]?Math.round(ca/at[y]*100):null);ip.push(it[y]?Math.round(ci/it[y]*100):null);});});
+  return {lab:lab,ap:ap,ip:ip,yr:yr,cy:String(cy)};
+}
+function tvaKpi(lab,val,sub,cls){return '<div class="tva-kpi"><div class="tva-kl">'+lab+'</div><div class="tva-kv '+(cls||'')+'">'+val+'</div><div class="tva-ks">'+sub+'</div></div>';}
+function tvaPanelHtml(px,opts,sel){
+  return '<div class="tva-pick"><label>Show</label><select id="'+px+'-pick">'+opts.map(function(o){return '<option value="'+escAttr(o.v)+'"'+(o.v===sel?' selected':'')+'>'+esc(o.l)+'</option>';}).join('')+'</select></div>'
+    +'<div class="tva-kpis" id="'+px+'-kpis"></div>'
+    +'<div class="chart-row c2">'
+    +'<div class="chart-box"><h3>Quotation — monthly vs target</h3><div class="chart-desc">Bars = quotations issued each month (excl. all 15%). Line = monthly target (Award target ÷ hit ratio ÷ 12). SAR M.</div><canvas id="'+px+'-quo"></canvas></div>'
+    +'<div class="chart-box"><h3>Award &amp; Invoice — target achievement by quarter</h3><div class="chart-desc">Cumulative actual ÷ annual target. Prior year lighter, current year darker.</div><canvas id="'+px+'-ai"></canvas></div>'
+    +'</div><div class="chart-row c2">'
+    +'<div class="chart-box"><h3>Quo → HP % — monthly</h3><div class="chart-desc">HP ÷ active quotations (30/50/70%) at each month end. Dashed = target.</div><canvas id="'+px+'-qhp"></canvas></div>'
+    +'<div class="chart-box"><h3>HP → Award % — monthly</h3><div class="chart-desc">HP at each month end awarded within 3 months. Dashed = target. Shown to the last month end with a full 3-month window.</div><canvas id="'+px+'-hpa"></canvas></div>'
+    +'</div>';
+}
+function tvaPct(v){return v==null?'–':(v*100).toFixed(1)+'%';}
+function tvaDraw(px,e,ref,refName){
+  var ms=tvaMonths(),lab=ms.map(mLabel),t=e.t,h=tvaHi(),ci=tvaCi(),hit=tvaHit(e.o);
+  var rq=tvaCalc(e,'quo'),ra=tvaCalc(e,'awd'),ri=tvaCalc(e,'inv'),rp=tvaCalc(e,'hotp'),rh=tvaCalc(e,'hawp');
+  function ach(r){return r.pct==null?'–':Math.round(r.pct*100)+'%';}
+  document.getElementById(px+'-kpis').innerHTML=
+     tvaKpi('Hit ratio',tvaPct(hit),sar(tvaSum(e.o.awd))+' ÷ '+sar(tvaSum(e.o.quo)),'')
+    +tvaKpi('Quotation',ach(rq),sar(rq.act)+' / '+sar(rq.tgt),tvaCls(rq.pct))
+    +tvaKpi('Award',ach(ra),sar(ra.act)+' / '+sar(ra.tgt),tvaCls(ra.pct))
+    +tvaKpi('Invoice',ach(ri),sar(ri.act)+' / '+sar(ri.tgt),tvaCls(ri.pct))
+    +tvaKpi('Quo → HP %',tvaPct(rp.act),'target '+tvaPct(rp.tgt),tvaCls(rp.pct))
+    +tvaKpi('HP → Award %',tvaPct(rh.act),'target '+tvaPct(rh.tgt),tvaCls(rh.pct));
+  var M1=function(v){return v==null?null:+(v/1e6).toFixed(1);},P=function(v){return v==null?null:+(v*100).toFixed(1);};
+  var lineOpt=function(unit){return {responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:14}},
+    tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+(c.raw==null?'–':c.raw+unit);}}}},
+    scales:{x:{ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{font:{size:10},callback:function(v){return v+unit;}}}}};};
+  // Quotation monthly
+  var ctx=getCtx(px+'-quo');
+  if(ctx){var qt=t&&t.quo?t.quo/12:null;
+    _charts[px+'-quo']=new Chart(ctx,{type:'bar',data:{labels:lab,datasets:[
+      {type:'bar',label:'Quotations',data:e.o.quo.map(M1),backgroundColor:'#1f5fd6',order:2,
+        datalabels:{display:true,anchor:'end',align:'top',font:{size:9,weight:'bold'},color:'#333',formatter:function(v){return v?v.toFixed(0):'';}}},
+      {type:'line',label:'Target'+(qt?' ('+sar(qt)+'/month)':''),data:ms.map(function(){return M1(qt);}),borderColor:'#c0392b',borderDash:[6,4],borderWidth:2,pointRadius:0,fill:false,order:1}
+    ]},options:lineOpt('M')});}
+  // Award & Invoice by quarter
+  ctx=getCtx(px+'-ai');
+  if(ctx){var q=tvaQtrAch(e.list),dl={display:function(c){return c.dataset.data[c.dataIndex]>0;},anchor:'end',align:'top',font:{size:9,weight:'bold'},color:'#333',formatter:function(v){return v?v+'%':'';}};
+    _charts[px+'-ai']=new Chart(ctx,{type:'bar',data:{labels:q.lab,datasets:[
+      Object.assign({label:'Award tgt %',data:q.ap,backgroundColor:q.yr.map(function(y){return y===q.cy?C.awd26:C.awd25;}),datalabels:dl},BAR_TIGHT),
+      Object.assign({label:'Invoice tgt %',data:q.ip,backgroundColor:q.yr.map(function(y){return y===q.cy?C.inv26:C.inv25;}),datalabels:dl},BAR_TIGHT)
+    ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}},grid:yoyGrid},y:{beginAtZero:true,ticks:{callback:function(v){return v+'%';}}}}}});}
+  // Quo -> HP % monthly
+  function rateChart(id,k){
+    var c=getCtx(id);if(!c)return;var r=tvaCalc(e,k),ds=[
+      {label:e.name+' actual',data:r.ma.map(P),borderColor:'#1f5fd6',backgroundColor:'#1f5fd6',borderWidth:2.5,pointRadius:3,tension:0.25,spanGaps:true,
+        datalabels:{display:function(x){return x.dataset.data[x.dataIndex]!=null;},align:'top',font:{size:9,weight:'bold'},color:'#1f5fd6',formatter:function(v){return v+'%';}}},
+      {label:e.name+' target',data:r.mt.map(P),borderColor:'#c0392b',borderDash:[6,4],borderWidth:2,pointRadius:0,spanGaps:true}];
+    if(ref){var rr=tvaCalc(ref,k);ds.push({label:refName+' actual',data:rr.ma.map(P),borderColor:'#141b24',borderWidth:1.5,pointRadius:2,tension:0.25,spanGaps:true});}
+    _charts[id]=new Chart(c,{type:'line',data:{labels:lab,datasets:ds},options:lineOpt('%')});
+  }
+  rateChart(px+'-qhp','hotp');rateChart(px+'-hpa','hawp');
+}
 var TVA_COLORS=['#1f5fd6','#b06f10','#0f6640','#8e44ad','#c0392b','#16a085','#7f8c8d'];
 
 // ---- KSA vs Team (Trends tab; EVP / operations only) ----
 function renderTVAKsa(){
   var root=document.getElementById('tva-ksa');if(!root)return;
   if(MGR_TEAMS){root.style.display='none';return;}
-  var M=tvaModel(),k=TVA.metric,lab=tvaMeta(k).lab;
-  if(!TVA.ksaTeam||!M.teams.some(function(t){return t.name===TVA.ksaTeam;}))TVA.ksaTeam=M.teams.length?M.teams[0].name:null;
-  var rows=[M.ksa].concat(M.teams);
-  root.innerHTML='<div class="tva-wrap"><div class="tva-head"><h2>KSA vs Team — Target vs Actual<span>'+tvaYear()+' YTD · click a metric or a team</span></h2></div>'
-    +tvaSegHtml()
-    +'<div class="tva-scroll"><table class="tva-grid">'+tvaGridHead('Team')
-    +rows.map(function(e,i){return '<tr class="'+(i===0?'tva-tot':'tva-click')+(e.name===TVA.ksaTeam?' tva-sel':'')+'" data-tvat="'+(i?escAttr(e.name):'')+'"><td>'+esc(e.name)+'</td>'+TVA_M.map(function(m){return tvaCell(e,m.k);}).join('')+'</tr>';}).join('')
-    +'</table></div>'
-    +'<div class="chart-row c2">'
-    +'<div class="chart-box"><h3>Target vs Actual by team — '+lab+'</h3><div class="chart-desc">'+(tvaMeta(k).kind==='rate'?'Rate % (KSA included).':'SAR M, YTD. Label = achievement %.')+'</div><canvas id="ch-tva-teams"></canvas></div>'
-    +'<div class="chart-box"><h3>KSA vs '+esc(TVA.ksaTeam||'')+' — '+lab+' monthly</h3><div class="chart-desc">'+(tvaMeta(k).kind==='rate'?'Solid = actual, dashed = target.':(k==='hot'||k==='haw'?'Achievement % of target by month.':'Cumulative achievement % of target (pro-rated).'))+'</div>'
-    +'<select id="tva-ksa-team" style="font-family:inherit;font-size:12px;height:28px;margin-bottom:8px">'+M.teams.map(function(t){return '<option'+(t.name===TVA.ksaTeam?' selected':'')+'>'+esc(t.name)+'</option>';}).join('')+'</select>'
-    +'<canvas id="ch-tva-ksa-trend"></canvas></div>'
-    +'</div>'+tvaNote(M)+'</div>';
-  tvaWire(root,renderTVAKsa);
-  root.querySelectorAll('tr[data-tvat]').forEach(function(tr){var t=tr.getAttribute('data-tvat');if(t)tr.addEventListener('click',function(){TVA.ksaTeam=t;renderTVAKsa();});});
-  document.getElementById('tva-ksa-team').addEventListener('change',function(){TVA.ksaTeam=this.value;renderTVAKsa();});
-  tvaBarChart('ch-tva-teams',(tvaMeta(k).kind==='rate'?[M.ksa]:[]).concat(M.teams),k,false);
-  var team=M.teams.filter(function(t){return t.name===TVA.ksaTeam;})[0];
-  var ser=[{name:'KSA',e:M.ksa,color:'#141b24',w:3}];if(team)ser.push({name:team.name,e:team,color:'#1f5fd6'});
-  tvaTrendChart('ch-tva-ksa-trend',ser,k,'pct');
+  var M=tvaModel(),opts=[{v:'KSA',l:'KSA'}].concat(M.teams.map(function(t){return {v:t.name,l:t.name};}));
+  if(!TVA.ksaTeam||!opts.some(function(o){return o.v===TVA.ksaTeam;}))TVA.ksaTeam='KSA';
+  var e=TVA.ksaTeam==='KSA'?M.ksa:M.teams.filter(function(t){return t.name===TVA.ksaTeam;})[0];
+  root.innerHTML='<div class="tva-wrap"><div class="tva-head"><h2>KSA vs Team — Target vs Actual<span>'+tvaYear()+' YTD</span></h2></div>'
+    +tvaPanelHtml('tvk',opts,TVA.ksaTeam)+tvaNote(M,e)+'</div>';
+  document.getElementById('tvk-pick').addEventListener('change',function(){TVA.ksaTeam=this.value;renderTVAKsa();});
+  tvaDraw('tvk',e,e===M.ksa?null:M.ksa,'KSA');
 }
 
 // ---- Team vs Individual (Team Summary tab; managers see only their team) ----
 function renderTVATeam(){
   var root=document.getElementById('tva-team');if(!root)return;
-  var M=tvaModel(),k=TVA.metric,lab=tvaMeta(k).lab;
+  var M=tvaModel();
   var teams=M.teams.filter(function(t){return !MGR_TEAMS||MGR_TEAMS.indexOf(t.name)>=0;});
   if(!teams.length){root.innerHTML='';return;}
   if(!TVA.team||!teams.some(function(t){return t.name===TVA.team;}))TVA.team=teams[0].name;
   var T=teams.filter(function(t){return t.name===TVA.team;})[0];
-  var ses=T.ses.filter(function(s){return STATE.showInactive||!s.inactive||tvaSum(s.o.awd)>0;})
-    .sort(function(a,b){var ra=tvaCalc(a,k),rb=tvaCalc(b,k);return (rb.act||0)-(ra.act||0);});
+  var ses=T.ses.filter(function(s){return STATE.showInactive||!s.inactive||tvaSum(s.o.awd)>0;}).sort(function(a,b){return a.name<b.name?-1:1;});
+  var opts=[{v:'__team',l:T.name+' (team)'}].concat(ses.map(function(s){return {v:s.name,l:s.name+(s.t?'':' (no target)')};}));
+  if(!TVA.teamSel||!opts.some(function(o){return o.v===TVA.teamSel;}))TVA.teamSel='__team';
+  var e=TVA.teamSel==='__team'?T:ses.filter(function(s){return s.name===TVA.teamSel;})[0];
   var pick=teams.length>1?'<select id="tva-team-pick">'+teams.map(function(t){return '<option'+(t.name===TVA.team?' selected':'')+'>'+esc(t.name)+'</option>';}).join('')+'</select>':'';
   root.innerHTML='<div class="tva-wrap"><div class="tva-head"><h2>'+esc(T.name)+' — Team vs Individual, Target vs Actual<span>'+tvaYear()+' YTD</span></h2>'+pick+'</div>'
-    +tvaSegHtml()
-    +'<div class="tva-scroll"><table class="tva-grid">'+tvaGridHead('Engineer')
-    +[T].concat(ses).map(function(e,i){return '<tr class="'+(i===0?'tva-tot':'')+'"><td>'+esc(i===0?e.name+' (team)':e.name)+(i>0&&!e.t?' <span class="tva-sub" style="display:inline">no target</span>':'')+'</td>'+TVA_M.map(function(m){return tvaCell(e,m.k);}).join('')+'</tr>';}).join('')
-    +'</table></div>'
-    +'<div class="chart-row c2">'
-    +'<div class="chart-box"><h3>SE Target vs Actual — '+lab+'</h3><div class="chart-desc">'+(tvaMeta(k).kind==='rate'?'Rate % per SE (team first).':'SAR M, YTD. Label = achievement %.')+'</div><div style="position:relative"><canvas id="ch-tva-ses"></canvas></div></div>'
-    +'<div class="chart-box"><h3>'+esc(T.name)+' — '+lab+' monthly</h3><div class="chart-desc">'+(tvaMeta(k).kind==='rate'?'Solid = actual, dashed = target.':(tvaMeta(k).kind==='stock'?'Month-end HOT (bars) vs target (dashed), SAR M.':(k==='haw'?'HOT at each month end awarded within 3 months (bars) vs target (dashed), SAR M.':'Cumulative actual (bars) vs pro-rated target (dashed), SAR M.')))+'</div><canvas id="ch-tva-team-trend"></canvas></div>'
-    +'</div>'+tvaNote(M)+'</div>';
-  tvaWire(root,renderTVATeam);
-  var p=document.getElementById('tva-team-pick');if(p)p.addEventListener('change',function(){TVA.team=this.value;renderTVATeam();});
-  var bars=(tvaMeta(k).kind==='rate'?[{name:T.name+' (team)',o:T.o,t:T.t}]:[]).concat(ses);
-  tvaBarChart('ch-tva-ses',bars,k,true);
-  tvaTrendChart('ch-tva-team-trend',[{name:T.name,e:T,color:'#1f5fd6'}],k,'abs');
+    +tvaPanelHtml('tvt',opts,TVA.teamSel)+tvaNote(M,e)+'</div>';
+  var p=document.getElementById('tva-team-pick');if(p)p.addEventListener('change',function(){TVA.team=this.value;TVA.teamSel='__team';renderTVATeam();});
+  document.getElementById('tvt-pick').addEventListener('change',function(){TVA.teamSel=this.value;renderTVATeam();});
+  tvaDraw('tvt',e,e===T?null:T,T.name+' (team)');
 }
 
 function startReport(session){
