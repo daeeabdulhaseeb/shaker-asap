@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1793539534"></script>
+<script src="auth.js?v=1793681559"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -299,7 +299,6 @@ table.tva-mt{width:100%;border-collapse:collapse;margin:6px 0;font-size:10.5px}
     <div class="seg" id="seg-channel">
       <button data-ch="project" class="on">Projects</button>
       <button data-ch="acs">ACS</button>
-      <button data-ch="all">All</button>
     </div>
     <div class="dropdown" id="dd-team">
       <button class="dd-btn" type="button">All teams <span class="dd-caret">&#9662;</span></button>
@@ -413,14 +412,14 @@ function updateMethodBox(){
   var det=document.getElementById('explainer-detail');
   box.innerHTML='<b>SE Composite Score — universal formula</b><br><br>'
     +'<b>15%</b> Quotation value · <b>15%</b> Q→Hot Projects rate · <b>20%</b> Award value · <b>30%</b> HP→Award rate · <b>20%</b> Invoiced value<br><br>'
-    +'Each component normalized 0–100 across all active peers, prorated for tenure (2-month headstart for new joiners).'
+    +'Each component normalized 0–100 against active peers in the same channel (Projects or ACS — the two are scored and ranked separately), prorated for tenure (2-month headstart for new joiners).'
     +'<br><br><a href="javascript:void(0)" id="toggle-explainer" style="color:var(--blue);font-weight:600;text-decoration:none">▸ How is the score calculated?</a>';
   det.innerHTML='<b>Step 1 — Cumulative total.</b> For value metrics (quo, award, invoiced), sum all SAR from start through latest month. Q→HP uses the latest month\'s conversion rate. HP→Award uses cumulative ratio.<br><br>'
     +'<b>Step 2 — Adjust for tenure.</b> Divide by active months minus 2-month grace period (only applies if SE joined within the current view window).<br><br>'
-    +'<b>Step 3 — Normalize against peers.</b> Capped min-max (2nd lowest to 2nd highest) scale to 0–100 across all active SEs.<br><br>'
+    +'<b>Step 3 — Normalize against peers.</b> Capped min-max (2nd lowest to 2nd highest) scale to 0–100 across active SEs of the same channel (Projects teams: Central / East / West Projects, Direct Channel; ACS: ACS-CR / ER / WR).<br><br>'
     +'<b>Step 4 — Weight and sum.</b><br>'
     +'<span style="display:block;margin:4px 0 6px 12px;font-size:11px">Score = 15% × Quo + 15% × Q→HP + 20% × Award + 30% × HP→Awd + 20% × Invoiced</span>'
-    +'Maximum 100. Score of ~50 = middle of the peer group.<br><br>'
+    +'Maximum 100. Score of ~50 = middle of the SE\'s channel. Projects and ACS scores are not comparable with each other.<br><br>'
     +'<b>Limitations:</b> Relative to peers (shifts as the pool changes). Does not measure quota attainment. One outlier\'s impact is capped (2nd-highest/2nd-lowest normalization).';
   document.getElementById('score-explainer').style.display='none';
   document.getElementById('toggle-explainer').addEventListener('click',function(){
@@ -437,8 +436,8 @@ function _sbkId(name){return 'ch-sbk-'+name.replace(/[^a-zA-Z0-9]/g,'_');}
 function seScoreBreakdown(se, allPeers){
   var sp=scoreParts(se, allPeers);
   var f=sp.formula, pc=sp.peerCount||1;
-  // Compute actual rank position per component (1 = best)
-  var cp=allPeers;
+  // Compute actual rank position per component (1 = best) - within the SE's channel
+  var cp=channelPeers(allPeers,se);
   function rankPos(normArr,myVal){
     var above=normArr.filter(function(v){return v>myVal;}).length;
     return above+1;
@@ -550,7 +549,7 @@ function renderBreakdownTrend(se, allPeers){
     var ttl=Math.round(0.15*qn)+Math.round(0.15*qhN)+Math.round(0.20*an)+Math.round(0.30*haN)+Math.round(0.20*in_);
     seLine.push(ttl);
     quoLine.push(Math.round(qn)); qhpLine.push(Math.round(qhN)); awdLine.push(Math.round(an)); hpaLine.push(Math.round(haN)); invLine.push(Math.round(in_));
-    var ksaSum=0,tmSum=0,tmN=0;allPeers.forEach(function(s2){
+    var ksaSum=0,tmSum=0,tmN=0;cp.forEach(function(s2){
       var q2=nrm2(cpQ,pmS2(s2,'quo')),a2=nrm2(cpA,pmS2(s2,'awd')),i2=nrm2(cpI,pmS2(s2,'inv'));
       var qh2=nrm2(qhAll,(s2.hp_quo_pct||{})[pt.key]||0);
       var hp2n=0,hp2d=0;slice.forEach(function(m2){hp2n+=(s2.award_from_hp||{})[m2]||0;hp2d+=(s2.total_award_hp||{})[m2]||0;});
@@ -558,7 +557,7 @@ function renderBreakdownTrend(se, allPeers){
       var sc2=Math.round(0.15*q2)+Math.round(0.15*qh2)+Math.round(0.20*a2)+Math.round(0.30*ha2)+Math.round(0.20*i2);
       ksaSum+=sc2; if(s2.team===se.team){tmSum+=sc2;tmN++;}
     });
-    ksaLine.push(Math.round(ksaSum/allPeers.length)); teamLine.push(tmN?Math.round(tmSum/tmN):null);
+    ksaLine.push(Math.round(ksaSum/cp.length)); teamLine.push(tmN?Math.round(tmSum/tmN):null);
   }
   // SE vs team avg vs KSA avg only (parameter lines removed, Abdul 28-Oct-2026)
   var lastOf=function(arr){var l=-1;arr.forEach(function(v,k){if(v!=null)l=k;});return l;};
@@ -567,8 +566,8 @@ function renderBreakdownTrend(se, allPeers){
      datalabels:{display:function(c){return seLine[c.dataIndex]!=null;},font:{size:9,weight:'bold'},color:'#141b24',anchor:'end',align:'top',offset:1}},
     {label:'Team avg ('+se.team+')',data:teamLine,borderColor:'#1f5fd6',pointRadius:0,pointHitRadius:8,borderWidth:1.8,borderDash:[6,3],tension:0.3,
      datalabels:{display:function(c){return c.dataIndex===lastOf(teamLine);},font:{size:9,weight:'bold'},color:'#1f5fd6',anchor:'end',align:'right',offset:4,formatter:function(v){return 'Team '+v;}}},
-    {label:'KSA avg',data:ksaLine,borderColor:'#8b96a3',pointRadius:0,pointHitRadius:8,borderWidth:1.8,borderDash:[2,3],tension:0.3,
-     datalabels:{display:function(c){return c.dataIndex===lastOf(ksaLine);},font:{size:9,weight:'bold'},color:'#6b7682',anchor:'end',align:'right',offset:4,formatter:function(v){return 'KSA '+v;}}}
+    {label:channelName(se)+' avg',data:ksaLine,borderColor:'#8b96a3',pointRadius:0,pointHitRadius:8,borderWidth:1.8,borderDash:[2,3],tension:0.3,
+     datalabels:{display:function(c){return c.dataIndex===lastOf(ksaLine);},font:{size:9,weight:'bold'},color:'#6b7682',anchor:'end',align:'right',offset:4,formatter:function(v){return channelName(se)+' '+v;}}}
   ];
   _charts[canvasId]=new Chart(ctx.getContext('2d'),{type:'line',data:{labels:labels,datasets:datasets},
     options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.5,interaction:{mode:'index',intersect:false},layout:{padding:{right:56}},plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:12}},datalabels:{clip:false,formatter:function(v){return v!=null?v:'';}}},
@@ -665,9 +664,13 @@ function isProjectTeam(team){return PROJECT_TEAMS[team]||false;}
 
 // Channel-aware peer pool for normalization: project SEs normalize against
 // project peers, ACS against ACS peers. This keeps the two scales independent.
+// Projects and ACS are scored and ranked separately (Abdul, 3-Nov-2026): an SE is normalised only
+// against peers in the same channel.
 function channelPeers(allPeers, se){
-  return allPeers;
+  var pj=!!isProjectTeam(se.team);
+  return allPeers.filter(function(s){return !!isProjectTeam(s.team)===pj;});
 }
+function channelName(se){return isProjectTeam(se.team)?'Projects':'ACS';}
 
 // Stable normalization pool — ignores channel/team/SE/tenure/type filters.
 // Only excludes inactive + manually excluded SEs. Scores never change with filters.
@@ -751,7 +754,7 @@ function renderTable(){
     }).join('');
     var belowKSA=r.score<avg, belowTeam=r.score<(teamAvg[se.team]||50);
     var tags='';
-    if(belowKSA)tags+='<span class="tag tag-ksa">Below KSA avg</span>';
+    if(belowKSA)tags+='<span class="tag tag-ksa">Below '+(STATE.channel==='acs'?'ACS':'Projects')+' avg</span>';
     else if(belowTeam)tags+='<span class="tag tag-team">Below team avg</span>';
     if(se.join_date)tags+='<span class="tag tag-new">Joined '+se.join_date+'</span>';
     if(se.se_type && se.se_type!=='Unclassified')tags+='<span class="tag tag-'+se.se_type.toLowerCase().replace('-','')+'">'+se.se_type+'</span>';
@@ -1874,7 +1877,7 @@ document.addEventListener('click',function(e){
 
 function renderFullscreenTrend(se){
   var allPeers=SE_DATA.filter(function(s){return STATE.excluded.indexOf(s.se_name)<0&&(!INACTIVE_SES[s.se_name]||STATE.showInactive);});
-  var cp=allPeers;
+  var cp=channelPeers(allPeers,se);
   var ms_=months(); // continuous, chronological
   var HS={quo:2,awd:2,inv:2};
   var labels=[],seLine=[],ksaLine=[],teamLine=[],quoLine=[],qhpLine=[],awdLine=[],hpaLine=[],invLine=[];
@@ -1914,8 +1917,8 @@ function renderFullscreenTrend(se){
      datalabels:{display:true,font:{size:10,weight:'bold'},color:'#141b24',anchor:'end',align:'top',offset:2}},
     {label:'Team avg ('+se.team+')',data:teamLine,borderColor:'#1f5fd6',pointRadius:2,pointBackgroundColor:'#1f5fd6',borderWidth:2,borderDash:[6,3],tension:0.3,
      datalabels:{display:function(c){return c.dataIndex===lastOf(teamLine);},font:{size:10,weight:'bold'},color:'#1f5fd6',anchor:'end',align:'right',offset:6,formatter:function(v){return 'Team '+v;}}},
-    {label:'KSA avg',data:ksaLine,borderColor:'#8b96a3',pointRadius:2,pointBackgroundColor:'#8b96a3',borderWidth:2,borderDash:[2,3],tension:0.3,
-     datalabels:{display:function(c){return c.dataIndex===lastOf(ksaLine);},font:{size:10,weight:'bold'},color:'#6b7682',anchor:'end',align:'right',offset:6,formatter:function(v){return 'KSA '+v;}}}
+    {label:channelName(se)+' avg',data:ksaLine,borderColor:'#8b96a3',pointRadius:2,pointBackgroundColor:'#8b96a3',borderWidth:2,borderDash:[2,3],tension:0.3,
+     datalabels:{display:function(c){return c.dataIndex===lastOf(ksaLine);},font:{size:10,weight:'bold'},color:'#6b7682',anchor:'end',align:'right',offset:6,formatter:function(v){return channelName(se)+' '+v;}}}
   ];
   var ctx=document.getElementById('ch-fs-trend');
   if(_charts['ch-fs-trend']){_charts['ch-fs-trend'].destroy();delete _charts['ch-fs-trend'];}
