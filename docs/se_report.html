@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script src="auth.js?v=1793681559"></script>
+<script src="auth.js?v=1794224801"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Engineer Performance Review — Shaker Group</title>
 <style>
@@ -411,14 +411,14 @@ function updateMethodBox(){
   var box=document.getElementById('method-box');
   var det=document.getElementById('explainer-detail');
   box.innerHTML='<b>SE Composite Score — universal formula</b><br><br>'
-    +'<b>15%</b> Quotation value · <b>15%</b> Q→Hot Projects rate · <b>20%</b> Award value · <b>30%</b> HP→Award rate · <b>20%</b> Invoiced value<br><br>'
+    +'<b>20%</b> Quotation value · <b>20%</b> Award value · <b>30%</b> HP→Award (share of award from hot projects) · <b>30%</b> Invoiced value<br><br>'
     +'Each component normalized 0–100 against active peers in the same channel (Projects or ACS — the two are scored and ranked separately), prorated for tenure (2-month headstart for new joiners).'
     +'<br><br><a href="javascript:void(0)" id="toggle-explainer" style="color:var(--blue);font-weight:600;text-decoration:none">▸ How is the score calculated?</a>';
-  det.innerHTML='<b>Step 1 — Cumulative total.</b> For value metrics (quo, award, invoiced), sum all SAR from start through latest month. Q→HP uses the latest month\'s conversion rate. HP→Award uses cumulative ratio.<br><br>'
+  det.innerHTML='<b>Step 1 — Cumulative total.</b> For value metrics (quo, award, invoiced), sum all SAR from start through latest month. HP→Award uses the cumulative ratio (award from HP ÷ total award).<br><br>'
     +'<b>Step 2 — Adjust for tenure.</b> Divide by active months minus 2-month grace period (only applies if SE joined within the current view window).<br><br>'
     +'<b>Step 3 — Normalize against peers.</b> Capped min-max (2nd lowest to 2nd highest) scale to 0–100 across active SEs of the same channel (Projects teams: Central / East / West Projects, Direct Channel; ACS: ACS-CR / ER / WR).<br><br>'
     +'<b>Step 4 — Weight and sum.</b><br>'
-    +'<span style="display:block;margin:4px 0 6px 12px;font-size:11px">Score = 15% × Quo + 15% × Q→HP + 20% × Award + 30% × HP→Awd + 20% × Invoiced</span>'
+    +'<span style="display:block;margin:4px 0 6px 12px;font-size:11px">Score = 20% × Quo + 20% × Award + 30% × HP→Awd + 30% × Invoiced</span>'
     +'Maximum 100. Score of ~50 = middle of the SE\'s channel. Projects and ACS scores are not comparable with each other.<br><br>'
     +'<b>Limitations:</b> Relative to peers (shifts as the pool changes). Does not measure quota attainment. One outlier\'s impact is capped (2nd-highest/2nd-lowest normalization).';
   document.getElementById('score-explainer').style.display='none';
@@ -443,19 +443,17 @@ function seScoreBreakdown(se, allPeers){
     return above+1;
   }
 
-  // Build component list — universal formula 15/15/20/30/20
+  // Build component list — 20/20/30/30
+  var W=SCORE_W;
   var comps=[
-    {label:'Quotation value',basis:'per-month avg',raw:sar(sp.quoPM)+' SAR/mo',norm:sp.quoN,w:0.15,pts:Math.round(0.15*sp.quoN)},
-    {label:'Q → HP conversion',basis:'latest month',raw:sp.hasHP?(sp.qhpRaw*100).toFixed(1)+'%':'No HP data',norm:sp.qhpN,w:0.15,pts:Math.round(0.15*sp.qhpN)},
-    {label:'Award value',basis:'per-month avg',raw:sar(sp.awdPM)+' SAR/mo',norm:sp.awdN,w:0.20,pts:Math.round(0.20*sp.awdN)},
-    {label:'HP → Award conversion',basis:'cumulative',raw:sp.hasHPA?(sp.hpaRaw*100).toFixed(1)+'%':'No HP data',norm:sp.hpaN,w:0.30,pts:Math.round(0.30*sp.hpaN)},
-    {label:'Invoiced value',basis:'per-month avg',raw:sar(sp.invPM)+' SAR/mo',norm:sp.invN,w:0.20,pts:Math.round(0.20*sp.invN)}
+    {label:'Quotation value',basis:'per-month avg',raw:sar(sp.quoPM)+' SAR/mo',norm:sp.quoN,w:W.quo,pts:Math.round(W.quo*sp.quoN)},
+    {label:'Award value',basis:'per-month avg',raw:sar(sp.awdPM)+' SAR/mo',norm:sp.awdN,w:W.awd,pts:Math.round(W.awd*sp.awdN)},
+    {label:'HP → Award (share of award from HP)',basis:'cumulative',raw:sp.hasHPA?(sp.hpaRaw*100).toFixed(1)+'%':'No HP data',norm:sp.hpaN,w:W.hpa,pts:Math.round(W.hpa*sp.hpaN)},
+    {label:'Invoiced value',basis:'per-month avg',raw:sar(sp.invPM)+' SAR/mo',norm:sp.invN,w:W.inv,pts:Math.round(W.inv*sp.invN)}
   ];
-  var normArrays=[
-    cp.map(function(s){return scoreParts(s,allPeers).quoN;}),cp.map(function(s){return scoreParts(s,allPeers).qhpN;}),
-    cp.map(function(s){return scoreParts(s,allPeers).awdN;}),cp.map(function(s){return scoreParts(s,allPeers).hpaN;}),
-    cp.map(function(s){return scoreParts(s,allPeers).invN;})
-  ];
+  var _all=cp.map(function(s){return scoreParts(s,allPeers);});
+  var normArrays=[_all.map(function(x){return x.quoN;}),_all.map(function(x){return x.awdN;}),
+    _all.map(function(x){return x.hpaN;}),_all.map(function(x){return x.invN;})];
   comps.forEach(function(c,i){c.rankPos=rankPos(normArrays[i],c.norm);});
 
   var totalPts=comps.reduce(function(s,c){return s+c.pts;},0);
@@ -464,7 +462,7 @@ function seScoreBreakdown(se, allPeers){
   var watchItems=comps.filter(function(c){return c.raw==='No HP data';});
 
   // LEFT: score breakdown
-  var left='<div style="font-size:13px;font-weight:700;margin:0 0 10px">Score formula (15/15/20/30/20)</div>';
+  var left='<div style="font-size:13px;font-weight:700;margin:0 0 10px">Score formula (20/20/30/30)</div>';
   comps.forEach(function(c,i){
     var barW=Math.max(2,Math.round(c.norm));
     left+='<div style="margin:0 0 8px;padding:7px 10px;background:var(--bg);border-radius:6px">'
@@ -501,7 +499,7 @@ function seScoreBreakdown(se, allPeers){
   if(weakest.label.indexOf('Invoiced')>=0) recText='Focus on closing invoiced pipeline — quotation and award generation are relatively strong.';
   else if(weakest.label.indexOf('Award')>=0&&weakest.label.indexOf('HP')<0) recText='Win rate needs attention — pipeline is healthy but conversion to awards is below peers.';
   else if(weakest.label.indexOf('Quo')>=0&&weakest.label.indexOf('HP')<0) recText='Pipeline generation is the bottleneck — need more quotation activity to feed downstream conversion.';
-  else if(weakest.label.indexOf('HP')>=0) recText='Hot project conversion is low — quotes are being submitted but not progressing to the hot stage. Review quote quality and follow-up process.';
+  else if(weakest.label.indexOf('HP')>=0) recText='Little of the award is coming through hot projects — qualify more quotes to the HP stage (50/70%) and push them to award.';
   else recText='No single metric stands out as a drag. Focus on maintaining consistent output across all components.';
   right+='<div style="padding:7px 10px;background:var(--bg);border-radius:6px;margin:8px 0 0;border-left:3px solid var(--ink-faint)">'
     +'<div style="font-size:11px;font-weight:600;color:var(--ink);margin:0 0 2px">Recommendation</div>'
@@ -525,53 +523,21 @@ function renderBreakdownTrend(se, allPeers){
   var ctx=document.getElementById(canvasId);
   if(!ctx)return;
   if(_charts[canvasId]){_charts[canvasId].destroy();delete _charts[canvasId];}
-  var yoy=yoyMonths(months()), ms_=months();
-  var teamPeers=allPeers.filter(function(s){return s.team===se.team;});
-  var cp=channelPeers(allPeers,se);
-  var HS={quo:2,awd:2,inv:2};
-  var labels=[],seLine=[],ksaLine=[],teamLine=[],quoLine=[],qhpLine=[],awdLine=[],hpaLine=[],invLine=[];
-  for(var i=0;i<yoy.length;i++){
-    var pt=yoy[i]; labels.push(pt.label);
-    var slice=ms_.filter(function(m){return m<=pt.key;});
-    if(!slice.length){seLine.push(null);ksaLine.push(null);teamLine.push(null);quoLine.push(null);qhpLine.push(null);awdLine.push(null);hpaLine.push(null);invLine.push(null);continue;}
-    function totalS2(s,metric){var d=seData(s),v=0,k=metric==='awd'?'award':metric==='inv'?'inv':'quo';slice.forEach(function(m){v+=d[k][m]||0;});return v;}
-    function amS2(s,hs){var jd=s.join_date;if(!jd)return Math.max(1,slice.length-hs);var y=parseInt(jd.slice(0,4)),m=parseInt(jd.slice(5,7)),last=slice[slice.length-1],ly=parseInt(last.slice(0,4)),lm=parseInt(last.slice(5)),active=(ly-y)*12+(lm-m)+1;return Math.max(1,(active<1?0:active)-hs);}
-    function pmS2(s,metric){var t=amS2(s,HS[metric]);return t>0?totalS2(s,metric)/t:0;}
-    function nrm2(a,v){return wnorm(a,v);}
-    // Per-parameter norms for this slice
-    var cpQ=cp.map(function(x){return pmS2(x,'quo');}),cpA=cp.map(function(x){return pmS2(x,'awd');}),cpI=cp.map(function(x){return pmS2(x,'inv');});
-    var qn=nrm2(cpQ,pmS2(se,'quo')),an=nrm2(cpA,pmS2(se,'awd')),in_=nrm2(cpI,pmS2(se,'inv'));
-    var qhpAtM=(se.hp_quo_pct||{})[pt.key]||0;
-    var qhAll=cp.map(function(x){return(x.hp_quo_pct||{})[pt.key]||0;});
-    var haAll=cp.map(function(x){var n2=0,d2=0;slice.forEach(function(m2){n2+=(x.award_from_hp||{})[m2]||0;d2+=(x.total_award_hp||{})[m2]||0;});return d2>0?n2/d2:0;});
-    var hpaSe=0,hpaSd=0;slice.forEach(function(m2){hpaSe+=(se.award_from_hp||{})[m2]||0;hpaSd+=(se.total_award_hp||{})[m2]||0;});
-    var qhN=nrm2(qhAll,qhpAtM),haN=nrm2(haAll,hpaSd>0?hpaSe/hpaSd:0);
-    var ttl=Math.round(0.15*qn)+Math.round(0.15*qhN)+Math.round(0.20*an)+Math.round(0.30*haN)+Math.round(0.20*in_);
-    seLine.push(ttl);
-    quoLine.push(Math.round(qn)); qhpLine.push(Math.round(qhN)); awdLine.push(Math.round(an)); hpaLine.push(Math.round(haN)); invLine.push(Math.round(in_));
-    var ksaSum=0,tmSum=0,tmN=0;cp.forEach(function(s2){
-      var q2=nrm2(cpQ,pmS2(s2,'quo')),a2=nrm2(cpA,pmS2(s2,'awd')),i2=nrm2(cpI,pmS2(s2,'inv'));
-      var qh2=nrm2(qhAll,(s2.hp_quo_pct||{})[pt.key]||0);
-      var hp2n=0,hp2d=0;slice.forEach(function(m2){hp2n+=(s2.award_from_hp||{})[m2]||0;hp2d+=(s2.total_award_hp||{})[m2]||0;});
-      var ha2=nrm2(haAll,hp2d>0?hp2n/hp2d:0);
-      var sc2=Math.round(0.15*q2)+Math.round(0.15*qh2)+Math.round(0.20*a2)+Math.round(0.30*ha2)+Math.round(0.20*i2);
-      ksaSum+=sc2; if(s2.team===se.team){tmSum+=sc2;tmN++;}
-    });
-    ksaLine.push(Math.round(ksaSum/cp.length)); teamLine.push(tmN?Math.round(tmSum/tmN):null);
-  }
+  // Month-by-month series (no YoY pairing), same engine as the table -> last point = table score
+  var S=scoreSeries(se,allPeers), labels=S.labels, seLine=S.se, teamLine=S.team, ksaLine=S.ch;
   // SE vs team avg vs KSA avg only (parameter lines removed, Abdul 28-Oct-2026)
   var lastOf=function(arr){var l=-1;arr.forEach(function(v,k){if(v!=null)l=k;});return l;};
   var datasets=[
     {label:se.se_name,data:seLine,borderColor:'#141b24',pointRadius:2.5,pointBackgroundColor:'#141b24',borderWidth:2.5,tension:0.3,
      datalabels:{display:function(c){return seLine[c.dataIndex]!=null;},font:{size:9,weight:'bold'},color:'#141b24',anchor:'end',align:'top',offset:1}},
     {label:'Team avg ('+se.team+')',data:teamLine,borderColor:'#1f5fd6',pointRadius:0,pointHitRadius:8,borderWidth:1.8,borderDash:[6,3],tension:0.3,
-     datalabels:{display:function(c){return c.dataIndex===lastOf(teamLine);},font:{size:9,weight:'bold'},color:'#1f5fd6',anchor:'end',align:'right',offset:4,formatter:function(v){return 'Team '+v;}}},
+     datalabels:{display:function(c){return c.dataIndex===lastOf(teamLine);},font:{size:9,weight:'bold'},color:'#1f5fd6',anchor:'end',align:-25,offset:4,formatter:function(v){return 'Team '+v;}}},
     {label:channelName(se)+' avg',data:ksaLine,borderColor:'#8b96a3',pointRadius:0,pointHitRadius:8,borderWidth:1.8,borderDash:[2,3],tension:0.3,
-     datalabels:{display:function(c){return c.dataIndex===lastOf(ksaLine);},font:{size:9,weight:'bold'},color:'#6b7682',anchor:'end',align:'right',offset:4,formatter:function(v){return channelName(se)+' '+v;}}}
+     datalabels:{display:function(c){return c.dataIndex===lastOf(ksaLine);},font:{size:9,weight:'bold'},color:'#6b7682',anchor:'end',align:25,offset:4,formatter:function(v){return channelName(se)+' '+v;}}}
   ];
   _charts[canvasId]=new Chart(ctx.getContext('2d'),{type:'line',data:{labels:labels,datasets:datasets},
     options:{responsive:true,maintainAspectRatio:true,aspectRatio:2.5,interaction:{mode:'index',intersect:false},layout:{padding:{right:56}},plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:12}},datalabels:{clip:false,formatter:function(v){return v!=null?v:'';}}},
-    scales:{x:{ticks:{font:{size:8},maxRotation:65},grid:yoyGrid},y:{min:0,max:100,ticks:{font:{size:8},callback:function(v){return v}}}}}});
+    scales:{x:{ticks:{font:{size:8},maxRotation:65},grid:{color:'rgba(0,0,0,0.05)'}},y:{min:0,max:100,ticks:{font:{size:8},callback:function(v){return v}}}}}});
 }
 
 function sar(v){
@@ -682,33 +648,57 @@ function normPool(){
   });
 }
 
-function scoreParts(se,allPeers){
+// Score weights (EVP, Nov-2026): 20% Quotation · 20% Award · 30% HP→Award · 30% Invoiced. Q→HP is no longer scored.
+var SCORE_W={quo:0.20, awd:0.20, hpa:0.30, inv:0.30};
+function totalIn(se,metric,ms){
+  var d=seData(se), map=metric==='quo'?d.quo:metric==='awd'?d.award:d.inv;
+  return ms.reduce(function(s,m){return s+(map[m]||0);},0);
+}
+function activeMonthsIn(se,headstart,ms){
+  var jd=se.join_date?new Date(se.join_date):new Date(2025,0,1);
+  var active=ms.filter(function(m){return new Date(m+'-01')>=jd;}).length;
+  var hs=headstart||0;
+  if(hs>0 && ms.length>0){
+    var rampEnd=new Date(jd.getFullYear(), jd.getMonth()+hs, 1);
+    if(rampEnd<=new Date(ms[0]+'-01')) hs=0;      // fully ramped before this window
+  }
+  return Math.max(1, active-hs);
+}
+// One scoring engine for the table, the breakdown and every trend chart: score of `se` over months `ms`
+// (default = the selected period), normalised against its channel peers over the same months.
+function scorePartsFor(se,allPeers,ms){
+  ms=ms||months();
   var HS={quo:2, awd:2, inv:2};
-  // Normalize value metrics within the SE's own channel pool
   var cp=channelPeers(allPeers,se);
-  function perMo(s,metric){var t=activeMonths(s,HS[metric]);return t>0?total(s,metric)/t:0;}
-  var invA=cp.map(function(s){return perMo(s,'inv');});
-  var awdA=cp.map(function(s){return perMo(s,'awd');});
-  var quoA=cp.map(function(s){return perMo(s,'quo');});
-  function norm(a,v){return wnorm(a,v);}
-  var qi=perMo(se,'quo'), ai=perMo(se,'awd'), ii=perMo(se,'inv');
-  var qN=norm(quoA,qi), aN=norm(awdA,ai), iN=norm(invA,ii);
-
-  // Universal formula: 15% Quo, 15% Q→HP, 20% Award, 30% HP→Award, 20% Invoiced
-  var ms_=months();
-  function latestPct(s){var obj=s.hp_quo_pct||{};for(var i=ms_.length-1;i>=0;i--){if(obj[ms_[i]]!=null)return obj[ms_[i]];}return 0;}
-  function sumField(s,field){var obj=s[field]||{},v=0;ms_.forEach(function(m){v+=obj[m]||0;});return v;}
+  function perMo(s,metric){var t=activeMonthsIn(s,HS[metric],ms);return t>0?totalIn(s,metric,ms)/t:0;}
+  function sumField(s,field){var obj=s[field]||{},v=0;ms.forEach(function(m){v+=obj[m]||0;});return v;}
   function hpaRatio(s){var n=sumField(s,'award_from_hp'),d=sumField(s,'total_award_hp');return d>0?n/d:0;}
-  var qhpR=latestPct(se), hpaR=hpaRatio(se);
-  var qhpAll=cp.map(function(s){return latestPct(s);});
-  var hpaAll=cp.map(function(s){return hpaRatio(s);});
-  var qhpN=norm(qhpAll,qhpR), hpaN=norm(hpaAll,hpaR);
-  var hasHP=Object.keys(se.hp_quo_pct||{}).length>0;
-  var hasHPA=sumField(se,'award_from_hp')>0;
-  var score=Math.round(0.15*qN)+Math.round(0.15*qhpN)+Math.round(0.20*aN)+Math.round(0.30*hpaN)+Math.round(0.20*iN);
-  return {quoPM:qi, awdPM:ai, invPM:ii, quoN:qN, awdN:aN, invN:iN,
-          qhpRaw:qhpR, hpaRaw:hpaR, hasHP:hasHP, hasHPA:hasHPA,
-          qhpN:qhpN, hpaN:hpaN, peerCount:cp.length, score:score};
+  var norm=wnorm;
+  var qi=perMo(se,'quo'), ai=perMo(se,'awd'), ii=perMo(se,'inv'), hpaR=hpaRatio(se);
+  var qN=norm(cp.map(function(s){return perMo(s,'quo');}),qi);
+  var aN=norm(cp.map(function(s){return perMo(s,'awd');}),ai);
+  var iN=norm(cp.map(function(s){return perMo(s,'inv');}),ii);
+  var hpaN=norm(cp.map(function(s){return hpaRatio(s);}),hpaR);
+  var hasHPA=sumField(se,'total_award_hp')>0;
+  var score=Math.round(SCORE_W.quo*qN)+Math.round(SCORE_W.awd*aN)+Math.round(SCORE_W.hpa*hpaN)+Math.round(SCORE_W.inv*iN);
+  return {quoPM:qi, awdPM:ai, invPM:ii, quoN:qN, awdN:aN, invN:iN, hpaRaw:hpaR, hasHPA:hasHPA,
+          hpaN:hpaN, peerCount:cp.length, score:score};
+}
+function scoreParts(se,allPeers){ return scorePartsFor(se,allPeers,months()); }
+// Score trend for one SE: month by month (chronological), cumulative from the start of the selected period.
+// Returns {labels, se:[], team:[], ch:[]} - the last point equals the score shown in the table.
+function scoreSeries(se,allPeers){
+  var ms=months(), cp=channelPeers(allPeers,se), tp=cp.filter(function(s){return s.team===se.team;});
+  var out={keys:[],labels:[],se:[],team:[],ch:[]};
+  ms.forEach(function(m,i){
+    var slice=ms.slice(0,i+1);
+    var sc={};cp.forEach(function(s){sc[s.se_name]=scorePartsFor(s,allPeers,slice).score;});
+    var avg=function(arr){return arr.length?Math.round(arr.reduce(function(a,s){return a+sc[s.se_name];},0)/arr.length):null;};
+    out.keys.push(m);out.labels.push(mLabel(m));
+    out.se.push(sc[se.se_name]!=null?sc[se.se_name]:scorePartsFor(se,allPeers,slice).score);
+    out.team.push(avg(tp));out.ch.push(avg(cp));
+  });
+  return out;
 }
 function composite(se,peers){ return scoreParts(se,peers).score; }
 
@@ -1114,7 +1104,6 @@ function exportScores(){
 
   var aoa=[['Rank','Sales Engineer','Team','Formula','Score',
             'Quo /mo (M)','Quo rank (0-100)','Quo weight','Quo pts',
-            'Q→HP rate (latest mo)','Q→HP rank (0-100)','Q→HP weight','Q→HP pts',
             'Award /mo (M)','Award rank (0-100)','Award weight','Award pts',
             'HP→Awd rate (cumul)','HP→Awd rank (0-100)','HP→Awd weight','HP→Awd pts',
             'Inv /mo (M)','Inv rank (0-100)','Inv weight','Inv pts',
@@ -1122,12 +1111,11 @@ function exportScores(){
   rows.forEach(function(r,i){
     var se=r.se, sp=r.sp;
     aoa.push([
-      i+1, se.se_name, se.team||'', '15/15/20/30/20', sp.score,
-      toM(sp.quoPM), r1(sp.quoN), '15%', Math.round(0.15*sp.quoN),
-      pct(sp.qhpRaw), r1(sp.qhpN), '15%', Math.round(0.15*(sp.qhpN||0)),
-      toM(sp.awdPM), r1(sp.awdN), '20%', Math.round(0.20*sp.awdN),
-      pct(sp.hpaRaw), r1(sp.hpaN), '30%', Math.round(0.30*(sp.hpaN||0)),
-      toM(sp.invPM), r1(sp.invN), '20%', Math.round(0.20*sp.invN),
+      i+1, se.se_name, se.team||'', '20/20/30/30 ('+channelName(se)+')', sp.score,
+      toM(sp.quoPM), r1(sp.quoN), '20%', Math.round(SCORE_W.quo*sp.quoN),
+      toM(sp.awdPM), r1(sp.awdN), '20%', Math.round(SCORE_W.awd*sp.awdN),
+      pct(sp.hpaRaw), r1(sp.hpaN), '30%', Math.round(SCORE_W.hpa*(sp.hpaN||0)),
+      toM(sp.invPM), r1(sp.invN), '30%', Math.round(SCORE_W.inv*sp.invN),
       toM(r.quo), toM(r.awd), toM(r.inv),
       se.join_date||'', sp.peerCount||''
     ]);
@@ -1877,48 +1865,16 @@ document.addEventListener('click',function(e){
 
 function renderFullscreenTrend(se){
   var allPeers=SE_DATA.filter(function(s){return STATE.excluded.indexOf(s.se_name)<0&&(!INACTIVE_SES[s.se_name]||STATE.showInactive);});
-  var cp=channelPeers(allPeers,se);
-  var ms_=months(); // continuous, chronological
-  var HS={quo:2,awd:2,inv:2};
-  var labels=[],seLine=[],ksaLine=[],teamLine=[],quoLine=[],qhpLine=[],awdLine=[],hpaLine=[],invLine=[];
-  for(var i=0;i<ms_.length;i++){
-    var mKey=ms_[i];
-    labels.push(mKey.slice(5)+'/'+mKey.slice(2,4)); // 01/25
-    var slice=ms_.filter(function(m){return m<=mKey;});
-    function totalFS(s,metric){var d=seData(s),v=0,k=metric==='awd'?'award':metric==='inv'?'inv':'quo';slice.forEach(function(m){v+=d[k][m]||0;});return v;}
-    function amFS(s,hs){var jd=s.join_date;if(!jd)return Math.max(1,slice.length-hs);var y=parseInt(jd.slice(0,4)),m=parseInt(jd.slice(5,7)),last=slice[slice.length-1],ly=parseInt(last.slice(0,4)),lm=parseInt(last.slice(5)),active=(ly-y)*12+(lm-m)+1;return Math.max(1,(active<1?0:active)-hs);}
-    function pmFS(s,metric){var t=amFS(s,HS[metric]);return t>0?totalFS(s,metric)/t:0;}
-    function nrmFS(a,v){return wnorm(a,v);}
-    var cpQ=cp.map(function(x){return pmFS(x,'quo');}),cpA=cp.map(function(x){return pmFS(x,'awd');}),cpI=cp.map(function(x){return pmFS(x,'inv');});
-    var qhAll=cp.map(function(x){return(x.hp_quo_pct||{})[mKey]||0;});
-    var haAll=cp.map(function(x){var n2=0,d2=0;slice.forEach(function(m2){n2+=(x.award_from_hp||{})[m2]||0;d2+=(x.total_award_hp||{})[m2]||0;});return d2>0?n2/d2:0;});
-
-    var qn=nrmFS(cpQ,pmFS(se,'quo')),an=nrmFS(cpA,pmFS(se,'awd')),in_=nrmFS(cpI,pmFS(se,'inv'));
-    var qhpAtM=(se.hp_quo_pct||{})[mKey]||0;
-    var qhN=nrmFS(qhAll,qhpAtM);
-    var hpaSe=0,hpaSd=0;slice.forEach(function(m2){hpaSe+=(se.award_from_hp||{})[m2]||0;hpaSd+=(se.total_award_hp||{})[m2]||0;});
-    var haN=nrmFS(haAll,hpaSd>0?hpaSe/hpaSd:0);
-    var ttl=Math.round(0.15*qn)+Math.round(0.15*qhN)+Math.round(0.20*an)+Math.round(0.30*haN)+Math.round(0.20*in_);
-    seLine.push(ttl);quoLine.push(Math.round(qn));qhpLine.push(Math.round(qhN));awdLine.push(Math.round(an));hpaLine.push(Math.round(haN));invLine.push(Math.round(in_));
-    var ksaSum=0,tmSum=0,tmN=0;cp.forEach(function(s2){
-      var q2=nrmFS(cpQ,pmFS(s2,'quo')),a2=nrmFS(cpA,pmFS(s2,'awd')),i2=nrmFS(cpI,pmFS(s2,'inv'));
-      var qh2=nrmFS(qhAll,(s2.hp_quo_pct||{})[mKey]||0);
-      var hp2n=0,hp2d=0;slice.forEach(function(m2){hp2n+=(s2.award_from_hp||{})[m2]||0;hp2d+=(s2.total_award_hp||{})[m2]||0;});
-      var ha2=nrmFS(haAll,hp2d>0?hp2n/hp2d:0);
-      var sc2=Math.round(0.15*q2)+Math.round(0.15*qh2)+Math.round(0.20*a2)+Math.round(0.30*ha2)+Math.round(0.20*i2);
-      ksaSum+=sc2; if(s2.team===se.team){tmSum+=sc2;tmN++;}
-    });
-    ksaLine.push(Math.round(ksaSum/cp.length)); teamLine.push(tmN?Math.round(tmSum/tmN):null);
-  }
+  var S=scoreSeries(se,allPeers), labels=S.labels, seLine=S.se, teamLine=S.team, ksaLine=S.ch;
   // SE vs team avg vs KSA avg only (parameter lines removed, Abdul 28-Oct-2026)
   var lastOf=function(arr){var l=-1;arr.forEach(function(v,k){if(v!=null)l=k;});return l;};
   var datasets=[
     {label:se.se_name,data:seLine,borderColor:'#141b24',pointRadius:3,pointBackgroundColor:'#141b24',borderWidth:2.5,tension:0.3,
      datalabels:{display:true,font:{size:10,weight:'bold'},color:'#141b24',anchor:'end',align:'top',offset:2}},
     {label:'Team avg ('+se.team+')',data:teamLine,borderColor:'#1f5fd6',pointRadius:2,pointBackgroundColor:'#1f5fd6',borderWidth:2,borderDash:[6,3],tension:0.3,
-     datalabels:{display:function(c){return c.dataIndex===lastOf(teamLine);},font:{size:10,weight:'bold'},color:'#1f5fd6',anchor:'end',align:'right',offset:6,formatter:function(v){return 'Team '+v;}}},
+     datalabels:{display:function(c){return c.dataIndex===lastOf(teamLine);},font:{size:10,weight:'bold'},color:'#1f5fd6',anchor:'end',align:-25,offset:6,formatter:function(v){return 'Team '+v;}}},
     {label:channelName(se)+' avg',data:ksaLine,borderColor:'#8b96a3',pointRadius:2,pointBackgroundColor:'#8b96a3',borderWidth:2,borderDash:[2,3],tension:0.3,
-     datalabels:{display:function(c){return c.dataIndex===lastOf(ksaLine);},font:{size:10,weight:'bold'},color:'#6b7682',anchor:'end',align:'right',offset:6,formatter:function(v){return channelName(se)+' '+v;}}}
+     datalabels:{display:function(c){return c.dataIndex===lastOf(ksaLine);},font:{size:10,weight:'bold'},color:'#6b7682',anchor:'end',align:25,offset:6,formatter:function(v){return channelName(se)+' '+v;}}}
   ];
   var ctx=document.getElementById('ch-fs-trend');
   if(_charts['ch-fs-trend']){_charts['ch-fs-trend'].destroy();delete _charts['ch-fs-trend'];}
