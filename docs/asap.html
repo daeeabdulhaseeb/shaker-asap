@@ -1028,7 +1028,7 @@ function obLive(a){
   };
 }
 var OB_CLAIMS={};
-var ACCOUNTS=[], SE_DATA=[], TEAM_DATA=[], PIPE_DATA=[], PROD_DATA={}, BL_DATA={};
+var ACCOUNTS=[], SE_DATA=[], TEAM_DATA=[], PIPE_DATA=[], PROD_DATA={}, BL_DATA={}; var HAS_CHURN=false;
 var ACC_INDEX={};
 var SEL_TEAM=null, SEL_SE=null, SEL_MONTH=null;
 var ACC_FILTERED=[];
@@ -1073,10 +1073,10 @@ function saNum(v){return +v||0;}
 function saQuo(a){var q=a.quo26||[0,0,0,0];return SA.vp?saNum(q[0]):saNum(q[1]);}
 function saLost(a){var q=a.quo26||[0,0,0,0];return SA.vp?saNum(q[2]):saNum(q[3]);}
 function saOwnE(a){var k=a.owner_key;var e=(a.by_se||[]).filter(function(x){return x[1]===k;})[0];return e||[a.curr_se,k,0,0,0,0,0,0,0,0,0];}
-function saRow(a){if(SA.own){var e=saOwnE(a);return {a:a,name:a.name,size:a.size_tier,st:a.cust_status,s25:e[2],s26:e[3],aw:e[4],bl:e[5],act:e[6],q:SA.vp?e[7]:e[8],lost:SA.vp?e[9]:e[10],qhr:e[7],
+function saRow(a){if(SA.own){var e=saOwnE(a);return {a:a,name:a.name,size:a.size_tier,st:a.cust_status,s25:e[2],s26:e[3],aw:e[4],bl:e[5],act:e[6],q:SA.vp?e[7]:e[8],lost:SA.vp?e[9]:e[10],qhr:e[7],ch:a.churn==null?-1:a.churn,
   qall:SA.vp?saNum((a.quo26||[0])[0]):saNum((a.quo26||[0,0])[1])};}
   return {a:a,qall:saQuo(a),name:a.name,size:a.size_tier,st:a.cust_status,s26:saNum(a.sales&&a.sales['2026']),s25:saNum(a.sales&&a.sales['2025']),
-  aw:saNum(a.award_by_year&&a.award_by_year['2026']),bl:saNum(a.backlog),act:saNum(a.act_quo),q:saQuo(a),lost:saLost(a),qhr:saNum((a.quo26||[0])[0])};}
+  aw:saNum(a.award_by_year&&a.award_by_year['2026']),bl:saNum(a.backlog),act:saNum(a.act_quo),q:saQuo(a),lost:saLost(a),qhr:saNum((a.quo26||[0])[0]),ch:a.churn==null?-1:a.churn};}
 function saInit(){if(SA.init)return;SA.init=true;
   var teams={};ACCOUNTS.forEach(function(a){if(a.curr_team)teams[a.curr_team]=1;});
   populateFilter('sa-team',Object.keys(teams).sort());saTeamChanged();saVP(SA.vp);saOwn(SA.own);}
@@ -1088,6 +1088,8 @@ function saVP(v){SA.vp=v;document.querySelectorAll('#sa-vp button').forEach(func
 function saAccounts(){var t=document.getElementById('sa-team').value,se=document.getElementById('sa-se').value,st=document.getElementById('sa-status').value,q=(document.getElementById('sa-search').value||'').toLowerCase();
   return ACCOUNTS.filter(function(a){if(!a.curr_se||!a.curr_team)return false;if(t&&a.curr_team!==t)return false;if(se&&a.curr_se!==se)return false;if(st&&a.cust_status!==st)return false;if(q&&(a.name||'').toLowerCase().indexOf(q)<0)return false;return true;});}
 function saKpi(l,v,n){return '<div class="card" style="padding:10px 12px;margin:0"><div style="font-size:10.5px;color:var(--text3);font-weight:600">'+l+'</div><div style="font-size:18px;font-weight:600;margin-top:2px">'+v+'</div>'+(n?'<div style="font-size:10.5px;color:var(--text2)">'+n+'</div>':'')+'</div>';}
+function saRisk(r){return r.a.churn_hi&&(r.s25+r.s26)>0;}
+function saChurn(v,hi){if(v==null||v<0)return '<span class="dim">--</span>';var c=hi?'var(--bad,#c0392b)':v>=30?'var(--warn,#b9770e)':'var(--text2)';return '<span style="color:'+c+';font-weight:'+(hi?600:400)+'">'+v+'%</span>';}
 function saHR(aw,q){return q>0?(aw/q*100).toFixed(1)+'%':'--';}
 function saSortBy(k){if(SA.sort===k)SA.dir*=-1;else{SA.sort=k;SA.dir=(k==='name'||k==='se')?1:-1;}saRender();}
 function saTh(k,l,r){return '<th class="'+(r?'r':'')+'" style="cursor:pointer;font-size:11px;white-space:nowrap" onclick="saSortBy(&quot;'+k+'&quot;)">'+l+(SA.sort===k?(SA.dir<0?' &#9662;':' &#9652;'):'')+'</th>';}
@@ -1099,26 +1101,28 @@ function saRender(){if(!SA.init)return;var se=document.getElementById('sa-se').v
   var withSales=rows.filter(function(r){return r.s26>0;}).length;
   document.getElementById('sa-kpis').innerHTML=saKpi('Accounts',T.n,stTxt)+saKpi('Accounts with 2026 sales',withSales,T.n?Math.round(withSales/T.n*100)+'% of accounts':'')+
     saKpi('2026 sales',sar(T.s26),'2025: '+sar(T.s25))+saKpi('2026 award',sar(T.aw),'')+saKpi('Backlog',sar(T.bl),'')+saKpi('Active quotes (30/50/70)',sar(T.act),'Valid from 2025+')+
-    saKpi(qlbl,sar(T.q),'of which lost: '+sar(T.lost)+(SA.own?' · other SEs: '+sar(T.qall-T.q):''))+saKpi('Hit ratio 2026',saHR(T.aw,T.qhr),'award ÷ quotes 2026 (valid prob.)');
+    saKpi(qlbl,sar(T.q),'of which lost: '+sar(T.lost)+(SA.own?' · other SEs: '+sar(T.qall-T.q):''))+saKpi('Hit ratio 2026',saHR(T.aw,T.qhr),'award ÷ quotes 2026 (valid prob.)')+
+    (HAS_CHURN?(function(){var R=rows.filter(saRisk);return saKpi('Retain: at risk of going quiet',R.length+' account'+(R.length===1?'':'s'),sar(R.reduce(function(s,r){return s+r.s25+r.s26;},0))+' sales 2025–26 · churn model');})():'');
   var th=document.getElementById('sa-thead'),tb=document.getElementById('sa-tbody'),h='';
   if(!se){ // one row per SE
-    var m={};rows.forEach(function(r){var k=r.a.curr_se;if(!m[k])m[k]={se:k,team:r.a.curr_team,n:0,live:0,s26:0,aw:0,bl:0,act:0,q:0,lost:0,qhr:0};var o=m[k];o.n++;if(r.s26>0)o.live++;['s26','aw','bl','act','q','lost','qhr'].forEach(function(x){o[x]+=r[x];});});
+    var m={};rows.forEach(function(r){var k=r.a.curr_se;if(!m[k])m[k]={se:k,team:r.a.curr_team,n:0,live:0,s26:0,aw:0,bl:0,act:0,q:0,lost:0,qhr:0,risk:0};var o=m[k];o.n++;if(r.s26>0)o.live++;if(saRisk(r))o.risk++;['s26','aw','bl','act','q','lost','qhr'].forEach(function(x){o[x]+=r[x];});});
     var L=Object.keys(m).map(function(k){var o=m[k];o.hr=o.qhr?o.aw/o.qhr:-1;return o;});
     var sk=SA.sort==='name'?'se':SA.sort;L.sort(function(a,b){var x=a[sk],y=b[sk];if(typeof x==='string')return SA.dir*x.localeCompare(y);return SA.dir*((x||0)-(y||0));});
-    th.innerHTML='<tr>'+saTh('se','SE')+'<th style="font-size:11px">Team</th>'+saTh('n','Accounts',1)+saTh('live','With 2026 sales',1)+saTh('s26','2026 sales',1)+saTh('aw','2026 award',1)+saTh('bl','Backlog',1)+saTh('act','Active quotes',1)+saTh('q',qlbl,1)+saTh('lost','Lost 2026',1)+saTh('hr','Hit ratio',1)+'</tr>';
-    L.forEach(function(o){h+='<tr class="clickable" onclick="saPickSE(&quot;'+o.se.replace(/"/g,'')+'&quot;)"><td style="font-weight:500;font-size:11px">'+o.se+'</td><td style="font-size:11px">'+(o.team||'')+'</td><td class="r">'+o.n+'</td><td class="r">'+o.live+'</td><td class="r">'+sar(o.s26)+'</td><td class="r">'+sar(o.aw)+'</td><td class="r">'+sar(o.bl)+'</td><td class="r">'+sar(o.act)+'</td><td class="r">'+sar(o.q)+'</td><td class="r dim">'+sar(o.lost)+'</td><td class="r">'+saHR(o.aw,o.qhr)+'</td></tr>';});
+    th.innerHTML='<tr>'+saTh('se','SE')+'<th style="font-size:11px">Team</th>'+saTh('n','Accounts',1)+saTh('live','With 2026 sales',1)+saTh('s26','2026 sales',1)+saTh('aw','2026 award',1)+saTh('bl','Backlog',1)+saTh('act','Active quotes',1)+saTh('q',qlbl,1)+saTh('lost','Lost 2026',1)+saTh('hr','Hit ratio',1)+(HAS_CHURN?saTh('risk','At-risk accounts',1):'')+'</tr>';
+    L.forEach(function(o){h+='<tr class="clickable" onclick="saPickSE(&quot;'+o.se.replace(/"/g,'')+'&quot;)"><td style="font-weight:500;font-size:11px">'+o.se+'</td><td style="font-size:11px">'+(o.team||'')+'</td><td class="r">'+o.n+'</td><td class="r">'+o.live+'</td><td class="r">'+sar(o.s26)+'</td><td class="r">'+sar(o.aw)+'</td><td class="r">'+sar(o.bl)+'</td><td class="r">'+sar(o.act)+'</td><td class="r">'+sar(o.q)+'</td><td class="r dim">'+sar(o.lost)+'</td><td class="r">'+saHR(o.aw,o.qhr)+'</td>'+(HAS_CHURN?'<td class="r'+(o.risk?'':' dim')+'">'+o.risk+'</td>':'')+'</tr>';});
     tb.innerHTML=h;document.getElementById('sa-count').textContent=L.length+' SEs · click an SE to see the accounts';
   } else {
     rows.sort(function(a,b){var x=a[SA.sort],y=b[SA.sort];if(SA.sort==='hr'){x=a.qhr?a.aw/a.qhr:-1;y=b.qhr?b.aw/b.qhr:-1;}if(typeof x==='string')return SA.dir*String(x).localeCompare(String(y||''));return SA.dir*((x||0)-(y||0));});
-    th.innerHTML='<tr>'+saTh('name','Account')+'<th style="font-size:11px">Size</th><th style="font-size:11px">Status</th>'+saTh('s26','2026 sales',1)+saTh('s25','2025 sales',1)+saTh('aw','2026 award',1)+saTh('bl','Backlog',1)+saTh('act','Active quotes',1)+saTh('q',qlbl,1)+saTh('lost','Lost 2026',1)+saTh('hr','Hit ratio',1)+'</tr>';
-    h='<tr style="background:var(--surface2);font-weight:500"><td style="font-size:11px">Total ('+T.n+')</td><td></td><td></td><td class="r">'+sar(T.s26)+'</td><td class="r">'+sar(T.s25)+'</td><td class="r">'+sar(T.aw)+'</td><td class="r">'+sar(T.bl)+'</td><td class="r">'+sar(T.act)+'</td><td class="r">'+sar(T.q)+'</td><td class="r dim">'+sar(T.lost)+'</td><td class="r">'+saHR(T.aw,T.qhr)+'</td></tr>';
+    th.innerHTML='<tr>'+saTh('name','Account')+'<th style="font-size:11px">Size</th><th style="font-size:11px">Status</th>'+saTh('s26','2026 sales',1)+saTh('s25','2025 sales',1)+saTh('aw','2026 award',1)+saTh('bl','Backlog',1)+saTh('act','Active quotes',1)+saTh('q',qlbl,1)+saTh('lost','Lost 2026',1)+saTh('hr','Hit ratio',1)+(HAS_CHURN?saTh('ch','Churn risk 6m',1):'')+'</tr>';
+    h='<tr style="background:var(--surface2);font-weight:500"><td style="font-size:11px">Total ('+T.n+')</td><td></td><td></td><td class="r">'+sar(T.s26)+'</td><td class="r">'+sar(T.s25)+'</td><td class="r">'+sar(T.aw)+'</td><td class="r">'+sar(T.bl)+'</td><td class="r">'+sar(T.act)+'</td><td class="r">'+sar(T.q)+'</td><td class="r dim">'+sar(T.lost)+'</td><td class="r">'+saHR(T.aw,T.qhr)+'</td>'+(HAS_CHURN?'<td></td>':'')+'</tr>';
     rows.forEach(function(r){var a=r.a;h+='<tr class="clickable" onclick="saToggle(&quot;'+a.customer+'&quot;)"><td style="font-weight:500;font-size:11px">'+a.name+' <span class="dim" style="font-weight:400;font-size:10px">'+a.customer+'</span></td><td>'+sizeBadge(a.size_tier,a.size_trend)+'</td><td>'+statusBadge(a.cust_status)+'</td>'+
-      '<td class="r '+(r.s26?'':'dim')+'">'+sar(r.s26)+'</td><td class="r dim">'+sar(r.s25)+'</td><td class="r">'+sar(r.aw)+'</td><td class="r">'+sar(r.bl)+'</td><td class="r">'+sar(r.act)+'</td><td class="r">'+sar(r.q)+'</td><td class="r dim">'+sar(r.lost)+'</td><td class="r">'+saHR(r.aw,r.qhr)+'</td></tr>';
-      if(SA.open===a.customer)h+='<tr><td colspan="11" style="background:var(--surface2);padding:8px 12px">'+saSplit(a)+saProjects(a)+'</td></tr>';});
+      '<td class="r '+(r.s26?'':'dim')+'">'+sar(r.s26)+'</td><td class="r dim">'+sar(r.s25)+'</td><td class="r">'+sar(r.aw)+'</td><td class="r">'+sar(r.bl)+'</td><td class="r">'+sar(r.act)+'</td><td class="r">'+sar(r.q)+'</td><td class="r dim">'+sar(r.lost)+'</td><td class="r">'+saHR(r.aw,r.qhr)+'</td>'+(HAS_CHURN?'<td class="r">'+saChurn(r.ch,saRisk(r))+'</td>':'')+'</tr>';
+      if(SA.open===a.customer)h+='<tr><td colspan="'+(HAS_CHURN?12:11)+'" style="background:var(--surface2);padding:8px 12px">'+saSplit(a)+saProjects(a)+'</td></tr>';});
     tb.innerHTML=h;document.getElementById('sa-count').textContent=T.n+' accounts · click an account for its open quotations';
   }
   document.getElementById('sa-note').innerHTML=(SA.own?'<b>Account owner only</b>: sales, award, backlog and quotes made by the account owner (vCust) on the account. ':'<b>All SEs on the account</b>: every SE&#39;s sales and quotes on the owner&#39;s accounts. ')+'Status / size: account explorer rules. 2026 sales = invoiced (sales file). Award = 90/100% by expected award date 2026. Backlog = awarded not invoiced. Active quotes = 30/50/70%, won or in progress, quoted 2025 onward. '+
-    'Quotes 2026 = every VALID quotation with Valid from 2026, any status incl. lost; <b>valid probability = true</b> drops 15% and blank probability (same base as the hit ratio in the SE report and Power BI).';}
+    'Quotes 2026 = every VALID quotation with Valid from 2026, any status incl. lost; <b>valid probability = true</b> drops 15% and blank probability (same base as the hit ratio in the SE report and Power BI).'+
+    (HAS_CHURN?' <b>Churn risk 6m</b> = model probability that the account raises no quotation and wins no award in the next 6 months (recency and trend of quotations and awards, payment lateness; monthly pipeline snapshots). Bold red = Retain: at-risk band and last-12-month award at or above the median account; the KPI counts those that bought in 2025–26 — sort by churn risk for the visit list.':'');}
 function saPickSE(se){var a=ACCOUNTS.filter(function(x){return x.curr_se===se;})[0];if(a&&document.getElementById('sa-team').value&&a.curr_team!==document.getElementById('sa-team').value){document.getElementById('sa-team').value='';saTeamChanged();}
   document.getElementById('sa-se').value=se;SA.sort='s26';SA.dir=-1;saRender();window.scrollTo(0,0);}
 function saToggle(c){SA.open=SA.open===c?null:c;if(SA.open)loadAccountProjects(saRender);saRender();}
@@ -1134,7 +1138,7 @@ function saProjects(a){if(!ACCOUNT_PROJECTS)return '<span class="dim" style="fon
 function saExport(){var se=document.getElementById('sa-se').value,rows=saAccounts().map(saRow);
   var ql=SA.vp?'Quotes 2026 (valid prob.)':'Quotes 2026 (all prob.)';
   var acc=rows.map(function(r){var a=r.a;return {'SE':a.curr_se,'Team':a.curr_team,'Account':a.name,'Customer No':a.customer,'Size':a.size_tier||'','Status':a.cust_status||'',
-    '2026 sales':r.s26,'2025 sales':r.s25,'2026 award':r.aw,'Backlog':r.bl,'Active quotes (30/50/70)':r.act,[ql]:r.q,'Lost 2026':r.lost,'Hit ratio 2026':r.qhr?Math.round(r.aw/r.qhr*10000)/10000:''};});
+    '2026 sales':r.s26,'2025 sales':r.s25,'2026 award':r.aw,'Backlog':r.bl,'Active quotes (30/50/70)':r.act,[ql]:r.q,'Lost 2026':r.lost,'Hit ratio 2026':r.qhr?Math.round(r.aw/r.qhr*10000)/10000:'','Churn risk 6m %':r.ch>=0?r.ch:'','At risk':saRisk(r)?'Yes':''};});
   var m={};rows.forEach(function(r){var k=r.a.curr_se;if(!m[k])m[k]={'SE':k,'Team':r.a.curr_team,'Accounts':0,'Accounts with 2026 sales':0,'2026 sales':0,'2025 sales':0,'2026 award':0,'Backlog':0,'Active quotes (30/50/70)':0,[ql]:0,'Lost 2026':0,_qhr:0};
     var o=m[k];o['Accounts']++;if(r.s26>0)o['Accounts with 2026 sales']++;o['2026 sales']+=r.s26;o['2025 sales']+=r.s25;o['2026 award']+=r.aw;o['Backlog']+=r.bl;o['Active quotes (30/50/70)']+=r.act;o[ql]+=r.q;o['Lost 2026']+=r.lost;o._qhr+=r.qhr;});
   var sum=Object.keys(m).map(function(k){var o=m[k];o['Hit ratio 2026']=o._qhr?Math.round(o['2026 award']/o._qhr*10000)/10000:'';delete o._qhr;return o;}).sort(function(a,b){return b['2026 sales']-a['2026 sales'];});
@@ -4261,6 +4265,7 @@ function ensureAccounts(){
   __ACC_PROMISE=fetch(base+'asap_accounts.json'+cb).then(function(r){return r.json();}).then(function(acc){
     ACCOUNTS=acc||[];
     if(window.__MY_TEAMS) ACCOUNTS=ACCOUNTS.filter(function(a){return window.__MY_TEAMS.indexOf(a.curr_team)>=0;});
+    HAS_CHURN=ACCOUNTS.some(function(a){return a.churn!=null;});
     ACCOUNTS.forEach(function(a,i){ACC_INDEX[a.customer]=i;});
     initFilters();
     ACC_FILTERED=ACCOUNTS.slice();
